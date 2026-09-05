@@ -1,5 +1,5 @@
 // ── Service Worker — Inventaire HACCP La Salle à Manger ──
-const CACHE_NAME = 'haccp-lsm-v3';
+const CACHE_NAME = 'haccp-lsm-v5';
 
 // Installation
 self.addEventListener('install', event => {
