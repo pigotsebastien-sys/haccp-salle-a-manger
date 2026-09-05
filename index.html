@@ -2770,20 +2770,10 @@ const App = {
         '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_bl":"...","lignes":[{"code":"...","montant_ht":0.00,"taux_tva":0}]}\n'+
         "Les taux de TVA possibles sont 0, 5.5, 10 ou 20. Si une information est illisible ou absente, mets null.";
 
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      const resp = await fetch("https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-facture", {
         method:"POST",
-        headers:{
-          "content-type":"application/json",
-          "x-api-key": this.apiKey,
-          "anthropic-version":"2023-06-01",
-          "anthropic-dangerous-direct-browser-access":"true"
-        },
-        body: JSON.stringify({
-          model:"claude-sonnet-4-6",
-          max_tokens:1200,
-          system: systemPrompt,
-          messages:[{ role:"user", content:[contentBlock, {type:"text", text:"Ventile cette facture au format JSON demandé, en te basant strictement sur les codes fournis."}] }]
-        })
+        headers:{"content-type":"application/json"},
+        body: JSON.stringify({ base64: base64, media_type: isPdf ? "application/pdf" : (file.type || "image/jpeg") })
       });
       if(!resp.ok){
         const errBody = await resp.text().catch(()=> "");
@@ -7331,16 +7321,20 @@ window.CaApp = CaApp;
 // ══ NAVIGATION TUILES ══
 function goHome() {
   // Masquer tous les panneaux
-  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){
+    p.classList.remove('active');
+    p.style.display = 'none';
+  });
   document.querySelectorAll('.tab-btn, .tab-more-item').forEach(function(b){ b.classList.remove('active'); });
+  // Masquer les stats-row et tab-bar originales
+  document.querySelectorAll('.stats-row, .tab-bar, .tab-bar-wrap, .restore-banner, .footer-bar').forEach(function(el){
+    el.style.display = 'none';
+  });
   // Afficher l'écran d'accueil
   var hs = document.getElementById('home-screen');
-  if(hs) hs.classList.add('active');
+  if(hs){ hs.style.display = 'block'; hs.classList.add('active'); }
   // Mettre à jour bottom nav
   updateBottomNav('home');
-  // Masquer la tab-bar originale
-  var tb = document.querySelector('.tab-bar-wrap, .tab-bar');
-  if(tb) tb.style.display = 'none';
   // Mettre à jour les stats
   updateHomeStats();
 }
@@ -7348,10 +7342,14 @@ function goHome() {
 function goToModule(name) {
   // Masquer écran d'accueil
   var hs = document.getElementById('home-screen');
-  if(hs) hs.classList.remove('active');
-  // Afficher la tab-bar originale
-  var tb = document.querySelector('.tab-bar-wrap, .tab-bar');
-  if(tb) tb.style.display = '';
+  if(hs){ hs.style.display = 'none'; hs.classList.remove('active'); }
+  // Restaurer les éléments de l'app
+  document.querySelectorAll('.stats-row, .tab-bar, .tab-bar-wrap').forEach(function(el){
+    el.style.display = '';
+  });
+  document.querySelectorAll('.panel').forEach(function(p){
+    p.style.display = '';
+  });
   // Naviguer vers le module
   if(name === 'reception-mp' || name === 'factures' || name === 'tracabilite' ||
      name === 'historique' || name === 'prix' || name === 'carte-allergenes' || name === 'pieces') {
