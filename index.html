@@ -1132,7 +1132,7 @@ tr:hover td { background:var(--rec-surface2); }
   window.addEventListener('load', function() { setTimeout(initSync, 1500); });
   </script>
 </head>
-<body role="application" aria-label="Inventaire HACCP La Salle à Manger">
+<body role="application" onload="setTimeout(goHome,2100)" aria-label="Inventaire HACCP La Salle à Manger">
 
 
 <!-- ══ ÉCRAN D'ACCUEIL TUILES ══ -->
@@ -7414,12 +7414,7 @@ window.addEventListener('load', function(){
   setTimeout(function(){
     goHome();
     updateHomeStats();
-    // Recalculer stats quand les données Supabase arrivent
-    var origSync = window.syncProductsFromCloud;
-    if(typeof origSync === 'function') {
-      var origPull = window.pullCloud;
-    }
-  }, 500);
+  }, 2000); // Après initSync (1500ms)
 });
 
 function closeAddProduct(){
