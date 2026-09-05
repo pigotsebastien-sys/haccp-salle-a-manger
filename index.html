@@ -4565,14 +4565,24 @@ async function analyzeReceptionPhoto(input) {
       img.src = url;
     });
 
-    var response = await fetch('https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-etiquette', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: b64, mimeType: mimeType })
+    // Appel direct via XMLHttpRequest pour contourner le Service Worker
+    var info = await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-etiquette');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.timeout = 30000;
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch(e) { reject(new Error('Réponse invalide')); }
+        } else {
+          reject(new Error('Erreur serveur ' + xhr.status));
+        }
+      };
+      xhr.onerror = function() { reject(new Error('Connexion impossible')); };
+      xhr.ontimeout = function() { reject(new Error('Délai dépassé')); };
+      xhr.send(JSON.stringify({ image: b64, mimeType: mimeType }));
     });
-
-    if (!response.ok) throw new Error('Erreur serveur ' + response.status);
-    var info = await response.json();
     if (info.error) throw new Error(info.error);
 
     // Remplir le formulaire
