@@ -6215,13 +6215,22 @@ async function analyzeReceptionPhoto(input) {
     var filled = 0;
     if (info.produit) { var e1=document.getElementById('rec-produit'); if(e1){e1.value=info.produit;filled++;} }
     if (info.fournisseur) { var e2=document.getElementById('rec-fourn'); if(e2){e2.value=info.fournisseur;filled++;} }
-    if (info.dlc) { var e3=document.getElementById('rec-dlc'); if(e3){e3.value=info.dlc;filled++;} }
+    if (info.dlc) {
+      var e3=document.getElementById('rec-dlc-date'); // nouveau module: rec-dlc-date
+      if(!e3) e3=document.getElementById('rec-dlc'); // ancien module fallback
+      if(e3 && e3.type==='date'){e3.value=info.dlc;filled++;if(typeof recCalcDlc==='function')recCalcDlc();}
+    }
     if (info.temperature) {
       var e4=document.getElementById('rec-temp'); if(e4) e4.value=info.temperature;
       var t=parseFloat(info.temperature);
       var te=document.getElementById('rec-type-temp');
-      if(te) te.value=t<=-18?'-18':t<=4?'4':t<=8?'8':'na';
-      if(typeof checkReceptionMP==='function') checkReceptionMP();
+      if(te){
+        if(t<=-18) te.value='-18';
+        else if(t<=4) te.value='4';
+        else if(t<=8) te.value='8';
+        else te.value='na';
+      }
+      if(typeof checkReception==='function') checkReception();
       filled++;
     }
     var obs='';
