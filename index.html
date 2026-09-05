@@ -4203,6 +4203,9 @@ function buildInvoiceList(){
     INVOICES.map(inv=>`<div class="inv-card"><div class="inv-card-header"><div><div class="inv-card-title">${inv.fournisseur}</div><div style="font-size:11px;color:var(--text2)">${inv.date} · N° ${inv.id}</div></div><div class="inv-card-total">${inv.total.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div></div>${inv.items.map(it=>`<div class="inv-item"><span class="inv-item-name">${it.p}</span><span class="inv-item-price">${it.q} ${it.u} × ${it.px.toFixed(2)} €</span></div>`).join('')}</div>`).join('');
 }
 function switchTab(name,btn){
+  // Bloquer si l'écran d'accueil est actif
+  var hs=document.getElementById('home-screen');
+  if(hs && hs.style.display==='block') return;
   if(name==='reception-mp'){
     document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
     document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
@@ -9486,6 +9489,8 @@ function toggleTabMore(btn){
   btn.classList.toggle('active-more',!open);
 }
 function switchTabMore(name,btn){
+  var hs=document.getElementById('home-screen');
+  if(hs && hs.style.display==='block') return;
   // Fermer le menu
   document.getElementById('tab-more-menu').style.display='none';
   document.querySelector('.tab-more-btn')?.classList.remove('active-more');
