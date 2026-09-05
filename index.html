@@ -4528,79 +4528,71 @@ function openEditProduct(code){
 async function analyzeReceptionPhoto(input) {
   var file = input && input.files && input.files[0];
   if (!file) return;
-
   var status = document.getElementById('rec-photo-status');
   var preview = document.getElementById('rec-photo-preview');
-  if (status) status.innerHTML = '<span style="color:var(--info-text)">⏳ Analyse en cours…</span>';
-
-  // Preview
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    if (preview) { preview.src = e.target.result; preview.style.display = 'block'; }
-  };
-  reader.readAsDataURL(file);
+  if (status) status.innerHTML = '<span style="color:var(--info-text)">⏳ Compression…</span>';
 
   try {
-    // Compresser et convertir en base64
-    var mimeType = 'image/jpeg';
+    // Compression maximale : 300px, qualité 30%
     var b64 = await new Promise(function(resolve, reject) {
-      var img = new Image();
-      var url = URL.createObjectURL(file);
-      img.onload = function() {
-        var canvas = document.createElement('canvas');
-        var MAX = 1024;
-        var w = img.width, h = img.height;
-        if (w > MAX || h > MAX) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          var MAX = 300;
+          var w = img.width, h = img.height;
           if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
           else { w = Math.round(w * MAX / h); h = MAX; }
-        }
-        canvas.width = w; canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        URL.revokeObjectURL(url);
-        resolve(dataUrl.split(',')[1]);
+          var c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', 0.3).split(',')[1]);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
       };
-      img.onerror = reject;
-      img.src = url;
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
+
+    if (preview) { preview.src = 'data:image/jpeg;base64,' + b64; preview.style.display = 'block'; }
+    if (status) status.innerHTML = '<span style="color:var(--info-text)">⏳ Analyse IA…</span>';
 
     var response = await fetch('https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-etiquette', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: b64, mimeType: mimeType })
+      body: JSON.stringify({ image: b64, mimeType: 'image/jpeg' })
     });
 
-    if (!response.ok) throw new Error('Erreur serveur ' + response.status);
+    if (!response.ok) throw new Error('Erreur ' + response.status);
     var info = await response.json();
     if (info.error) throw new Error(info.error);
 
-    // Remplir le formulaire
     var filled = 0;
-    if (info.produit) { var el = document.getElementById('rec-produit'); if(el) el.value = info.produit; filled++; }
-    if (info.fournisseur) { var el2 = document.getElementById('rec-fourn'); if(el2) el2.value = info.fournisseur; filled++; }
-    if (info.dlc) { var el3 = document.getElementById('rec-dlc'); if(el3) el3.value = info.dlc; filled++; }
+    if (info.produit) { var e1=document.getElementById('rec-produit'); if(e1){e1.value=info.produit;filled++;} }
+    if (info.fournisseur) { var e2=document.getElementById('rec-fourn'); if(e2){e2.value=info.fournisseur;filled++;} }
+    if (info.dlc) { var e3=document.getElementById('rec-dlc'); if(e3){e3.value=info.dlc;filled++;} }
     if (info.temperature) {
-      var el4 = document.getElementById('rec-temp'); if(el4) el4.value = info.temperature;
-      var t = parseFloat(info.temperature);
-      var typeEl = document.getElementById('rec-type-temp');
-      if (typeEl) { typeEl.value = t <= -18 ? '-18' : t <= 4 ? '4' : t <= 8 ? '8' : 'na'; }
-      checkReceptionMP(); filled++;
+      var e4=document.getElementById('rec-temp'); if(e4) e4.value=info.temperature;
+      var t=parseFloat(info.temperature);
+      var te=document.getElementById('rec-type-temp');
+      if(te) te.value=t<=-18?'-18':t<=4?'4':t<=8?'8':'na';
+      if(typeof checkReceptionMP==='function') checkReceptionMP();
+      filled++;
     }
-    var obs = '';
-    if (info.lot) obs += 'Lot: ' + info.lot + '\n';
-    if (info.poids) obs += 'Poids: ' + info.poids + '\n';
-    if (info.observations) obs += info.observations;
-    if (obs.trim()) { var el5 = document.getElementById('rec-obs'); if(el5) el5.value = obs.trim(); filled++; }
+    var obs='';
+    if(info.lot) obs+='Lot: '+info.lot+' ';
+    if(info.poids) obs+='Poids: '+info.poids+' ';
+    if(info.observations) obs+=info.observations;
+    if(obs.trim()){ var e5=document.getElementById('rec-obs'); if(e5){e5.value=obs.trim();filled++;} }
 
-    if (status) status.innerHTML = '<span style="color:var(--success-text)">✅ ' + filled + ' champ(s) rempli(s) — vérifiez et complétez</span>';
+    if(status) status.innerHTML='<span style="color:var(--success-text)">✅ '+filled+' champ(s) rempli(s)</span>';
 
   } catch(e) {
     console.error('[SCAN]', e);
-    if (status) status.innerHTML = '<span style="color:var(--pink-text)">⚠️ ' + (e.message || 'Analyse impossible') + '</span>';
+    if(status) status.innerHTML='<span style="color:var(--pink-text)">⚠️ '+(e.message||'Erreur')+'</span>';
   }
-
-  if (input) input.value = '';
+  if(input) input.value='';
 }
 
 function closeAddProduct(){
