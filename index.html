@@ -707,6 +707,139 @@ tr:hover td { background:var(--rec-surface2); }
 
 
 #panel-factures-ca .api-key-section { display: none !important; }
+
+/* ══════════════════════════════════════
+   NOUVELLE INTERFACE — TUILES HACCP LSM
+   ══════════════════════════════════════ */
+
+/* Reset header existant */
+.app-header { display: none !important; }
+
+/* Nouveau header */
+.hd-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: #1a2c4a;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  gap: 10px;
+}
+.hd-brand { display: flex; align-items: center; gap: 8px; }
+.hd-brand-name { color: #fff; font-size: 14px; font-weight: 600; }
+.hd-brand-sub { color: rgba(255,255,255,.5); font-size: 11px; }
+.hd-sync { width: 8px; height: 8px; border-radius: 50%; background: #52B788; flex-shrink: 0; }
+.hd-sync.orange { background: #f59e0b; }
+.hd-sync.red { background: #ef4444; }
+.hd-actions { display: flex; gap: 6px; }
+.hd-btn {
+  background: rgba(255,255,255,.12); border: none; border-radius: 8px;
+  color: #fff; font-size: 12px; font-weight: 500; padding: 6px 12px;
+  cursor: pointer; font-family: inherit;
+}
+.hd-btn:active { background: rgba(255,255,255,.2); }
+
+/* Page d'accueil tuiles */
+#home-screen {
+  padding: 14px;
+  display: none;
+}
+#home-screen.active { display: block; }
+
+/* Tuile principale — Inventaire */
+.tile-main {
+  background: #1a2c4a;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: opacity .15s;
+}
+.tile-main:active { opacity: .85; }
+.tile-main-left { }
+.tile-main-icon { font-size: 28px; margin-bottom: 6px; }
+.tile-main-title { color: #fff; font-size: 17px; font-weight: 600; }
+.tile-main-sub { color: rgba(255,255,255,.55); font-size: 12px; margin-top: 2px; }
+.tile-main-right { text-align: right; }
+.tile-main-value { color: #fff; font-size: 30px; font-weight: 600; line-height: 1; }
+.tile-main-label { color: rgba(255,255,255,.55); font-size: 11px; margin-top: 2px; }
+.tile-main-badge { color: #52B788; font-size: 12px; font-weight: 600; margin-top: 6px; }
+
+/* Tuiles moyennes */
+.tiles-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.tile-mid {
+  border-radius: 12px; padding: 14px;
+  cursor: pointer; transition: opacity .15s;
+}
+.tile-mid:active { opacity: .85; }
+.tile-mid-icon { font-size: 22px; margin-bottom: 8px; }
+.tile-mid-title { color: #fff; font-size: 13px; font-weight: 600; }
+.tile-mid-sub { color: rgba(255,255,255,.6); font-size: 11px; margin-top: 2px; }
+.tile-mid-badge {
+  margin-top: 8px; display: inline-block;
+  background: rgba(255,255,255,.15); border-radius: 6px;
+  padding: 3px 8px; color: #fff; font-size: 10px; font-weight: 600;
+}
+.tile-reception { background: #0F6E56; }
+.tile-factures { background: #185FA5; }
+
+/* Tuiles secondaires */
+.tiles-section-title {
+  font-size: 11px; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: 10px; margin-top: 4px;
+}
+.tiles-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; margin-bottom: 14px;
+}
+.tile-sm {
+  background: var(--bg2); border: 0.5px solid var(--border);
+  border-radius: 10px; padding: 10px 6px; text-align: center;
+  cursor: pointer; position: relative; transition: opacity .15s;
+}
+.tile-sm:active { opacity: .75; }
+.tile-sm-icon { font-size: 20px; }
+.tile-sm-label { font-size: 10px; color: var(--text2); margin-top: 4px; }
+.tile-sm-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 7px; height: 7px; border-radius: 50%; background: #ef4444;
+}
+
+/* Bottom nav */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 99;
+  background: var(--bg); border-top: 0.5px solid var(--border);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bn-item {
+  padding: 8px 4px; text-align: center; cursor: pointer;
+  border-top: 2px solid transparent; transition: border-color .15s;
+}
+.bn-item.active { border-top-color: #1a2c4a; }
+.bn-icon { font-size: 20px; }
+.bn-label { font-size: 9px; color: var(--text2); margin-top: 1px; }
+.bn-item.active .bn-label { color: #1a2c4a; font-weight: 600; }
+
+/* Ajuster le contenu pour le bottom nav */
+.app-content, .panel, #home-screen {
+  padding-bottom: 70px;
+}
+
+/* Stats bar */
+.stats-bar {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border);
+  border-bottom: 0.5px solid var(--border);
+  margin-bottom: 14px;
+}
+.stat-cell {
+  background: var(--bg2); padding: 10px 12px;
+}
+.stat-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; }
+.stat-value { font-size: 16px; font-weight: 600; color: var(--text); margin-top: 2px; }
+.stat-value.danger { color: #ef4444; }
+
 </style>
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
@@ -1000,6 +1133,134 @@ tr:hover td { background:var(--rec-surface2); }
   </script>
 </head>
 <body role="application" aria-label="Inventaire HACCP La Salle à Manger">
+
+
+<!-- ══ ÉCRAN D'ACCUEIL TUILES ══ -->
+<div id="home-screen">
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-cell">
+      <div class="stat-label">Valeur HT</div>
+      <div class="stat-value" id="hs-valeur">—</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Références</div>
+      <div class="stat-value" id="hs-refs">—</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-label">Alertes DLC</div>
+      <div class="stat-value danger" id="hs-dlc">—</div>
+    </div>
+  </div>
+
+  <!-- Inventaire — tuile principale -->
+  <div class="tile-main" onclick="goToModule('inventaire')">
+    <div class="tile-main-left">
+      <div class="tile-main-icon">📦</div>
+      <div class="tile-main-title">Inventaire</div>
+      <div class="tile-main-sub">Cœur de l'application</div>
+    </div>
+    <div class="tile-main-right">
+      <div class="tile-main-value" id="hs-refs2">539</div>
+      <div class="tile-main-label">références</div>
+      <div class="tile-main-badge" id="hs-valeur2">3 163 € HT</div>
+    </div>
+  </div>
+
+  <!-- Réception MP + Factures -->
+  <div class="tiles-row">
+    <div class="tile-mid tile-reception" onclick="goToModule('reception-mp')">
+      <div class="tile-mid-icon">🚚</div>
+      <div class="tile-mid-title">Réception MP</div>
+      <div class="tile-mid-sub">Contrôle livraisons</div>
+      <div class="tile-mid-badge">📸 Scan IA actif</div>
+    </div>
+    <div class="tile-mid tile-factures" onclick="goToModule('factures')">
+      <div class="tile-mid-icon">📄</div>
+      <div class="tile-mid-title">Factures</div>
+      <div class="tile-mid-sub">Cahier d'achats</div>
+      <div class="tile-mid-badge" id="hs-factures">📸 Scan IA</div>
+    </div>
+  </div>
+
+  <!-- Modules secondaires -->
+  <div class="tiles-section-title">Autres modules</div>
+  <div class="tiles-grid">
+    <div class="tile-sm" onclick="goToModule('dlc')">
+      <div class="tile-sm-icon">🌡</div>
+      <div class="tile-sm-label">DLC</div>
+      <div class="tile-sm-dot" id="hs-dlc-dot" style="display:none"></div>
+    </div>
+    <div class="tile-sm" onclick="goToModule('dashboard')">
+      <div class="tile-sm-icon">📊</div>
+      <div class="tile-sm-label">Bilan</div>
+    </div>
+    <div class="tile-sm" onclick="goToModule('recettes')">
+      <div class="tile-sm-icon">👨‍🍳</div>
+      <div class="tile-sm-label">Recettes</div>
+    </div>
+    <div class="tile-sm" onclick="goToModule('commande')">
+      <div class="tile-sm-icon">🛒</div>
+      <div class="tile-sm-label">Commandes</div>
+    </div>
+    <div class="tile-sm" onclick="goToModule('allergenes')">
+      <div class="tile-sm-icon">⚠️</div>
+      <div class="tile-sm-label">Allergènes</div>
+    </div>
+    <div class="tile-sm" onclick="goToModule('tracabilite')">
+      <div class="tile-sm-icon">📋</div>
+      <div class="tile-sm-label">Traçabilité</div>
+    </div>
+    <div class="tile-sm" onclick="goToModule('prix')">
+      <div class="tile-sm-icon">💰</div>
+      <div class="tile-sm-label">Prix</div>
+    </div>
+    <div class="tile-sm" onclick="goToModule('historique')">
+      <div class="tile-sm-icon">📈</div>
+      <div class="tile-sm-label">Historique</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NOUVEAU HEADER ══ -->
+<div class="hd-bar" id="hd-bar">
+  <div class="hd-brand">
+    <div class="hd-sync" id="hd-sync-dot"></div>
+    <div>
+      <div class="hd-brand-name">HACCP · La Salle à Manger</div>
+      <div class="hd-brand-sub" id="hd-subtitle">Grenoble · septembre 2026</div>
+    </div>
+  </div>
+  <div class="hd-actions">
+    <button class="hd-btn" onclick="goHome()">🏠</button>
+    <button class="hd-btn" onclick="openAddProduct()">+ Produit</button>
+    <button class="hd-btn" onclick="refreshApp()">🔄</button>
+  </div>
+</div>
+
+<!-- ══ BOTTOM NAV ══ -->
+<div class="bottom-nav" id="bottom-nav">
+  <div class="bn-item active" id="bn-home" onclick="goHome()">
+    <div class="bn-icon">🏠</div>
+    <div class="bn-label">Accueil</div>
+  </div>
+  <div class="bn-item" id="bn-inventaire" onclick="goToModule('inventaire')">
+    <div class="bn-icon">📦</div>
+    <div class="bn-label">Inventaire</div>
+  </div>
+  <div class="bn-item" id="bn-reception" onclick="goToModule('reception-mp')">
+    <div class="bn-icon">🚚</div>
+    <div class="bn-label">Réception</div>
+  </div>
+  <div class="bn-item" id="bn-factures" onclick="goToModule('factures')">
+    <div class="bn-icon">📄</div>
+    <div class="bn-label">Factures</div>
+  </div>
+  <div class="bn-item" id="bn-plus" onclick="goToModule('dlc')">
+    <div class="bn-icon">🌡</div>
+    <div class="bn-label">DLC</div>
+  </div>
+</div>
 
 <div class="app-header" style="position:sticky;top:0;z-index:100">
   <div class="header-top">
@@ -7056,6 +7317,103 @@ const CaApp = {
 };
 window.CaApp = CaApp;
 // CaApp sera initialisé au clic sur Factures
+
+
+// ══ NAVIGATION TUILES ══
+function goHome() {
+  // Masquer tous les panneaux
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn, .tab-more-item').forEach(function(b){ b.classList.remove('active'); });
+  // Afficher l'écran d'accueil
+  var hs = document.getElementById('home-screen');
+  if(hs) hs.classList.add('active');
+  // Mettre à jour bottom nav
+  updateBottomNav('home');
+  // Masquer la tab-bar originale
+  var tb = document.querySelector('.tab-bar-wrap, .tab-bar');
+  if(tb) tb.style.display = 'none';
+  // Mettre à jour les stats
+  updateHomeStats();
+}
+
+function goToModule(name) {
+  // Masquer écran d'accueil
+  var hs = document.getElementById('home-screen');
+  if(hs) hs.classList.remove('active');
+  // Afficher la tab-bar originale
+  var tb = document.querySelector('.tab-bar-wrap, .tab-bar');
+  if(tb) tb.style.display = '';
+  // Naviguer vers le module
+  if(name === 'reception-mp' || name === 'factures' || name === 'tracabilite' ||
+     name === 'historique' || name === 'prix' || name === 'carte-allergenes' || name === 'pieces') {
+    switchTabMore(name, null);
+  } else {
+    switchTab(name, null);
+  }
+  updateBottomNav(name);
+}
+
+function updateBottomNav(active) {
+  var map = { home:'bn-home', inventaire:'bn-inventaire', 'reception-mp':'bn-reception', factures:'bn-factures', dlc:'bn-plus' };
+  document.querySelectorAll('.bn-item').forEach(function(b){ b.classList.remove('active'); });
+  var id = map[active] || 'bn-inventaire';
+  var el = document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+function updateHomeStats() {
+  try {
+    // Valeur et références
+    var total = 0, refs = DATA.length, sansPrix = 0;
+    DATA.forEach(function(d){ if(d.prix && d.qte) total += d.prix * d.qte; });
+    var v2 = document.getElementById('hs-valeur2');
+    var v = document.getElementById('hs-valeur');
+    var r = document.getElementById('hs-refs');
+    var r2 = document.getElementById('hs-refs2');
+    if(v) v.textContent = total > 0 ? total.toFixed(0) + ' €' : '—';
+    if(v2) v2.textContent = refs;
+    if(r) r.textContent = refs;
+    if(r2) r2.textContent = refs;
+    if(v2) v2.textContent = total > 0 ? new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(total) : '—';
+    // DLC alertes
+    var today = new Date().toISOString().slice(0,10);
+    var warn7 = new Date(); warn7.setDate(warn7.getDate()+7);
+    var warnStr = warn7.toISOString().slice(0,10);
+    var dlcCount = 0;
+    if(typeof DLC_DATA !== 'undefined') {
+      Object.values(DLC_DATA).forEach(function(d){ if(d.dlc && d.dlc <= warnStr) dlcCount++; });
+    }
+    var dlcEl = document.getElementById('hs-dlc');
+    var dlcDot = document.getElementById('hs-dlc-dot');
+    if(dlcEl) dlcEl.textContent = dlcCount > 0 ? dlcCount : '✓';
+    if(dlcEl) dlcEl.style.color = dlcCount > 0 ? '#ef4444' : '#52B788';
+    if(dlcDot) dlcDot.style.display = dlcCount > 0 ? 'block' : 'none';
+  } catch(e) {}
+}
+
+// Synchroniser le dot Supabase avec le nouveau header
+function updateSyncDot(color) {
+  var dot = document.getElementById('hd-sync-dot');
+  if(dot) {
+    dot.style.background = color === 'green' ? '#52B788' : color === 'orange' ? '#f59e0b' : '#ef4444';
+  }
+  // Aussi mettre à jour l'ancien dot si présent
+  var oldDot = document.querySelector('.sync-dot');
+  if(oldDot) oldDot.style.background = color === 'green' ? '#52B788' : color === 'orange' ? '#f59e0b' : '#ef4444';
+}
+
+// Démarrer sur l'écran d'accueil
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    goHome();
+    updateHomeStats();
+    // Recalculer stats quand les données Supabase arrivent
+    var origSync = window.syncProductsFromCloud;
+    if(typeof origSync === 'function') {
+      var origPull = window.pullCloud;
+    }
+  }, 500);
+});
 
 function closeAddProduct(){
   document.getElementById('addprod-overlay').classList.remove('open');
