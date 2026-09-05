@@ -514,6 +514,134 @@ select{min-height:36px;touch-action:manipulation}
 .scan-loading{display:none;text-align:center;padding:16px;color:var(--text2);font-size:13px}
 .scan-btn-apply{width:calc(100% - 32px);margin:0 16px 12px;padding:12px;border-radius:8px;border:none;background:var(--success-bg);color:var(--success-text);font-size:14px;font-weight:600;cursor:pointer;display:none;font-family:var(--font)}
 
+
+/* ── MODULE RÉCEPTION STANDALONE ── */
+
+
+
+/* ── Variables de base ─────────────────────────────────────────────── */
+:root {
+  --rec-accent:   #2D6A4F;
+  --rec-surface:  #FFFFFF;
+  --rec-surface2: #F7F5F0;
+  --rec-border:   #E8E2D9;
+  --rec-text:     #1A1916;
+  --rec-text2:    #5C5954;
+  --rec-text3:    #9B9892;
+  --rec-mono:     'DM Mono', 'Courier New', monospace;
+  --rec-danger:   #991B1B;
+  --rec-warn:     #D97706;
+  --rec-ok:       #2D6A4F;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: 'DM Sans', system-ui, sans-serif; background:#F7F5F0; color:var(--rec-text); margin:0; padding:16px; }
+
+/* ── Composants UI ────────────────────────────────────────────────── */
+.rec-form-group { display:flex; flex-direction:column; gap:5px; }
+.rec-form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--rec-text2); }
+.rec-form-control {
+  border:1.5px solid var(--rec-border); border-radius:8px; padding:9px 12px;
+  font-size:14px; font-family:inherit; color:var(--rec-text); background:var(--rec-surface);
+  transition:border-color .15s; width:100%;
+}
+.rec-form-control:focus { outline:none; border-color:var(--rec-accent); box-shadow:0 0 0 3px rgba(45,106,79,.1); }
+textarea.rec-form-control { resize:vertical; min-height:70px; }
+
+.rec-card-wrap { background:#fff; border-radius:14px; padding:20px; border:1.5px solid var(--rec-border); margin-bottom:16px; }
+.rec-card-title { font-size:14px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+
+.rec-btn { display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--rec-border);
+       border-radius:8px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;
+       background:var(--rec-surface); font-family:inherit; transition:.12s; }
+.rec-btn-primary { background:var(--rec-accent); color:#fff; border-color:var(--rec-accent); }
+.rec-btn-primary:hover { background:#1B4332; }
+
+.photo-zone { border:2px dashed var(--rec-border); border-radius:10px; position:relative;
+              overflow:hidden; cursor:pointer; background:var(--rec-surface2); }
+.photo-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.photo-zone-inner { display:flex; flex-direction:column; align-items:center; justify-content:center;
+                    gap:4px; padding:16px; color:var(--rec-text2); pointer-events:none; }
+.photo-previews { display:flex; flex-wrap:wrap; gap:6px; }
+.photo-preview { width:56px; height:56px; border-radius:6px; object-fit:cover; cursor:pointer; border:1.5px solid var(--rec-border); }
+
+.rec-table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:var(--rec-accent); color:#fff; padding:8px 10px; text-align:left; font-weight:600; white-space:nowrap; }
+td { padding:8px 10px; border-bottom:1px solid var(--rec-border); vertical-align:top; }
+tr:hover td { background:var(--rec-surface2); }
+
+.rec-sticky-header { position:sticky; top:0; background:var(--rec-surface2); z-index:10; padding-bottom:8px; }
+.rec-page-title { font-size:clamp(18px,4vw,24px); font-weight:800; margin:0 0 2px; }
+.rec-page-subtitle { font-size:13px; color:var(--rec-text2); margin:0; }
+
+.rec-lightbox { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:9999;
+            align-items:center; justify-content:center; }
+.rec-lightbox.open { display:flex; }
+.rec-lightbox img { max-width:90vw; max-height:90vh; border-radius:8px; }
+.rec-lightbox-close { position:absolute; top:16px; right:16px; background:#fff; border:none;
+                  border-radius:50%; width:36px; height:36px; font-size:18px; cursor:pointer; }
+
+
+/* ── Module Réception ────────────────────────────────────────────── */
+/* ── PAGE RÉCEPTION ──────────────────────────────────────── */
+.rec-card-main { border:2px solid var(--rec-accent); max-width:900px; margin-bottom:16px; }
+.rec-temp-input { font-family:var(--rec-mono); font-size:20px; font-weight:700; text-align:center; }
+/* Desktop : grilles compactes */
+.rec-row-1 { display:grid; grid-template-columns:160px 130px 1fr; gap:10px; margin-bottom:12px; }
+.rec-row-2 { display:grid; grid-template-columns:1fr 90px 120px 110px 150px; gap:10px; margin-bottom:12px; }
+.rec-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:12px; }
+.rec-row-4 { display:flex; gap:12px; margin-bottom:14px; align-items:flex-start; }
+.rec-photo-col { width:210px; flex-shrink:0; }
+.rec-btn-row { display:flex; gap:10px; align-items:center; }
+.rec-btn-save { flex:1; padding:13px; font-size:15px; font-weight:700; justify-content:center; }
+.rec-row-1 { grid-template-columns:1fr 1fr; }
+.rec-row-1 .rec-col-span { grid-column:1/-1; }
+.rec-row-2 { grid-template-columns:1fr 1fr; }
+.rec-row-2 .rec-col-span { grid-column:1/-1; }
+.rec-row-2 > .rec-form-group:nth-child(4),
+  .rec-row-2 > .rec-form-group:nth-child(5) { grid-column:span 1; }
+.rec-row-3 { grid-template-columns:1fr 1fr; }
+.rec-row-4 { flex-direction:column; }
+.rec-photo-col { width:100%; }
+.rec-temp-input { font-size:18px; }
+.rec-btn-row { flex-direction:column; }
+.rec-btn-save { width:100%; font-size:16px; padding:14px; }
+/* DLC row */
+.rec-row-dlc { display:grid; grid-template-columns:1fr 1fr 180px; gap:10px; margin-bottom:12px; }
+.rec-dlc-badge {
+  border-radius:8px; padding:10px 14px; font-size:14px; font-weight:700;
+  min-height:42px; display:flex; align-items:center; justify-content:center;
+  background:var(--rec-surface2); color:var(--rec-text2); border:1.5px solid var(--rec-border);
+}
+.rec-dlc-badge.ok     { background:#F0FAF4; color:#1B4332; border-color:#74C69D; }
+.rec-dlc-badge.warn   { background:#FFFBEB; color:#92400E; border-color:#FCD34D; }
+.rec-dlc-badge.danger { background:#FEF2F2; color:#991B1B; border-color:#FECACA; }
+.rec-row-dlc { grid-template-columns:1fr 1fr; }
+.rec-row-dlc .rec-form-group:last-child { grid-column:1/-1; }
+  
+
+/* ── Calendrier réception ────────────────────────────────────── */
+.rec-cal-wrap{background:#F7F5F0;border-radius:10px;padding:12px;margin-bottom:12px}
+.rec-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.rec-cal-nav{display:flex;align-items:center;gap:8px}
+.rec-cal-btn{border:1.5px solid #E8E2D9;background:#fff;border-radius:8px;padding:4px 8px;cursor:pointer}
+.rec-cal-title{font-size:14px;font-weight:700;min-width:140px;text-align:center}
+.rec-cal-legend{display:flex;gap:10px;font-size:11px}
+.rec-cal-leg-item{display:flex;align-items:center;gap:4px}
+.rec-cal-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.rec-cal-dot.ok{background:#52B788}.rec-cal-dot.warn{background:#FCD34D}.rec-cal-dot.danger{background:#F87171}
+.rec-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.rec-cal-day-hdr{text-align:center;font-size:10px;font-weight:700;color:#9B9892;padding:4px 0}
+.rec-cal-cell{text-align:center;padding:5px 2px;border-radius:5px;font-size:12px;cursor:pointer;position:relative;color:#5C5954}
+.rec-cal-cell:hover{background:#E8E2D9}
+.rec-cal-cell.ok{background:#D1FAE5;color:#1B4332;font-weight:700}
+.rec-cal-cell.warn{background:#FEF3C7;color:#92400E;font-weight:700}
+.rec-cal-cell.danger{background:#FEE2E2;color:#991B1B;font-weight:700}
+.rec-cal-count{position:absolute;top:1px;right:2px;font-size:9px;font-weight:800}
+.rec-day-panel{background:#fff;border:1.5px solid #E8E2D9;border-radius:10px;padding:12px;display:none}
+.rec-day-panel-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+  
 </style>
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
@@ -861,7 +989,7 @@ select{min-height:36px;touch-action:manipulation}
   <button class="tab-more-item" onclick="switchTabMore('prix',this)">💰 Comparateur prix</button>
   <button class="tab-more-item" onclick="switchTabMore('carte-allergenes',this)">🍽 Carte allergènes</button>
   <button class="tab-more-item" id="tab-factures-btn" onclick="switchTabMore('factures',this)">📄 Factures</button>
-  <button class="tab-more-item" onclick="switchTabMore('reception-mp',this)">🚚 Réception MP</button>
+  <button class="tab-more-item" onclick="switchTabMore('reception-mp',this)">🚚 Facture</button>
   <button class="tab-more-item" onclick="switchTabMore('pieces',this)">📎 Pièces comptables</button>
 </div>
 
@@ -1499,124 +1627,519 @@ select{min-height:36px;touch-action:manipulation}
 
 
 <div id="panel-reception-mp" class="panel">
-  <div class="rec-section">
-    <div class="rec-section-title">📋 Nouvelle réception</div>
-    <div style="padding:0 16px 4px">
-    <div class="scan-zone" onclick="document.getElementById('scan-input').click()" id="scan-zone-drop">
-      <div style="font-size:28px;margin-bottom:6px">📷</div>
-      <div style="font-size:14px;font-weight:600;color:var(--text)">Scanner l'étiquette / colis</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:4px">Appuyez pour prendre une photo ou choisir un fichier</div>
-      <input type="file" id="scan-input" accept="image/*" capture="environment" style="display:none" onchange="handleScanPhoto(this)">
-    </div>
-    <img id="scan-preview" class="scan-preview" alt="Aperçu">
-    <div class="scan-loading" id="scan-loading">
-      <div style="font-size:20px;margin-bottom:6px">🤖</div>
-      <div>Analyse IA en cours…</div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">Extraction DLC, lot, quantité…</div>
-    </div>
-    <div class="scan-result" id="scan-result"></div>
-    <button class="scan-btn-apply" id="scan-btn-apply" onclick="applyScanResult()">✅ Appliquer dans le formulaire</button>
+<div id="reception-module" style="max-width:960px;margin:0 auto;padding:16px">
+
+  <div class="rec-sticky-header" style="padding-bottom:12px">
+    <p class="rec-page-title">🚚 Réception & Factures</p>
+    <p class="rec-page-subtitle">Contrôle obligatoire à chaque livraison — point 1.4 audit</p>
   </div>
-  <div class="rec-form-grid">
-      <div><div class="rec-label">Date *</div><input class="rec-input" id="rec-date" type="date"></div>
-      <div><div class="rec-label">Heure</div><input class="rec-input" id="rec-heure" type="time"></div>
-      <div class="full" style="background:var(--info-bg);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="font-size:12px;font-weight:600;color:var(--info-text);margin-bottom:4px">📸 Scan automatique étiquette</div>
-        <div style="font-size:11px;color:var(--text2)">Photographiez l'étiquette → DLC, lot, qté extraits automatiquement</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <label class="btn btn-primary" style="cursor:pointer;padding:10px 14px;font-size:13px;font-weight:600">
-          📷 Photo
-          <input type="file" id="rec-photo-input" accept="image/*" capture="environment" style="display:none" onchange="analyzeReceptionPhoto(this)">
-        </label>
-        <label class="btn" style="cursor:pointer;padding:10px 14px;font-size:13px">
-          🖼 Galerie
-          <input type="file" id="rec-gallery-input" accept="image/*" style="display:none" onchange="analyzeReceptionPhoto(this)">
-        </label>
-      </div>
-      <div id="rec-photo-status" style="width:100%;font-size:12px;color:var(--text2);min-height:16px"></div>
-      <img id="rec-photo-preview" style="max-height:80px;border-radius:8px;display:none;object-fit:contain">
+
+  <div class="rec-card-wrap rec-card-main">
+    <div class="rec-card-title">
+      <span class="material-symbols-outlined">add_circle</span>
+      Nouvelle réception
     </div>
-      <div><div class="rec-label">Fournisseur *</div><input class="rec-input" id="rec-fourn" type="text" placeholder="SYSCO, POMONA…"></div>
-      <div><div class="rec-label">Produit(s)</div><input class="rec-input" id="rec-produit" type="text" placeholder="Nom du produit"></div>
-      <div>
-        <div class="rec-label">Température (°C)</div>
-        <div style="display:flex;gap:6px">
-          <input class="rec-input" id="rec-temp" type="number" step="0.1" placeholder="ex: 3.5" oninput="checkReceptionMP()" style="flex:1">
-          <select class="rec-input" id="rec-type-temp" style="flex:1" oninput="checkReceptionMP()">
-            <option value="na">Sans sonde</option>
-            <option value="4">Frais ≤ 4°C</option>
-            <option value="8">Frais ≤ 8°C</option>
-            <option value="-18">Surgelé ≤ -18°C</option>
-          </select>
+
+    <div class="rec-row-1">
+      <div class="rec-form-group">
+        <label class="rec-form-label">📅 Date</label>
+        <input type="date" class="rec-form-control" id="rec-date">
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">🕐 Heure</label>
+        <input type="time" class="rec-form-control" id="rec-heure">
+      </div>
+      <div class="form-group rec-col-span">
+        <label class="rec-form-label">🏭 Fournisseur</label>
+        <input type="text" class="rec-form-control" id="rec-fourn" placeholder="Nom du fournisseur">
+      </div>
+    </div>
+
+    <div class="rec-row-2">
+      <div class="form-group rec-col-span">
+        <label class="rec-form-label">📦 Produit / famille</label>
+        <input type="text" class="rec-form-control" id="rec-produit" placeholder="ex: viandes, légumes, poissons">
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">⚖️ Quantité</label>
+        <input type="number" class="rec-form-control" id="rec-qte" placeholder="ex: 5" min="0" step="0.1" style="font-size:15px;font-weight:600">
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">📏 Unité</label>
+        <select class="rec-form-control" id="rec-unite">
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+          <option value="L">L</option>
+          <option value="pièces">pièces</option>
+          <option value="boîtes">boîtes</option>
+          <option value="cartons">cartons</option>
+          <option value="barquettes">barquettes</option>
+          <option value="sachets">sachets</option>
+          <option value="caisses">caisses</option>
+        </select>
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">🌡️ T° mesurée (°C)</label>
+        <input type="number" class="rec-form-control rec-temp-input" id="rec-temp"
+          placeholder="ex: 3.5" step="0.1" oninput="checkReception()">
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">📋 T° attendue</label>
+        <select class="rec-form-control" id="rec-type-temp">
+          <option value="4">Frais ≤ 4°C</option>
+          <option value="8">Réfrigéré ≤ 8°C</option>
+          <option value="-18">Surgelé ≤ −18°C</option>
+          <option value="na">Ambiant</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rec-row-3">
+      <div class="rec-form-group">
+        <label class="rec-form-label">📅 DLC</label>
+        <select class="rec-form-control" id="rec-dlc">
+          <option value="ok">✅ Conforme</option>
+          <option value="ko">❌ Non conforme</option>
+        </select>
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">📦 Emballages</label>
+        <select class="rec-form-control" id="rec-emb">
+          <option value="ok">✅ Intacts</option>
+          <option value="partiel">⚠️ Partiels</option>
+          <option value="ko">❌ Endommagés</option>
+        </select>
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">✅ Décision</label>
+        <select class="rec-form-control" id="rec-decision">
+          <option value="ok">✅ Accepté</option>
+          <option value="reserve">⚠️ Réserve</option>
+          <option value="refuse">❌ Refusé</option>
+        </select>
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">👤 Opérateur</label>
+        <input type="text" class="rec-form-control" id="rec-op" placeholder="Prénom Nom">
+      </div>
+    </div>
+
+    <!-- Ligne DLC : Date fabrication + DLC + Durée restante -->
+    <div class="rec-row-dlc">
+      <div class="rec-form-group">
+        <label class="rec-form-label">🏭 Date de fabrication</label>
+        <input type="date" class="rec-form-control" id="rec-date-fab"
+          oninput="recCalcDlc()">
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">⏰ DLC / DLUO</label>
+        <input type="date" class="rec-form-control" id="rec-dlc-date"
+          oninput="recCalcDlc()">
+      </div>
+      <div class="rec-form-group">
+        <label class="rec-form-label">📊 Durée restante</label>
+        <div class="rec-dlc-badge" id="rec-dlc-badge">—</div>
+      </div>
+    </div>
+
+    <div class="rec-row-4">
+      <div class="rec-form-group" style="flex:1">
+        <label class="rec-form-label">💬 Observations / réserves</label>
+        <textarea class="rec-form-control" id="rec-obs"
+          placeholder="Anomalies constatées, actions prises..."
+          style="min-height:80px"></textarea>
+      </div>
+      <div class="rec-photo-col">
+        <div class="rec-form-label" style="margin-bottom:8px">📷 Photos</div>
+        <div class="photo-zone" id="rec-photo-zone" style="height:80px">
+          <input type="file" accept="image/*" multiple capture="environment"
+            id="rec-photo-input" onchange="handleRecPhotos(this)">
+          <div class="photo-zone-inner">
+            <span class="material-symbols-outlined" style="font-size:26px">photo_camera</span>
+            <span style="font-size:12px;font-weight:600">Prendre une photo</span>
+            <span style="font-size:10px;color:var(--text3)">DLC · étiquettes</span>
+          </div>
         </div>
-        <div id="rec-alert-box" style="margin-top:6px;font-size:12px"></div>
+        <div class="photo-previews" id="rec-photo-previews" style="margin-top:6px"></div>
+        <div class="photo-count" id="rec-photo-count"></div>
       </div>
-      <div><div class="rec-label">DLC / DDM</div><input class="rec-input" id="rec-dlc" type="date"></div>
-      <div><div class="rec-label">Emballages</div><select class="rec-input" id="rec-emb"><option value="ok">✅ Conformes</option><option value="partiel">⚠️ Partiels</option><option value="non">❌ Non conformes</option></select></div>
-      <div><div class="rec-label">Décision</div><select class="rec-input" id="rec-decision"><option value="ok">✅ Accepté</option><option value="reserve">⚠️ Réserve</option><option value="refuse">❌ Refusé</option></select></div>
-      <div><div class="rec-label">Opérateur</div><input class="rec-input" id="rec-op" type="text" placeholder="Prénom Nom"></div>
-      <div><div class="rec-label">Montant HT (€)</div><input class="rec-input" id="rec-montant-ht" type="number" step="0.01" placeholder="0.00"></div>
-      <div class="full"><div class="rec-label">Observations</div><textarea class="rec-input" id="rec-obs" rows="2" placeholder="Non-conformités, réserves…" style="resize:vertical"></textarea></div>
     </div>
-    <div style="display:flex;gap:8px;padding:0 16px 8px">
-      <button class="btn" onclick="openCameraReception()" style="flex:1;padding:12px;font-size:14px;font-weight:600;background:var(--info-bg);color:var(--info-text)">
-        📷 Scanner étiquette
+
+    <div id="rec-alert-box"></div>
+
+    <div class="rec-btn-row">
+      <button class="rec-btn btn-primary rec-btn-save" onclick="saveReception()">
+        <span class="material-symbols-outlined">save</span>
+        Enregistrer la réception
+      </button>
+      <button class="rec-btn" onclick="exportReceptions()" style="white-space:nowrap">
+        <span class="material-symbols-outlined">download</span>
+        Exporter CSV
       </button>
     </div>
-    <div id="rec-scan-preview" style="display:none;padding:0 16px 8px">
-      <div style="position:relative;border-radius:10px;overflow:hidden;background:#000">
-        <video id="rec-video" autoplay playsinline style="width:100%;max-height:250px;object-fit:cover"></video>
-        <canvas id="rec-canvas" style="display:none"></canvas>
-        <div style="position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:12px">
-          <button onclick="captureReceptionPhoto()" style="background:#fff;border:none;border-radius:50%;width:56px;height:56px;font-size:24px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3)">📸</button>
-          <button onclick="stopCameraReception()" style="background:rgba(0,0,0,.5);border:none;border-radius:50%;width:40px;height:40px;font-size:18px;cursor:pointer;color:#fff">✕</button>
+  </div>
+
+  <!-- CALENDRIER repliable -->
+  <div class="rec-card-wrap" style="margin-bottom:16px;max-width:900px">
+    <div class="rec-card-title" style="cursor:pointer" onclick="recCalToggle()">
+      <span class="material-symbols-outlined">calendar_month</span>
+      Calendrier des réceptions
+      <span class="material-symbols-outlined" id="rec-cal-chevron"
+        style="margin-left:auto;color:var(--text3)">expand_more</span>
+    </div>
+    <div id="rec-cal-content" style="display:none">
+      <div class="rec-cal-wrap">
+        <div class="rec-cal-header">
+          <div class="rec-cal-nav">
+            <button class="rec-cal-btn" onclick="recCalPrev()">
+              <span class="material-symbols-outlined" style="font-size:18px">chevron_left</span>
+            </button>
+            <div class="rec-cal-title" id="rec-cal-month-label">—</div>
+            <button class="rec-cal-btn" onclick="recCalNext()">
+              <span class="material-symbols-outlined" style="font-size:18px">chevron_right</span>
+            </button>
+          </div>
+          <div class="rec-cal-legend">
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot ok"></span>Conforme</span>
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot warn"></span>Réserve</span>
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot danger"></span>Refus</span>
+          </div>
         </div>
+        <div class="rec-cal-grid" id="rec-cal-grid"></div>
       </div>
-      <div id="rec-scan-status" style="text-align:center;font-size:12px;color:var(--text2);padding:8px">Pointez vers l'étiquette du colis</div>
-    </div>
-    <div id="rec-photo-preview" style="display:none;padding:0 16px 8px">
-      <img id="rec-photo-img" style="width:100%;border-radius:10px;max-height:200px;object-fit:cover">
-      <div style="display:flex;gap:8px;margin-top:8px">
-        
-        <button onclick="retakeReceptionPhoto()" style="padding:10px;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;cursor:pointer;font-family:var(--font)">🔄 Reprendre</button>
+      <div class="rec-day-panel" id="rec-day-panel">
+        <div class="rec-day-panel-title">
+          <span class="material-symbols-outlined" style="color:var(--accent);font-size:18px">local_shipping</span>
+          <span id="rec-day-panel-date">—</span>
+        </div>
+        <div id="rec-day-list"></div>
       </div>
-      <div id="rec-analysis-result" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
-    </div>
-    <div style="display:flex;gap:8px;padding:0 16px 16px">
-      <button class="btn btn-primary" onclick="saveReceptionMP()" style="flex:1;padding:12px;font-size:14px;font-weight:600">💾 Enregistrer</button>
-      <button class="btn" onclick="resetFormReceptionMP()" style="padding:12px">🗑 Vider</button>
     </div>
   </div>
-  <div class="rec-section">
-    <div class="rec-section-title">📅 Calendrier</div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-      <button class="btn" onclick="recCalMonth--;if(recCalMonth<0){recCalMonth=11;recCalYear--;}renderRecCalMP()">◀</button>
-      <span id="rec-cal-month-label" style="font-weight:600;font-size:13px;flex:1;text-align:center"></span>
-      <button class="btn" onclick="recCalMonth++;if(recCalMonth>11){recCalMonth=0;recCalYear++;}renderRecCalMP()">▶</button>
+
+  <!-- HISTORIQUE -->
+  <div class="rec-card-wrap" style="max-width:900px">
+    <div class="rec-card-title">
+      <span class="material-symbols-outlined">history</span>
+      Historique des réceptions
     </div>
-    <div id="rec-cal-grid" class="rec-cal-grid"></div>
-  </div>
-  <div class="rec-hist-wrap">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">
-      <div class="rec-section-title" style="margin:0">📋 Historique (<span id="rec-hist-count">0</span>)</div>
-      <input type="text" id="flt-rec-q" class="rec-input" placeholder="🔍 Rechercher…" oninput="renderReceptionsMP()" style="max-width:200px;font-size:12px;padding:6px 10px">
-    </div>
-    <select id="flt-rec-decision" class="rec-input" onchange="renderReceptionsMP()" style="max-width:160px;font-size:12px;margin-bottom:8px">
-      <option value="">Toutes décisions</option>
-      <option value="ok">✅ Accepté</option>
-      <option value="reserve">⚠️ Réserve</option>
-      <option value="refuse">❌ Refusé</option>
-    </select>
-    <div style="overflow-x:auto">
-      <table class="rec-table">
-        <thead><tr><th>Date</th><th>Fournisseur</th><th>Produit</th><th>T°C</th><th>DLC</th><th>Emb.</th><th>Décision</th><th>Opérateur</th><th>Obs.</th></tr></thead>
+    <div class="rec-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th><th>Heure</th><th>Fournisseur</th>
+            <th>Produit</th><th>T°</th><th>DLC</th>
+            <th>Emballages</th><th>Décision</th><th>Photos</th><th>Opérateur</th>
+          </tr>
+        </thead>
         <tbody id="rec-tbody"></tbody>
       </table>
     </div>
-    <div id="rec-empty" style="text-align:center;padding:2rem;color:var(--text2);display:none">Aucune réception enregistrée.</div>
   </div>
+
+  <div class="rec-lightbox" id="lightbox" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+    <img id="lightbox-img" src="" alt="Photo réception">
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// MODULE RÉCEPTION MARCHANDISES — Standalone v1.0
+// Auteur : HACCP Pro · haccp-lsm.netlify.app
+// Intégration : inclure ce fichier dans votre application
+// Événement : document.addEventListener('receptionSaved', fn) 
+//             → fn reçoit { detail: { id, date, fourn, produit, ... } }
+// Storage : localStorage clé 'haccp-reception-v1'
+// ══════════════════════════════════════════════════════════════════
+
+
+// ── État local ─────────────────────────────────────────────────────────
+var recState = { receptions: [], nextId: 1 };
+
+function recLoad() {
+  try { var r=localStorage.getItem('haccp-reception-v1'); if(r) recState=JSON.parse(r); }
+  catch(e) {}
+}
+function recSave() {
+  try { 
+    localStorage.setItem('haccp-reception-v1', JSON.stringify(recState));
+    if(typeof syncToCloud==='function') syncToCloud('receptions', recState);
+  }
+  catch(e) {}
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  recLoad();
+  renderReceptions();
+  recRenderCal();
+  var now = new Date();
+  var dateEl  = document.getElementById('rec-date');
+  var heureEl = document.getElementById('rec-heure');
+  if(dateEl)  dateEl.value  = now.toISOString().slice(0,10);
+  if(heureEl) heureEl.value = now.toTimeString().slice(0,5);
+});
+
+
+function recCalcDlc() {
+  var fab   = document.getElementById('rec-date-fab')?.value;
+  var dlc   = document.getElementById('rec-dlc-date')?.value;
+  var badge = document.getElementById('rec-dlc-badge');
+  if(!badge) return;
+  if(!dlc) { badge.textContent='—'; badge.className='rec-dlc-badge'; return; }
+  var today   = new Date(); today.setHours(0,0,0,0);
+  var dlcDate = new Date(dlc);
+  var diff    = Math.round((dlcDate - today) / 86400000);
+  var fabText = '';
+  if(fab) {
+    var fabDate = new Date(fab);
+    var age = Math.round((today - fabDate) / 86400000);
+    fabText = ' · J+' + age + ' fab.';
+  }
+  if(diff < 0)       { badge.textContent='EXPIRÉ ('+Math.abs(diff)+'j)'+fabText; badge.className='rec-dlc-badge danger'; }
+  else if(diff === 0){ badge.textContent='Expire auj.'+fabText;                   badge.className='rec-dlc-badge danger'; }
+  else if(diff <= 3) { badge.textContent=diff+' j restants'+fabText;             badge.className='rec-dlc-badge warn';   }
+  else               { badge.textContent=diff+' j restants'+fabText;             badge.className='rec-dlc-badge ok';     }
+}
+
+
+function checkReception() {
+  var temp = parseFloat(document.getElementById('rec-temp')?.value);
+  var typeTemp = document.getElementById('rec-type-temp')?.value;
+  var box = document.getElementById('rec-alert-box');
+  if(!box) return;
+  if(isNaN(temp) || typeTemp === 'na') { box.innerHTML = ''; return; }
+  var limit = parseFloat(typeTemp);
+  if(temp > limit) {
+    box.innerHTML = '<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#991B1B;font-weight:600;font-size:13px">⚠️ Température non conforme ('+temp+'°C > '+limit+'°C). Action corrective requise.</div>';
+  } else {
+    box.innerHTML = '<div style="background:#F0FAF4;border:1.5px solid #74C69D;border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#1B4332;font-weight:600;font-size:13px">✅ Température conforme ('+temp+'°C ≤ '+limit+'°C)</div>';
+  }
+}
+
+
+async function saveReception() {
+  var dateEl   = document.getElementById('rec-date');
+  var heureEl  = document.getElementById('rec-heure');
+  var fournEl  = document.getElementById('rec-fourn');
+  var prodEl   = document.getElementById('rec-produit');
+  var qteEl    = document.getElementById('rec-qte');
+  var uniteEl  = document.getElementById('rec-unite');
+  var tempEl   = document.getElementById('rec-temp');
+  var dlcEl    = document.getElementById('rec-dlc');
+  var embEl    = document.getElementById('rec-emb');
+  var decEl    = document.getElementById('rec-decision');
+  var opEl     = document.getElementById('rec-op');
+  var obsEl    = document.getElementById('rec-obs');
+  var fabEl    = document.getElementById('rec-date-fab');
+  var dlcDateEl= document.getElementById('rec-dlc-date');
+
+  if(!fournEl?.value.trim()) { alert('Veuillez saisir le fournisseur'); return; }
+  if(!prodEl?.value.trim())  { alert('Veuillez saisir le produit'); return; }
+
+  var rec = {
+    id:       Date.now(),
+    date:     dateEl?.value || new Date().toISOString().slice(0,10),
+    heure:    heureEl?.value || '',
+    fourn:    fournEl?.value.trim() || '',
+    produit:  prodEl?.value.trim() || '',
+    qte:      qteEl?.value || '',
+    unite:    uniteEl?.value || 'kg',
+    temp:     tempEl?.value || '',
+    dlc:      dlcEl?.value || 'ok',
+    emb:      embEl?.value || 'ok',
+    decision: decEl?.value || 'ok',
+    op:       opEl?.value.trim() || '',
+    obs:      obsEl?.value.trim() || '',
+    dateFab:  fabEl?.value || '',
+    dlcDate:  dlcDateEl?.value || '',
+    photos:   [],
+    ts:       Date.now()
+  };
+
+  // Photos
+  if(window.recPendingPhotos?.length) {
+    rec.photos = window.recPendingPhotos.map(p => p.dataURL);
+  }
+
+  // Sauvegarder
+  recState.receptions.unshift(rec);
+  recSave();
+  renderReceptions();
+
+  // Reset
+  if(prodEl)    prodEl.value  = '';
+  if(fournEl)   fournEl.value = '';
+  if(qteEl)     qteEl.value   = '';
+  if(tempEl)    tempEl.value  = '';
+  if(obsEl)     obsEl.value   = '';
+  if(fabEl)     fabEl.value   = '';
+  if(dlcDateEl) dlcDateEl.value = '';
+  var badge = document.getElementById('rec-dlc-badge');
+  if(badge) { badge.textContent='—'; badge.className='rec-dlc-badge'; }
+  window.recPendingPhotos = [];
+  var prev = document.getElementById('rec-photo-previews');
+  if(prev) prev.innerHTML = '';
+
+  // Feedback visuel
+  var btn = document.querySelector('.rec-btn-save');
+  if(btn) {
+    var orig = btn.innerHTML;
+    btn.innerHTML = '✅ Réception enregistrée !';
+    btn.style.background = '#1B4332';
+    setTimeout(function(){ btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+  }
+
+  // Déclencher un événement custom pour intégration externe
+  document.dispatchEvent(new CustomEvent('receptionSaved', { detail: rec }));
+}
+
+
+function renderReceptions() {
+  var tbody = document.getElementById('rec-tbody');
+  if(!tbody) return;
+  var recs = recState.receptions || [];
+  if(!recs.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#9B9892;padding:20px">Aucune réception enregistrée</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recs.map(function(r) {
+    var decCls = r.decision==='ok'?'color:#1B4332;font-weight:700': r.decision==='reserve'?'color:#D97706;font-weight:700':'color:#991B1B;font-weight:700';
+    var tempNum = parseFloat(r.temp);
+    var tempLimit = parseFloat(r['type-temp']||'4');
+    var tempOk = isNaN(tempNum) || isNaN(tempLimit) || tempNum <= tempLimit;
+    var tempCls = tempOk ? '' : 'color:#991B1B;font-weight:700';
+    var photos = r.photos?.length ? '<span style="cursor:pointer;color:#2D6A4F;font-weight:600" onclick="openLightbox(recState.receptions.find(function(x){return x.id==='+r.id+'}).photos[0])">📷 '+r.photos.length+'</span>' : '—';
+    return '<tr>'+
+      '<td>'+r.date+'</td>'+
+      '<td>'+r.heure+'</td>'+
+      '<td style="font-weight:600">'+r.fourn+'</td>'+
+      '<td>'+r.produit+(r.qte?' — <b>'+r.qte+' '+(r.unite||'')+'</b>':'')+'</td>'+
+      '<td style="font-family:monospace;font-weight:600;'+tempCls+'">'+r.temp+(r.temp?'°C':'—')+'</td>'+
+      '<td>'+(r.dlc==='ok'?'✅':'❌')+'</td>'+
+      '<td>'+(r.emb==='ok'?'✅':r.emb==='partiel'?'⚠️':'❌')+'</td>'+
+      '<td style="'+decCls+'">'+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</td>'+
+      '<td>'+photos+'</td>'+
+      '<td>'+r.op+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+
+window.recPendingPhotos = [];
+function handleRecPhotos(input) {
+  var files = Array.from(input.files || []);
+  var prev  = document.getElementById('rec-photo-previews');
+  if(!prev) return;
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var dataURL = e.target.result;
+      window.recPendingPhotos = window.recPendingPhotos || [];
+      window.recPendingPhotos.push({ dataURL: dataURL, name: file.name });
+      var img = document.createElement('img');
+      img.src = dataURL;
+      img.className = 'photo-preview';
+      img.onclick = function() { openLightbox(dataURL); };
+      prev.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+
+function openLightbox(url) {
+  var lb = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  if(!lb || !img || !url) return;
+  img.src = url;
+  lb.style.display = 'flex';
+}
+function closeLightbox() {
+  var lb = document.getElementById('lightbox');
+  if(lb) lb.style.display = 'none';
+}
+
+
+var recCalYear  = new Date().getFullYear();
+var recCalMonth = new Date().getMonth();
+
+function recCalPrev() { recCalMonth--; if(recCalMonth<0){recCalMonth=11;recCalYear--;} recRenderCal(); }
+function recCalNext() { recCalMonth++; if(recCalMonth>11){recCalMonth=0;recCalYear++;} recRenderCal(); }
+
+function recRenderCal() {
+  var grid = document.getElementById('rec-cal-grid');
+  var label = document.getElementById('rec-cal-month-label');
+  if(!grid) return;
+  var months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  if(label) label.textContent = months[recCalMonth] + ' ' + recCalYear;
+  var days = ['L','M','M','J','V','S','D'];
+  var first = new Date(recCalYear, recCalMonth, 1).getDay();
+  first = first === 0 ? 6 : first - 1;
+  var total = new Date(recCalYear, recCalMonth + 1, 0).getDate();
+  var recs = recState.receptions || [];
+  var html = days.map(function(d){ return '<div class="rec-cal-day-hdr">'+d+'</div>'; }).join('');
+  for(var i=0; i<first; i++) html += '<div></div>';
+  for(var d=1; d<=total; d++) {
+    var dateStr = recCalYear+'-'+String(recCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var dayRecs = recs.filter(function(r){ return r.date===dateStr; });
+    var cls = 'rec-cal-cell';
+    if(dayRecs.length) {
+      var hasRefus = dayRecs.some(function(r){ return r.decision==='refuse'; });
+      var hasReserve = dayRecs.some(function(r){ return r.decision==='reserve'; });
+      cls += hasRefus ? ' danger' : hasReserve ? ' warn' : ' ok';
+    }
+    html += '<div class="'+cls+'" data-d="'+dateStr+'" onclick="recSelectDay(this.dataset.d)">'+d+(dayRecs.length?'<span class="rec-cal-count">'+dayRecs.length+'</span>':'')+'</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function recSelectDay(dateStr) {
+  var panel = document.getElementById('rec-day-panel');
+  var list  = document.getElementById('rec-day-list');
+  var dateLabel = document.getElementById('rec-day-panel-date');
+  if(!panel || !list) return;
+  var dayRecs = (recState.receptions || []).filter(function(r){ return r.date===dateStr; });
+  if(dateLabel) dateLabel.textContent = dateStr;
+  if(!dayRecs.length) { list.innerHTML = '<p style="color:#9B9892;font-size:13px">Aucune réception ce jour</p>'; return; }
+  list.innerHTML = dayRecs.map(function(r){
+    return '<div style="padding:8px;border-radius:8px;background:#F7F5F0;margin-bottom:6px;font-size:13px">'+
+      '<b>'+r.fourn+'</b> — '+r.produit+(r.qte?' ('+r.qte+' '+r.unite+')':'')+'<br>'+
+      '<span style="color:#5C5954">'+r.temp+(r.temp?'°C · ':'')+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</span>'+
+    '</div>';
+  }).join('');
+  panel.style.display = 'block';
+}
+
+function recCalToggle() {
+  var content = document.getElementById('rec-cal-content');
+  var chevron = document.getElementById('rec-cal-chevron');
+  if(!content) return;
+  var hidden = content.style.display === 'none';
+  content.style.display = hidden ? '' : 'none';
+  if(chevron) chevron.textContent = hidden ? 'expand_less' : 'expand_more';
+  if(hidden) recRenderCal();
+}
+
+
+function exportReceptions() {
+  var recs = recState.receptions || [];
+  if(!recs.length) { alert('Aucune réception à exporter'); return; }
+  var header = 'Date,Heure,Fournisseur,Produit,Quantité,Unité,Température,DLC,Emballages,Décision,Opérateur,Observations,Date fabrication,DLC date';
+  var rows = recs.map(function(r) {
+    return [r.date,r.heure,r.fourn,r.produit,r.qte,r.unite,r.temp,r.dlc,r.emb,r.decision,r.op,r.obs,r.dateFab,r.dlcDate]
+      .map(function(v){ return '"'+(v||'').replace(/"/g,'""')+'"'; }).join(',');
+  });
+  var csv = header + '\n' + rows.join('\n');
+  var blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'receptions_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+</script>
 </div>
 
 <script>
@@ -4595,6 +5118,302 @@ async function analyzeReceptionPhoto(input) {
   if(input) input.value='';
 }
 
+
+// ══════════════════════════════════════════════════════════════════
+// MODULE RÉCEPTION MARCHANDISES — Standalone v1.0
+// Auteur : HACCP Pro · haccp-lsm.netlify.app
+// Intégration : inclure ce fichier dans votre application
+// Événement : document.addEventListener('receptionSaved', fn) 
+//             → fn reçoit { detail: { id, date, fourn, produit, ... } }
+// Storage : localStorage clé 'haccp-reception-v1'
+// ══════════════════════════════════════════════════════════════════
+
+
+// ── État local ─────────────────────────────────────────────────────────
+var recState = { receptions: [], nextId: 1 };
+
+function recLoad() {
+  try { var r=localStorage.getItem('haccp-reception-v1'); if(r) recState=JSON.parse(r); }
+  catch(e) {}
+}
+function recSave() {
+  try { 
+    localStorage.setItem('haccp-reception-v1', JSON.stringify(recState));
+    if(typeof syncToCloud==='function') syncToCloud('receptions', recState);
+  }
+  catch(e) {}
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+  recLoad();
+  renderReceptions();
+  recRenderCal();
+  var now = new Date();
+  var dateEl  = document.getElementById('rec-date');
+  var heureEl = document.getElementById('rec-heure');
+  if(dateEl)  dateEl.value  = now.toISOString().slice(0,10);
+  if(heureEl) heureEl.value = now.toTimeString().slice(0,5);
+});
+
+
+function recCalcDlc() {
+  var fab   = document.getElementById('rec-date-fab')?.value;
+  var dlc   = document.getElementById('rec-dlc-date')?.value;
+  var badge = document.getElementById('rec-dlc-badge');
+  if(!badge) return;
+  if(!dlc) { badge.textContent='—'; badge.className='rec-dlc-badge'; return; }
+  var today   = new Date(); today.setHours(0,0,0,0);
+  var dlcDate = new Date(dlc);
+  var diff    = Math.round((dlcDate - today) / 86400000);
+  var fabText = '';
+  if(fab) {
+    var fabDate = new Date(fab);
+    var age = Math.round((today - fabDate) / 86400000);
+    fabText = ' · J+' + age + ' fab.';
+  }
+  if(diff < 0)       { badge.textContent='EXPIRÉ ('+Math.abs(diff)+'j)'+fabText; badge.className='rec-dlc-badge danger'; }
+  else if(diff === 0){ badge.textContent='Expire auj.'+fabText;                   badge.className='rec-dlc-badge danger'; }
+  else if(diff <= 3) { badge.textContent=diff+' j restants'+fabText;             badge.className='rec-dlc-badge warn';   }
+  else               { badge.textContent=diff+' j restants'+fabText;             badge.className='rec-dlc-badge ok';     }
+}
+
+
+function checkReception() {
+  var temp = parseFloat(document.getElementById('rec-temp')?.value);
+  var typeTemp = document.getElementById('rec-type-temp')?.value;
+  var box = document.getElementById('rec-alert-box');
+  if(!box) return;
+  if(isNaN(temp) || typeTemp === 'na') { box.innerHTML = ''; return; }
+  var limit = parseFloat(typeTemp);
+  if(temp > limit) {
+    box.innerHTML = '<div style="background:#FEF2F2;border:1.5px solid #FECACA;border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#991B1B;font-weight:600;font-size:13px">⚠️ Température non conforme ('+temp+'°C > '+limit+'°C). Action corrective requise.</div>';
+  } else {
+    box.innerHTML = '<div style="background:#F0FAF4;border:1.5px solid #74C69D;border-radius:8px;padding:10px 14px;margin-bottom:12px;color:#1B4332;font-weight:600;font-size:13px">✅ Température conforme ('+temp+'°C ≤ '+limit+'°C)</div>';
+  }
+}
+
+
+async function saveReception() {
+  var dateEl   = document.getElementById('rec-date');
+  var heureEl  = document.getElementById('rec-heure');
+  var fournEl  = document.getElementById('rec-fourn');
+  var prodEl   = document.getElementById('rec-produit');
+  var qteEl    = document.getElementById('rec-qte');
+  var uniteEl  = document.getElementById('rec-unite');
+  var tempEl   = document.getElementById('rec-temp');
+  var dlcEl    = document.getElementById('rec-dlc');
+  var embEl    = document.getElementById('rec-emb');
+  var decEl    = document.getElementById('rec-decision');
+  var opEl     = document.getElementById('rec-op');
+  var obsEl    = document.getElementById('rec-obs');
+  var fabEl    = document.getElementById('rec-date-fab');
+  var dlcDateEl= document.getElementById('rec-dlc-date');
+
+  if(!fournEl?.value.trim()) { alert('Veuillez saisir le fournisseur'); return; }
+  if(!prodEl?.value.trim())  { alert('Veuillez saisir le produit'); return; }
+
+  var rec = {
+    id:       Date.now(),
+    date:     dateEl?.value || new Date().toISOString().slice(0,10),
+    heure:    heureEl?.value || '',
+    fourn:    fournEl?.value.trim() || '',
+    produit:  prodEl?.value.trim() || '',
+    qte:      qteEl?.value || '',
+    unite:    uniteEl?.value || 'kg',
+    temp:     tempEl?.value || '',
+    dlc:      dlcEl?.value || 'ok',
+    emb:      embEl?.value || 'ok',
+    decision: decEl?.value || 'ok',
+    op:       opEl?.value.trim() || '',
+    obs:      obsEl?.value.trim() || '',
+    dateFab:  fabEl?.value || '',
+    dlcDate:  dlcDateEl?.value || '',
+    photos:   [],
+    ts:       Date.now()
+  };
+
+  // Photos
+  if(window.recPendingPhotos?.length) {
+    rec.photos = window.recPendingPhotos.map(p => p.dataURL);
+  }
+
+  // Sauvegarder
+  recState.receptions.unshift(rec);
+  recSave();
+  renderReceptions();
+
+  // Reset
+  if(prodEl)    prodEl.value  = '';
+  if(fournEl)   fournEl.value = '';
+  if(qteEl)     qteEl.value   = '';
+  if(tempEl)    tempEl.value  = '';
+  if(obsEl)     obsEl.value   = '';
+  if(fabEl)     fabEl.value   = '';
+  if(dlcDateEl) dlcDateEl.value = '';
+  var badge = document.getElementById('rec-dlc-badge');
+  if(badge) { badge.textContent='—'; badge.className='rec-dlc-badge'; }
+  window.recPendingPhotos = [];
+  var prev = document.getElementById('rec-photo-previews');
+  if(prev) prev.innerHTML = '';
+
+  // Feedback visuel
+  var btn = document.querySelector('.rec-btn-save');
+  if(btn) {
+    var orig = btn.innerHTML;
+    btn.innerHTML = '✅ Réception enregistrée !';
+    btn.style.background = '#1B4332';
+    setTimeout(function(){ btn.innerHTML = orig; btn.style.background = ''; }, 2000);
+  }
+
+  // Déclencher un événement custom pour intégration externe
+  document.dispatchEvent(new CustomEvent('receptionSaved', { detail: rec }));
+}
+
+
+function renderReceptions() {
+  var tbody = document.getElementById('rec-tbody');
+  if(!tbody) return;
+  var recs = recState.receptions || [];
+  if(!recs.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#9B9892;padding:20px">Aucune réception enregistrée</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recs.map(function(r) {
+    var decCls = r.decision==='ok'?'color:#1B4332;font-weight:700': r.decision==='reserve'?'color:#D97706;font-weight:700':'color:#991B1B;font-weight:700';
+    var tempNum = parseFloat(r.temp);
+    var tempLimit = parseFloat(r['type-temp']||'4');
+    var tempOk = isNaN(tempNum) || isNaN(tempLimit) || tempNum <= tempLimit;
+    var tempCls = tempOk ? '' : 'color:#991B1B;font-weight:700';
+    var photos = r.photos?.length ? '<span style="cursor:pointer;color:#2D6A4F;font-weight:600" onclick="openLightbox(recState.receptions.find(function(x){return x.id==='+r.id+'}).photos[0])">📷 '+r.photos.length+'</span>' : '—';
+    return '<tr>'+
+      '<td>'+r.date+'</td>'+
+      '<td>'+r.heure+'</td>'+
+      '<td style="font-weight:600">'+r.fourn+'</td>'+
+      '<td>'+r.produit+(r.qte?' — <b>'+r.qte+' '+(r.unite||'')+'</b>':'')+'</td>'+
+      '<td style="font-family:monospace;font-weight:600;'+tempCls+'">'+r.temp+(r.temp?'°C':'—')+'</td>'+
+      '<td>'+(r.dlc==='ok'?'✅':'❌')+'</td>'+
+      '<td>'+(r.emb==='ok'?'✅':r.emb==='partiel'?'⚠️':'❌')+'</td>'+
+      '<td style="'+decCls+'">'+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</td>'+
+      '<td>'+photos+'</td>'+
+      '<td>'+r.op+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+
+window.recPendingPhotos = [];
+function handleRecPhotos(input) {
+  var files = Array.from(input.files || []);
+  var prev  = document.getElementById('rec-photo-previews');
+  if(!prev) return;
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var dataURL = e.target.result;
+      window.recPendingPhotos = window.recPendingPhotos || [];
+      window.recPendingPhotos.push({ dataURL: dataURL, name: file.name });
+      var img = document.createElement('img');
+      img.src = dataURL;
+      img.className = 'photo-preview';
+      img.onclick = function() { openLightbox(dataURL); };
+      prev.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+
+function openLightbox(url) {
+  var lb = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  if(!lb || !img || !url) return;
+  img.src = url;
+  lb.style.display = 'flex';
+}
+function closeLightbox() {
+  var lb = document.getElementById('lightbox');
+  if(lb) lb.style.display = 'none';
+}
+
+
+var recCalYear  = new Date().getFullYear();
+var recCalMonth = new Date().getMonth();
+
+function recCalPrev() { recCalMonth--; if(recCalMonth<0){recCalMonth=11;recCalYear--;} recRenderCal(); }
+function recCalNext() { recCalMonth++; if(recCalMonth>11){recCalMonth=0;recCalYear++;} recRenderCal(); }
+
+function recRenderCal() {
+  var grid = document.getElementById('rec-cal-grid');
+  var label = document.getElementById('rec-cal-month-label');
+  if(!grid) return;
+  var months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  if(label) label.textContent = months[recCalMonth] + ' ' + recCalYear;
+  var days = ['L','M','M','J','V','S','D'];
+  var first = new Date(recCalYear, recCalMonth, 1).getDay();
+  first = first === 0 ? 6 : first - 1;
+  var total = new Date(recCalYear, recCalMonth + 1, 0).getDate();
+  var recs = recState.receptions || [];
+  var html = days.map(function(d){ return '<div class="rec-cal-day-hdr">'+d+'</div>'; }).join('');
+  for(var i=0; i<first; i++) html += '<div></div>';
+  for(var d=1; d<=total; d++) {
+    var dateStr = recCalYear+'-'+String(recCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var dayRecs = recs.filter(function(r){ return r.date===dateStr; });
+    var cls = 'rec-cal-cell';
+    if(dayRecs.length) {
+      var hasRefus = dayRecs.some(function(r){ return r.decision==='refuse'; });
+      var hasReserve = dayRecs.some(function(r){ return r.decision==='reserve'; });
+      cls += hasRefus ? ' danger' : hasReserve ? ' warn' : ' ok';
+    }
+    html += '<div class="'+cls+'" data-d="'+dateStr+'" onclick="recSelectDay(this.dataset.d)">'+d+(dayRecs.length?'<span class="rec-cal-count">'+dayRecs.length+'</span>':'')+'</div>';
+  }
+  grid.innerHTML = html;
+}
+
+function recSelectDay(dateStr) {
+  var panel = document.getElementById('rec-day-panel');
+  var list  = document.getElementById('rec-day-list');
+  var dateLabel = document.getElementById('rec-day-panel-date');
+  if(!panel || !list) return;
+  var dayRecs = (recState.receptions || []).filter(function(r){ return r.date===dateStr; });
+  if(dateLabel) dateLabel.textContent = dateStr;
+  if(!dayRecs.length) { list.innerHTML = '<p style="color:#9B9892;font-size:13px">Aucune réception ce jour</p>'; return; }
+  list.innerHTML = dayRecs.map(function(r){
+    return '<div style="padding:8px;border-radius:8px;background:#F7F5F0;margin-bottom:6px;font-size:13px">'+
+      '<b>'+r.fourn+'</b> — '+r.produit+(r.qte?' ('+r.qte+' '+r.unite+')':'')+'<br>'+
+      '<span style="color:#5C5954">'+r.temp+(r.temp?'°C · ':'')+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</span>'+
+    '</div>';
+  }).join('');
+  panel.style.display = 'block';
+}
+
+function recCalToggle() {
+  var content = document.getElementById('rec-cal-content');
+  var chevron = document.getElementById('rec-cal-chevron');
+  if(!content) return;
+  var hidden = content.style.display === 'none';
+  content.style.display = hidden ? '' : 'none';
+  if(chevron) chevron.textContent = hidden ? 'expand_less' : 'expand_more';
+  if(hidden) recRenderCal();
+}
+
+
+function exportReceptions() {
+  var recs = recState.receptions || [];
+  if(!recs.length) { alert('Aucune réception à exporter'); return; }
+  var header = 'Date,Heure,Fournisseur,Produit,Quantité,Unité,Température,DLC,Emballages,Décision,Opérateur,Observations,Date fabrication,DLC date';
+  var rows = recs.map(function(r) {
+    return [r.date,r.heure,r.fourn,r.produit,r.qte,r.unite,r.temp,r.dlc,r.emb,r.decision,r.op,r.obs,r.dateFab,r.dlcDate]
+      .map(function(v){ return '"'+(v||'').replace(/"/g,'""')+'"'; }).join(',');
+  });
+  var csv = header + '\n' + rows.join('\n');
+  var blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'receptions_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+
 function closeAddProduct(){
   document.getElementById('addprod-overlay').classList.remove('open');
   _editCode=null;
@@ -6681,7 +7500,7 @@ function switchTabMore(name,btn){
   if(name==='prix'){initPrixPanel();setTimeout(renderPrixChart,100);}
   if(name==='carte-allergenes')renderCartAlg();
   if(name==='pieces')detectCameraContext();
-  if(name==='reception-mp'){initReceptionModule();renderReceptionsMP();renderRecCalMP();}
+  if(name==='reception-mp'){recLoad();renderReceptions();recRenderCal();}
 }
 
 
@@ -7466,141 +8285,27 @@ function refreshApp(){
 // ══════════════════════════════════════
 // MODULE RÉCEPTION MARCHANDISES
 // ══════════════════════════════════════
-let recCalYear=new Date().getFullYear(), recCalMonth=new Date().getMonth();
-const REC_MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const REC_DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-const REC_KEY='haccp_receptions_v1';
-let RECEPTIONS_DATA=[];
 
-function loadReceptionsData(){
-  try{const r=localStorage.getItem(REC_KEY);RECEPTIONS_DATA=r?JSON.parse(r):[];}
-  catch(e){RECEPTIONS_DATA=[];}
-}
 
-function saveReceptionsData(){
-  try{
-    localStorage.setItem(REC_KEY,JSON.stringify(RECEPTIONS_DATA));
-    if(typeof syncToCloud==='function') syncToCloud('receptions',RECEPTIONS_DATA);
-  }catch(e){}
-}
 
-function checkReceptionMP(){
-  const t=parseFloat(document.getElementById('rec-temp').value);
-  const type=document.getElementById('rec-type-temp').value;
-  const ab=document.getElementById('rec-alert-box');
-  if(!ab)return;
-  if(!isNaN(t)&&type!=='na'){
-    const max=parseFloat(type);
-    const bad=(max<0&&t>max)||(max>0&&t>max);
-    ab.innerHTML=bad
-      ? '<div style="background:var(--pink-bg);color:var(--pink-text);padding:6px 10px;border-radius:6px">⚠️ T° '+t+'°C hors seuil ('+max+'°C) — vérifier la chaîne du froid</div>'
-      : '<div style="background:var(--success-bg);color:var(--success-text);padding:6px 10px;border-radius:6px">✓ T° '+t+'°C conforme</div>';
-  } else { ab.innerHTML=''; }
-}
 
-function resetFormReceptionMP(){
-  ['rec-fourn','rec-produit','rec-temp','rec-obs','rec-montant-ht','rec-dlc'].forEach(function(id){
-    var el=document.getElementById(id); if(el) el.value='';
-  });
-  var now=new Date();
-  var dateEl=document.getElementById('rec-date'); if(dateEl) dateEl.value=now.toISOString().slice(0,10);
-  var heureEl=document.getElementById('rec-heure'); if(heureEl) heureEl.value=now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-  var decEl=document.getElementById('rec-decision'); if(decEl) decEl.value='ok';
-  var embEl=document.getElementById('rec-emb'); if(embEl) embEl.value='ok';
-  var typeEl=document.getElementById('rec-type-temp'); if(typeEl) typeEl.value='na';
-  var abEl=document.getElementById('rec-alert-box'); if(abEl) abEl.innerHTML='';
-}
 
-function saveReceptionMP(){
-  var d=document.getElementById('rec-date').value;
-  var f=document.getElementById('rec-fourn').value.trim();
-  if(!d||!f){if(typeof showSyncToast==='function')showSyncToast('⚠️ Date et fournisseur requis');return;}
-  loadReceptionsData();
-  var rec={
-    id:Date.now(),
-    date:d,
-    heure:(document.getElementById('rec-heure').value||''),
-    fourn:f,
-    produit:(document.getElementById('rec-produit').value.trim()||''),
-    temp:(document.getElementById('rec-temp').value||''),
-    typeTemp:(document.getElementById('rec-type-temp').value||'na'),
-    dlc:(document.getElementById('rec-dlc').value||''),
-    emb:(document.getElementById('rec-emb').value||'ok'),
-    decision:(document.getElementById('rec-decision').value||'ok'),
-    op:(document.getElementById('rec-op').value.trim()||''),
-    montant:(parseFloat(document.getElementById('rec-montant-ht').value)||null),
-    obs:(document.getElementById('rec-obs').value.trim()||''),
-  };
-  RECEPTIONS_DATA.unshift(rec);
-  saveReceptionsData();
-  renderReceptionsMP();
-  renderRecCalMP();
-  resetFormReceptionMP();
-  if(typeof showSyncToast==='function') showSyncToast('✅ Réception enregistrée !');
-}
 
-function renderReceptionsMP(){
-  loadReceptionsData();
-  var tb=document.getElementById('rec-tbody');
-  var countEl=document.getElementById('rec-hist-count');
-  var emptyEl=document.getElementById('rec-empty');
-  if(!tb)return;
-  var fQ=(document.getElementById('flt-rec-q')&&document.getElementById('flt-rec-q').value||'').toLowerCase();
-  var fDec=(document.getElementById('flt-rec-decision')&&document.getElementById('flt-rec-decision').value||'');
-  var filtered=RECEPTIONS_DATA.filter(function(r){
-    if(fDec&&r.decision!==fDec)return false;
-    if(fQ&&!(r.fourn+r.produit+r.obs).toLowerCase().includes(fQ))return false;
-    return true;
-  });
-  if(countEl) countEl.textContent=filtered.length;
-  if(!filtered.length){
-    tb.innerHTML='';
-    if(emptyEl) emptyEl.style.display='block';
-    return;
-  }
-  if(emptyEl) emptyEl.style.display='none';
-  var decL={ok:'✅ Accepté',reserve:'⚠️ Réserve',refuse:'❌ Refusé'};
-  var decC={ok:'ok',reserve:'reserve',refuse:'refuse'};
-  var embL={ok:'✅',partiel:'⚠️',non:'❌'};
-  tb.innerHTML=filtered.map(function(r){
-    return '<tr><td>'+r.date+(r.heure?' '+r.heure:'')+'</td><td><strong>'+r.fourn+'</strong></td><td>'+(r.produit||'—')+'</td>'
-      +'<td style="font-family:var(--mono)">'+(r.temp!==''?r.temp+'°C':'—')+'</td>'
-      +'<td>'+(r.dlc||'—')+'</td><td>'+(embL[r.emb]||r.emb)+'</td>'
-      +'<td><span class="rec-badge '+(decC[r.decision]||'')+'">'+(decL[r.decision]||r.decision)+'</span></td>'
-      +'<td>'+(r.op||'—')+'</td>'
-      +'<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r.obs||'')+'">'+(r.obs||'—')+'</td></tr>';
-  }).join('');
-}
 
-function renderRecCalMP(){
-  loadReceptionsData();
-  var label=document.getElementById('rec-cal-month-label');
-  var grid=document.getElementById('rec-cal-grid');
-  if(!grid)return;
-  if(label) label.textContent=REC_MONTHS[recCalMonth]+' '+recCalYear;
-  var byDate={};
-  RECEPTIONS_DATA.forEach(function(r){if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
-  var firstDay=new Date(recCalYear,recCalMonth,1);
-  var daysInMonth=new Date(recCalYear,recCalMonth+1,0).getDate();
-  var today=new Date().toISOString().slice(0,10);
-  var offset=(firstDay.getDay()+6)%7;
-  var html=REC_DAYS.map(function(d){return '<div class="rec-cal-dh">'+d+'</div>';}).join('');
-  for(var i=0;i<offset;i++) html+='<div></div>';
-  for(var d=1;d<=daysInMonth;d++){
-    var ds=recCalYear+'-'+String(recCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-    var recs=byDate[ds]||[];
-    var hasRefuse=recs.some(function(r){return r.decision==='refuse';});
-    var cls='rec-cal-day'+(hasRefuse?' has-refuse':(recs.length?' has-rec':''))+(ds===today?' today':'');
-    html+='<div class="'+cls+'" title="'+recs.length+' réception(s)">'+d+(recs.length?'<br><span style="font-size:9px">'+recs.length+'</span>':'')+'</div>';
-  }
-  grid.innerHTML=html;
-}
 
-function initReceptionModule(){
-  loadReceptionsData();
-  resetFormReceptionMP();
-  renderRecCalMP();
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ══════════════════════════════════════
