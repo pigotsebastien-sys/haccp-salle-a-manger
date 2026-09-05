@@ -1,0 +1,30 @@
+{
+  "name": "Inventaire HACCP — La Salle à Manger",
+  "short_name": "HACCP LSM",
+  "description": "Gestion inventaire HACCP · La Salle à Manger Grenoble",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a2c4a",
+  "theme_color": "#1a2c4a",
+  "orientation": "any",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
