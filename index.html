@@ -58,7 +58,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15
 .tab-btn.active{color:var(--info-text);border-bottom-color:var(--info-text)}
 /* Indicateur scroll onglets */
 .tab-scroll-hint{display:none;font-size:11px;color:var(--text3);padding:4px 10px 0;text-align:right}
-.panel{display:none}.panel.active{display:block}
+.panel.active{display:block !important}
 .zone-scroll{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .zone-scroll::-webkit-scrollbar{display:none}
 .zone-chip{font-size:12px;font-weight:500;padding:6px 12px;border-radius:20px;border:.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
@@ -840,6 +840,13 @@ tr:hover td { background:var(--rec-surface2); }
 .stat-value { font-size: 16px; font-weight: 600; color: var(--text); margin-top: 2px; }
 .stat-value.danger { color: #ef4444; }
 
+
+/* ── Masquer panneaux au démarrage, home-screen visible ── */
+.panel { display: none !important; }
+.stats-row { display: none; }
+.tab-bar { display: none; }
+.restore-banner { display: none; }
+
 </style>
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
@@ -1136,7 +1143,7 @@ tr:hover td { background:var(--rec-surface2); }
 
 
 <!-- ══ ÉCRAN D'ACCUEIL TUILES ══ -->
-<div id="home-screen">
+<div id="home-screen" style="display:block">
   <!-- Stats bar -->
   <div class="stats-bar">
     <div class="stat-cell">
@@ -7348,10 +7355,10 @@ function goToModule(name) {
   if(hs){ hs.style.display = 'none'; hs.classList.remove('active'); }
   // Restaurer les éléments de l'app
   document.querySelectorAll('.stats-row, .tab-bar, .tab-bar-wrap').forEach(function(el){
-    el.style.display = '';
+    el.style.display = 'flex';
   });
   document.querySelectorAll('.panel').forEach(function(p){
-    p.style.display = '';
+    p.style.display = 'none';
   });
   // Naviguer vers le module
   if(name === 'reception-mp' || name === 'factures' || name === 'tracabilite' ||
