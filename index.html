@@ -58,7 +58,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15
 .tab-btn.active{color:var(--info-text);border-bottom-color:var(--info-text)}
 /* Indicateur scroll onglets */
 .tab-scroll-hint{display:none;font-size:11px;color:var(--text3);padding:4px 10px 0;text-align:right}
-.panel.active{display:block !important}
+.panel{display:none}.panel.active{display:block !important}
 .zone-scroll{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .zone-scroll::-webkit-scrollbar{display:none}
 .zone-chip{font-size:12px;font-weight:500;padding:6px 12px;border-radius:20px;border:.5px solid var(--border2);background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
@@ -241,7 +241,7 @@ select:focus{outline:none}
 }
 /* Tablette paysage / petit laptop */
 @media(min-width:1025px){
-  body{max-width:900px;margin:0 auto}
+  body{max-width:100%;width:100%}
   .app-header{padding:14px 24px}
   .stats-row{padding:14px 24px;gap:12px}
   .table-wrap,.controls,.zone-scroll,.legend,.bilan-wrap,.inv-list{padding-left:24px;padding-right:24px}
@@ -712,8 +712,8 @@ tr:hover td { background:var(--rec-surface2); }
    NOUVELLE INTERFACE — TUILES HACCP LSM
    ══════════════════════════════════════ */
 
-/* Reset header existant */
-.app-header { display: none !important; }
+/* Header visible */
+.app-header { display: block; }
 
 /* Nouveau header */
 .hd-bar {
@@ -841,11 +841,426 @@ tr:hover td { background:var(--rec-surface2); }
 .stat-value.danger { color: #ef4444; }
 
 
-/* ── Masquer panneaux au démarrage, home-screen visible ── */
-.panel { display: none !important; }
-.stats-row { display: none; }
-.tab-bar { display: none; }
-.restore-banner { display: none; }
+/* ── Panneaux gérés par JS ── */
+
+
+/* ══ INTERFACE TUILES ══ */
+#home-screen {
+  display: none;
+  padding: 14px;
+  padding-bottom: 80px;
+}
+.tile-main {
+  background: #1a2c4a;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tile-main:active { opacity: .85; }
+.tile-main-icon { font-size: 28px; margin-bottom: 6px; }
+.tile-main-title { color: #fff; font-size: 17px; font-weight: 600; }
+.tile-main-sub { color: rgba(255,255,255,.55); font-size: 12px; margin-top: 2px; }
+.tile-main-value { color: #fff; font-size: 30px; font-weight: 600; line-height: 1; }
+.tile-main-label { color: rgba(255,255,255,.55); font-size: 11px; margin-top: 2px; }
+.tile-main-badge { color: #52B788; font-size: 12px; font-weight: 600; margin-top: 6px; }
+.tiles-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.tile-mid {
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+}
+.tile-mid:active { opacity: .85; }
+.tile-mid-icon { font-size: 22px; margin-bottom: 8px; }
+.tile-mid-title { color: #fff; font-size: 13px; font-weight: 600; }
+.tile-mid-sub { color: rgba(255,255,255,.6); font-size: 11px; margin-top: 2px; }
+.tile-mid-badge {
+  margin-top: 8px;
+  display: inline-block;
+  background: rgba(255,255,255,.15);
+  border-radius: 6px;
+  padding: 3px 8px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+}
+.tile-reception { background: #0F6E56; }
+.tile-factures { background: #185FA5; }
+.tiles-section-title {
+  font-size: 11px;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+.tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.tile-sm {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 8px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.tile-sm:active { opacity: .75; transform: scale(.97); }
+.tile-sm-icon { font-size: 26px; display: block; margin-bottom: 6px; }
+.tile-sm-label { font-size: 11px; font-weight: 500; color: var(--text2); display: block; }
+.tiles-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.tile-stat {
+  background: var(--bg2);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.tile-stat-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; }
+.tile-stat-value { font-size: 18px; font-weight: 600; margin-top: 2px; }
+
+
+/* ══ ÉCRAN DE CONNEXION ══ */
+#login-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #1a2c4a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 24px;
+}
+.login-box {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.login-logo {
+  font-size: 48px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.login-title {
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: #1a2c4a;
+  margin-bottom: 4px;
+}
+.login-subtitle {
+  font-size: 12px;
+  color: #6b6b68;
+  text-align: center;
+  margin-bottom: 24px;
+}
+.login-field {
+  margin-bottom: 14px;
+}
+.login-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b6b68;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 5px;
+  display: block;
+}
+.login-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #e0ddd9;
+  background: #f7f5f0;
+  font-size: 15px;
+  font-family: inherit;
+  color: #1a1a18;
+  outline: none;
+  box-sizing: border-box;
+}
+.login-input:focus {
+  border-color: #1a2c4a;
+  background: #fff;
+}
+.login-btn {
+  width: 100%;
+  padding: 13px;
+  background: #1a2c4a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 8px;
+}
+.login-btn:active { opacity: .85; }
+.login-btn:disabled { opacity: .5; cursor: not-allowed; }
+.login-error {
+  background: #fbeaf0;
+  color: #72243e;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+}
+.login-magic {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 12px;
+  color: #6b6b68;
+}
+.login-magic a {
+  color: #1a2c4a;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.login-version {
+  color: rgba(255,255,255,0.4);
+  font-size: 11px;
+  margin-top: 20px;
+  text-align: center;
+}
+.login-pwd-wrap {
+  position: relative;
+}
+.login-pwd-wrap .login-input {
+  padding-right: 44px;
+}
+.login-eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #9e9e9a;
+  padding: 4px;
+  line-height: 1;
+}
+
+
+/* ── MODE HORS-LIGNE ── */
+#offline-banner {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10000;
+  background: #f59e0b;
+  color: #1a1a00;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  padding: 6px 12px;
+}
+#offline-banner.show { display: block; }
+
+
+/* ── BOUTON RETOUR ACCUEIL FLOTTANT ── */
+#btn-home-float {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  z-index: 200;
+  background: #1a2c4a;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#btn-home-float.visible { display: flex; }
+
+
+/* ── MODAL MON COMPTE ── */
+#account-overlay {
+  position: fixed; inset: 0; z-index: 5000;
+  background: rgba(0,0,0,0.45);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+#account-overlay.open { display: flex; }
+.account-box {
+  background: var(--bg);
+  border-radius: 16px;
+  padding: 28px 24px;
+  width: 100%; max-width: 360px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.account-title {
+  font-size: 17px; font-weight: 700;
+  color: var(--text); margin-bottom: 4px;
+}
+.account-email {
+  font-size: 12px; color: var(--text2);
+  margin-bottom: 20px;
+}
+.account-section {
+  border-top: 0.5px solid var(--border);
+  padding-top: 16px; margin-top: 16px;
+}
+.account-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--text2); text-transform: uppercase;
+  letter-spacing: .04em; margin-bottom: 5px; display: block;
+}
+.account-input {
+  width: 100%; padding: 11px 40px 11px 12px;
+  border-radius: 8px; border: 0.5px solid var(--border2);
+  background: var(--bg2); color: var(--text);
+  font-size: 15px; font-family: inherit;
+  box-sizing: border-box; outline: none; margin-bottom: 10px;
+}
+.account-input:focus { border-color: #1a2c4a; }
+.account-pwd-wrap { position: relative; }
+.account-pwd-wrap .account-input { padding-right: 40px; }
+.account-eye {
+  position: absolute; right: 10px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  font-size: 16px; color: var(--text2); padding: 4px;
+}
+.account-btn {
+  width: 100%; padding: 12px;
+  background: #1a2c4a; color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  margin-top: 4px;
+}
+.account-btn:disabled { opacity: .5; cursor: not-allowed; }
+.account-btn.danger {
+  background: #fbeaf0; color: #72243e; margin-top: 8px;
+}
+.account-msg {
+  font-size: 13px; padding: 10px 12px;
+  border-radius: 8px; margin-top: 10px; display: none;
+}
+.account-msg.ok { display: block; background: #eaf3de; color: #27500a; }
+.account-msg.err { display: block; background: #fbeaf0; color: #72243e; }
+.account-close {
+  float: right; background: var(--bg2); border: none;
+  border-radius: 50%; width: 30px; height: 30px;
+  font-size: 16px; cursor: pointer; color: var(--text2);
+}
+
+
+/* ══ MODULE MERCURIALE ══ */
+#mercuriale-overlay {
+  position: fixed; inset: 0; z-index: 6000;
+  background: rgba(0,0,0,0.5);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: 16px; overflow-y: auto;
+}
+#mercuriale-overlay.open { display: flex; }
+.merc-box {
+  background: var(--bg);
+  border-radius: 16px;
+  width: 100%; max-width: 780px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  margin: auto;
+  overflow: hidden;
+}
+.merc-header {
+  background: #1a2c4a; color: #fff;
+  padding: 18px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.merc-title { font-size: 16px; font-weight: 700; }
+.merc-subtitle { font-size: 11px; color: rgba(255,255,255,.6); margin-top: 2px; }
+.merc-close {
+  background: rgba(255,255,255,.15); border: none;
+  border-radius: 50%; width: 30px; height: 30px;
+  color: #fff; font-size: 16px; cursor: pointer;
+}
+.merc-body { padding: 20px; }
+.merc-drop {
+  border: 2px dashed var(--border2);
+  border-radius: 12px; padding: 32px 20px;
+  text-align: center; cursor: pointer;
+  transition: border-color .2s, background .2s;
+  background: var(--bg2);
+}
+.merc-drop:hover, .merc-drop.dragover {
+  border-color: #1a2c4a; background: var(--blue-bg);
+}
+.merc-drop-icon { font-size: 36px; margin-bottom: 8px; }
+.merc-drop-text { font-size: 14px; font-weight: 500; color: var(--text); }
+.merc-drop-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.merc-status {
+  padding: 12px 16px; border-radius: 8px; margin-top: 14px;
+  font-size: 13px; display: none;
+}
+.merc-status.loading { display: block; background: var(--info-bg); color: var(--info-text); }
+.merc-status.error { display: block; background: var(--pink-bg); color: var(--pink-text); }
+.merc-status.ok { display: block; background: var(--success-bg); color: var(--success-text); }
+.merc-results { margin-top: 16px; display: none; }
+.merc-results.show { display: block; }
+.merc-summary {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.merc-stat {
+  background: var(--bg2); border: .5px solid var(--border);
+  border-radius: 8px; padding: 10px 14px; flex: 1; min-width: 100px;
+}
+.merc-stat-val { font-size: 22px; font-weight: 700; }
+.merc-stat-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.merc-table-wrap { overflow-x: auto; border-radius: 8px; border: .5px solid var(--border); }
+.merc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.merc-table th {
+  background: var(--bg2); padding: 10px 12px;
+  text-align: left; font-size: 11px; font-weight: 600;
+  color: var(--text2); text-transform: uppercase; letter-spacing: .04em;
+  border-bottom: .5px solid var(--border);
+}
+.merc-table td { padding: 10px 12px; border-bottom: .5px solid var(--border); vertical-align: middle; }
+.merc-table tr:last-child td { border-bottom: none; }
+.merc-table tr.match-found { background: var(--success-bg); }
+.merc-table tr.match-none { background: var(--bg); color: var(--text2); }
+.merc-price-old { color: var(--text2); text-decoration: line-through; font-size: 12px; }
+.merc-price-new { font-weight: 600; }
+.merc-price-up { color: #c05621; }
+.merc-price-down { color: #27500a; }
+.merc-price-same { color: var(--text2); }
+.merc-check { width: 16px; height: 16px; cursor: pointer; }
+.merc-actions {
+  display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end;
+}
+.merc-btn {
+  padding: 11px 20px; border-radius: 8px; border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.merc-btn.primary { background: #1a2c4a; color: #fff; }
+.merc-btn.cancel { background: var(--bg2); color: var(--text2); }
+.merc-btn:disabled { opacity: .4; cursor: not-allowed; }
+.merc-select-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; font-size: 12px; color: var(--text2); }
+.merc-select-row button { font-size: 12px; padding: 4px 8px; border: .5px solid var(--border2); border-radius: 6px; background: var(--bg2); cursor: pointer; }
 
 </style>
 
@@ -860,6 +1275,35 @@ tr:hover td { background:var(--rec-surface2); }
     localStorage.setItem('haccp_device_id', id);
     return id;
   })();
+
+  // Identifiant utilisateur pour la traçabilité HACCP
+  // Priorité: email authentifié > DEVICE_ID (fallback si non connecté)
+  function getCurrentUserIdentifier() {
+    try {
+      // Lire depuis la session Supabase Auth
+      if (window.currentSession) {
+        // currentSession peut contenir user.email directement
+        var session = window.currentSession;
+        if (session.user && session.user.email) return session.user.email;
+        // Ou dans le JWT (access_token)
+        if (session.access_token) {
+          var payload = JSON.parse(atob(session.access_token.split('.')[1]));
+          if (payload.email) return payload.email;
+        }
+      }
+      // Fallback: lire depuis localStorage de session
+      var stored = localStorage.getItem('haccp_session');
+      if (stored) {
+        var s = JSON.parse(stored);
+        if (s.access_token) {
+          var p = JSON.parse(atob(s.access_token.split('.')[1]));
+          if (p.email) return p.email;
+        }
+      }
+    } catch(e) {}
+    // Dernier recours: DEVICE_ID
+    return DEVICE_ID;
+  }
 
   const SYNC_MODULES = {
     'inventaire':     'haccp_salleamanger_inventaire_v1',
@@ -906,7 +1350,7 @@ tr:hover td { background:var(--rec-surface2); }
       const rows = await r.json();
       let n = 0;
       for (const row of rows) {
-        if (row.updated_by === DEVICE_ID) continue;
+        if (row.updated_by === DEVICE_ID || row.updated_by === getCurrentUserIdentifier()) continue;
         const lk = SYNC_MODULES[row.id];
         if (!lk || !row.data || !Object.keys(row.data).length) continue;
         const remoteTs = new Date(row.updated_at).getTime();
@@ -935,8 +1379,25 @@ tr:hover td { background:var(--rec-surface2); }
           break;
         case 'dlc': if (typeof renderDLC==='function') renderDLC(); break;
         case 'tracabilite': if (typeof renderTracabilite==='function') renderTracabilite(); break;
-        case 'recettes': if (typeof renderRecettes==='function') renderRecettes(); break;
-        case 'temperatures': break; // chargé au prochain affichage
+        case 'recettes':
+          if (typeof loadNewModules==='function') loadNewModules();
+          if (typeof renderRecettes==='function') renderRecettes();
+          break;
+        case 'allergenes':
+          try{const r=localStorage.getItem(ALLERGENS_KEY);if(r)ALLERGEN_DATA=JSON.parse(r);}catch(e){}
+          if (typeof renderAllergens==='function') renderAllergens();
+          break;
+        case 'plats':
+          try{const r=localStorage.getItem(PLATS_KEY);if(r)PLATS_DATA=JSON.parse(r);}catch(e){}
+          if (typeof renderPlats==='function') renderPlats();
+          break;
+        case 'seuils':
+          try{const r=localStorage.getItem(SEUILS_KEY);if(r)SEUILS_DATA=JSON.parse(r);}catch(e){}
+          break;
+        case 'temperatures':
+          try{const r=localStorage.getItem(TEMP_KEY);if(r)TEMP_DATA=JSON.parse(r);}catch(e){}
+          if (typeof renderTemperatures==='function') renderTemperatures();
+          break;
         default: break;
       }
     } catch(e) {}
@@ -957,7 +1418,7 @@ tr:hover td { background:var(--rec-surface2); }
         const ts = new Date().toISOString();
         await supa('/rest/v1/haccp_store?id=eq.'+id, {
           method: 'PATCH',
-          body: JSON.stringify({data, updated_by: DEVICE_ID, updated_at: ts})
+          body: JSON.stringify({data, updated_by: getCurrentUserIdentifier(), updated_at: ts})
         });
         localStorage.setItem(SYNC_MODULES[id]+'_sync_ts', Date.now());
         lastTs[id] = ts;
@@ -1136,138 +1597,103 @@ tr:hover td { background:var(--rec-surface2); }
     t._timer = setTimeout(()=>t.style.opacity='0', 2500);
   }
 
-  window.addEventListener('load', function() { setTimeout(initSync, 1500); });
+  window.addEventListener('load', function() { 
+  initRecettesPDF();
+  // Afficher l'écran d'accueil immédiatement
+  var hs = document.getElementById('home-screen');
+  if (hs) hs.style.display = 'block';
+  // Masquer les panneaux au démarrage
+  document.querySelectorAll('.panel').forEach(function(p) {
+    p.classList.remove('active');
+  });
+  setTimeout(initSync, 1500);
+  // Mettre à jour les stats après chargement des données
+  setTimeout(function() {
+    try { showHomeScreen(); } catch(e) {}
+  }, 3000);
+});
   </script>
 </head>
-<body role="application" onload="setTimeout(goHome,2100)" aria-label="Inventaire HACCP La Salle à Manger">
+<body role="application" aria-label="Inventaire HACCP La Salle à Manger">
+<button id="btn-home-float" onclick="goHomeScreen()" title="Retour accueil">🏠</button>
 
-
-<!-- ══ ÉCRAN D'ACCUEIL TUILES ══ -->
-<div id="home-screen" style="display:block">
-  <!-- Stats bar -->
-  <div class="stats-bar">
-    <div class="stat-cell">
-      <div class="stat-label">Valeur HT</div>
-      <div class="stat-value" id="hs-valeur">—</div>
-    </div>
-    <div class="stat-cell">
-      <div class="stat-label">Références</div>
-      <div class="stat-value" id="hs-refs">—</div>
-    </div>
-    <div class="stat-cell">
-      <div class="stat-label">Alertes DLC</div>
-      <div class="stat-value danger" id="hs-dlc">—</div>
-    </div>
-  </div>
-
-  <!-- Inventaire — tuile principale -->
-  <div class="tile-main" onclick="goToModule('inventaire')">
-    <div class="tile-main-left">
-      <div class="tile-main-icon">📦</div>
-      <div class="tile-main-title">Inventaire</div>
-      <div class="tile-main-sub">Cœur de l'application</div>
-    </div>
-    <div class="tile-main-right">
-      <div class="tile-main-value" id="hs-refs2">539</div>
-      <div class="tile-main-label">références</div>
-      <div class="tile-main-badge" id="hs-valeur2">3 163 € HT</div>
-    </div>
-  </div>
-
-  <!-- Réception MP + Factures -->
-  <div class="tiles-row">
-    <div class="tile-mid tile-reception" onclick="goToModule('reception-mp')">
-      <div class="tile-mid-icon">🚚</div>
-      <div class="tile-mid-title">Réception MP</div>
-      <div class="tile-mid-sub">Contrôle livraisons</div>
-      <div class="tile-mid-badge">📸 Scan IA actif</div>
-    </div>
-    <div class="tile-mid tile-factures" onclick="goToModule('factures')">
-      <div class="tile-mid-icon">📄</div>
-      <div class="tile-mid-title">Factures</div>
-      <div class="tile-mid-sub">Cahier d'achats</div>
-      <div class="tile-mid-badge" id="hs-factures">📸 Scan IA</div>
-    </div>
-  </div>
-
-  <!-- Modules secondaires -->
-  <div class="tiles-section-title">Autres modules</div>
-  <div class="tiles-grid">
-    <div class="tile-sm" onclick="goToModule('dlc')">
-      <div class="tile-sm-icon">🌡</div>
-      <div class="tile-sm-label">DLC</div>
-      <div class="tile-sm-dot" id="hs-dlc-dot" style="display:none"></div>
-    </div>
-    <div class="tile-sm" onclick="goToModule('dashboard')">
-      <div class="tile-sm-icon">📊</div>
-      <div class="tile-sm-label">Bilan</div>
-    </div>
-    <div class="tile-sm" onclick="goToModule('recettes')">
-      <div class="tile-sm-icon">👨‍🍳</div>
-      <div class="tile-sm-label">Recettes</div>
-    </div>
-    <div class="tile-sm" onclick="goToModule('commande')">
-      <div class="tile-sm-icon">🛒</div>
-      <div class="tile-sm-label">Commandes</div>
-    </div>
-    <div class="tile-sm" onclick="goToModule('allergenes')">
-      <div class="tile-sm-icon">⚠️</div>
-      <div class="tile-sm-label">Allergènes</div>
-    </div>
-    <div class="tile-sm" onclick="goToModule('tracabilite')">
-      <div class="tile-sm-icon">📋</div>
-      <div class="tile-sm-label">Traçabilité</div>
-    </div>
-    <div class="tile-sm" onclick="goToModule('prix')">
-      <div class="tile-sm-icon">💰</div>
-      <div class="tile-sm-label">Prix</div>
-    </div>
-    <div class="tile-sm" onclick="goToModule('historique')">
-      <div class="tile-sm-icon">📈</div>
-      <div class="tile-sm-label">Historique</div>
-    </div>
-  </div>
+<!-- ── BANNIÈRE HORS-LIGNE ── -->
+<div id="offline-banner">
+  📵 Hors-ligne — les modifications seront synchronisées à la reconnexion
 </div>
 
-<!-- ══ NOUVEAU HEADER ══ -->
-<div class="hd-bar" id="hd-bar">
-  <div class="hd-brand">
-    <div class="hd-sync" id="hd-sync-dot"></div>
-    <div>
-      <div class="hd-brand-name">HACCP · La Salle à Manger</div>
-      <div class="hd-brand-sub" id="hd-subtitle">Grenoble · septembre 2026</div>
+<!-- ══ ÉCRAN DE CONNEXION SUPABASE AUTH ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🍽</div>
+    <div class="login-title">HACCP · La Salle à Manger</div>
+    <div class="login-subtitle">Grenoble — Espace sécurisé</div>
+    
+    <div class="login-field">
+      <label class="login-label" for="login-email">Adresse email</label>
+      <input class="login-input" id="login-email" type="email" 
+             placeholder="prenom@lasalleamanger.fr" autocomplete="email">
+    </div>
+    <div class="login-field">
+      <label class="login-label" for="login-password">Mot de passe</label>
+      <div class="login-pwd-wrap">
+        <input class="login-input" id="login-password" type="password" 
+               placeholder="••••••••" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter') doLogin()">
+        <button type="button" class="login-eye" onclick="toggleLoginPwd(this)" tabindex="-1" title="Afficher/masquer">👁</button>
+      </div>
+    </div>
+    
+    <button class="login-btn" id="login-btn" onclick="doLogin()">
+      Se connecter
+    </button>
+    
+    <div class="login-error" id="login-error"></div>
+    
+    <div class="login-magic">
+      Mot de passe oublié ? 
+      <a onclick="doMagicLink()">Recevoir un lien de connexion</a>
+    </div>
+    <div class="login-magic" style="margin-top:8px">
+      Première connexion ? 
+      <a onclick="showSignup()">Créer un compte</a>
+    </div>
+    
+    <!-- Formulaire inscription (caché par défaut) -->
+    <div id="signup-form" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #e0ddd9">
+      <div style="font-size:12px;font-weight:600;color:#1a2c4a;margin-bottom:12px;text-align:center">
+        ✉️ Inscription réservée à l'équipe
+      </div>
+      <div class="login-field">
+        <label class="login-label">Email professionnel</label>
+        <input class="login-input" id="signup-email" type="email" 
+               placeholder="prenom@lasalleamanger.fr">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Mot de passe (8 caractères min.)</label>
+        <input class="login-input" id="signup-password" type="password" 
+               placeholder="••••••••"
+               onkeydown="if(event.key==='Enter') doSignup()">
+      </div>
+      <div id="signup-info" style="font-size:11px;color:#6b6b68;margin-bottom:10px;padding:8px;background:#f7f5f0;border-radius:6px">
+        ⚠️ Comptes autorisés : <strong>@lasalleamanger.fr</strong> ou <strong>@gmail.com</strong>.<br>
+        Votre compte sera activé après validation par l'administrateur.
+      </div>
+      <button class="login-btn" id="signup-btn" onclick="doSignup()" 
+              style="background:#0F6E56">
+        Créer mon compte
+      </button>
+      <div class="login-magic" style="margin-top:10px">
+        <a onclick="hideSignup()">← Retour à la connexion</a>
+      </div>
     </div>
   </div>
-  <div class="hd-actions">
-    <button class="hd-btn" onclick="goHome()">🏠</button>
-    <button class="hd-btn" onclick="openAddProduct()">+ Produit</button>
-    <button class="hd-btn" onclick="refreshApp()">🔄</button>
-  </div>
+  <div class="login-version">HACCP LSM v2 · Cloudflare Pages · Supabase</div>
 </div>
 
-<!-- ══ BOTTOM NAV ══ -->
-<div class="bottom-nav" id="bottom-nav">
-  <div class="bn-item active" id="bn-home" onclick="goHome()">
-    <div class="bn-icon">🏠</div>
-    <div class="bn-label">Accueil</div>
-  </div>
-  <div class="bn-item" id="bn-inventaire" onclick="goToModule('inventaire')">
-    <div class="bn-icon">📦</div>
-    <div class="bn-label">Inventaire</div>
-  </div>
-  <div class="bn-item" id="bn-reception" onclick="goToModule('reception-mp')">
-    <div class="bn-icon">🚚</div>
-    <div class="bn-label">Réception</div>
-  </div>
-  <div class="bn-item" id="bn-factures" onclick="goToModule('factures')">
-    <div class="bn-icon">📄</div>
-    <div class="bn-label">Factures</div>
-  </div>
-  <div class="bn-item" id="bn-plus" onclick="goToModule('dlc')">
-    <div class="bn-icon">🌡</div>
-    <div class="bn-label">DLC</div>
-  </div>
-</div>
+
+
+
 
 <div class="app-header" style="position:sticky;top:0;z-index:100">
   <div class="header-top">
@@ -1276,8 +1702,12 @@ tr:hover td { background:var(--rec-surface2); }
       <p id='header-date-line'>La Salle à Manger · Grenoble</p>
     </div>
     <div class="header-actions">
+      <button class="btn" onclick="openAccount()" title="Mon compte" style="font-size:14px;padding:6px 10px">👤</button>
+      <button class="btn" onclick="doLogout()" title="Déconnexion" style="font-size:14px;padding:6px 10px">🔓</button>
+      <button class="btn" onclick="goHomeScreen()" title="Accueil" style="font-size:16px;padding:6px 10px">🏠</button>
       <button class="btn" onclick="openVoice()" style="background:var(--info-bg);color:var(--info-text);border-color:transparent;font-weight:600">🎙 Saisie</button>
       <button class="btn btn-addprod" onclick="openAddProduct()">+ Produit</button>
+      <button class="btn" onclick="openMercuriale()" title="Comparer une mercuriale fournisseur" style="background:var(--amber-bg);color:var(--amber-text);border-color:transparent;font-weight:600">📋 Mercuriale</button>
       <button class="btn btn-send" onclick="openSendCenter()" title="Envoyer par email">✉️ Envoyer</button>
       <button class="btn" onclick="refreshApp()" title="Actualiser la version" style="background:var(--green-bg);color:var(--green-text);border-color:transparent;font-weight:600">🔄</button>
       <button class="btn btn-more" onclick="toggleMoreMenu(this)" aria-label="Plus d'options" title="Plus d'options">•••</button>
@@ -1291,6 +1721,45 @@ tr:hover td { background:var(--rec-surface2); }
       <div class="more-separator"></div>
       <button class="more-item more-red" onclick="closeMoreMenu();resetInventory()">🔄 Remise à zéro</button>
     </div>
+
+<!-- ── MODAL MON COMPTE ── -->
+<div id="account-overlay">
+  <div class="account-box">
+    <button class="account-close" onclick="closeAccount()">✕</button>
+    <div class="account-title">👤 Mon compte</div>
+    <div class="account-email" id="account-email-display">—</div>
+
+    <!-- Changer le mot de passe -->
+    <div class="account-section">
+      <div class="account-label">Définir / changer le mot de passe</div>
+      <div class="account-pwd-wrap">
+        <input class="account-input" id="acc-pwd1" type="password"
+               placeholder="Nouveau mot de passe (8 car. min.)">
+        <button type="button" class="account-eye"
+                onclick="toggleAccPwd('acc-pwd1',this)">👁</button>
+      </div>
+      <div class="account-pwd-wrap">
+        <input class="account-input" id="acc-pwd2" type="password"
+               placeholder="Confirmer le mot de passe"
+               onkeydown="if(event.key==='Enter')changePassword()">
+        <button type="button" class="account-eye"
+                onclick="toggleAccPwd('acc-pwd2',this)">👁</button>
+      </div>
+      <button class="account-btn" id="acc-pwd-btn" onclick="changePassword()">
+        Enregistrer le mot de passe
+      </button>
+      <div class="account-msg" id="acc-pwd-msg"></div>
+    </div>
+
+    <!-- Déconnexion -->
+    <div class="account-section">
+      <button class="account-btn danger" onclick="doLogout()">
+        🔓 Se déconnecter
+      </button>
+    </div>
+  </div>
+</div>
+
   </div>
 </div>
 
@@ -1327,6 +1796,157 @@ tr:hover td { background:var(--rec-surface2); }
 </div>
 
 
+
+<!-- ══ ÉCRAN D'ACCUEIL ══ -->
+<div id="home-screen">
+
+  <!-- Stats rapides -->
+  <div class="tiles-stats">
+    <div class="tile-stat">
+      <div class="tile-stat-label">Valeur HT</div>
+      <div class="tile-stat-value" id="hs-valeur">—</div>
+    </div>
+    <div class="tile-stat">
+      <div class="tile-stat-label">Références</div>
+      <div class="tile-stat-value" id="hs-refs">—</div>
+    </div>
+    <div class="tile-stat">
+      <div class="tile-stat-label">Alertes DLC</div>
+      <div class="tile-stat-value" id="hs-dlc" style="color:#ef4444">—</div>
+    </div>
+  </div>
+
+  <!-- Inventaire — tuile principale -->
+  <div class="tile-main" onclick="tileGoTo('inventaire')">
+    <div>
+      <div class="tile-main-icon">📦</div>
+      <div class="tile-main-title">Inventaire</div>
+      <div class="tile-main-sub">Cœur de l'application</div>
+    </div>
+    <div style="text-align:right">
+      <div class="tile-main-value" id="hs-refs2">539</div>
+      <div class="tile-main-label">références</div>
+      <div class="tile-main-badge" id="hs-valeur2">— € HT</div>
+    </div>
+  </div>
+
+  <!-- Réception MP + Factures -->
+  <div class="tiles-row">
+    <div class="tile-mid tile-reception" onclick="tileGoTo('reception-mp')">
+      <div class="tile-mid-icon">🚚</div>
+      <div class="tile-mid-title">Réception MP</div>
+      <div class="tile-mid-sub">Contrôle livraisons</div>
+      <div class="tile-mid-badge">📸 Scan IA actif</div>
+    </div>
+    <div class="tile-mid tile-factures" onclick="tileGoTo('factures')">
+      <div class="tile-mid-icon">📄</div>
+      <div class="tile-mid-title">Factures</div>
+      <div class="tile-mid-sub">Cahier d'achats</div>
+      <div class="tile-mid-badge">📸 Scan IA</div>
+    </div>
+  </div>
+
+  <!-- Modules secondaires -->
+  <div class="tiles-section-title">Autres modules</div>
+  <div class="tiles-grid">
+    <div class="tile-sm" onclick="tileGoTo('dlc')">
+      <div class="tile-sm-icon">🌡</div>
+      <div class="tile-sm-label">DLC</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('dashboard')">
+      <div class="tile-sm-icon">📊</div>
+      <div class="tile-sm-label">Bilan</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('recettes')">
+      <div class="tile-sm-icon">👨‍🍳</div>
+      <div class="tile-sm-label">Recettes</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('commande')">
+      <div class="tile-sm-icon">🛒</div>
+      <div class="tile-sm-label">Commandes</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('allergenes')">
+      <div class="tile-sm-icon">⚠️</div>
+      <div class="tile-sm-label">Allergènes</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('tracabilite')">
+      <div class="tile-sm-icon">📋</div>
+      <div class="tile-sm-label">Traçabilité</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('prix')">
+      <div class="tile-sm-icon">💰</div>
+      <div class="tile-sm-label">Prix</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('historique')">
+      <div class="tile-sm-icon">📈</div>
+      <div class="tile-sm-label">Historique</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ MODAL MERCURIALE ══ -->
+<div id="mercuriale-overlay">
+  <div class="merc-box">
+    <div class="merc-header">
+      <div>
+        <div class="merc-title">📋 Comparer une mercuriale fournisseur</div>
+        <div class="merc-subtitle">Upload Excel ou PDF → comparaison avec les prix actuels → validation avant mise à jour</div>
+      </div>
+      <button class="merc-close" onclick="closeMercuriale()">✕</button>
+    </div>
+    <div class="merc-body">
+      <!-- Zone upload -->
+      <div class="merc-drop" id="merc-drop"
+           onclick="document.getElementById('merc-file-input').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="mercHandleDrop(event)">
+        <div class="merc-drop-icon">📂</div>
+        <div class="merc-drop-text">Cliquez ou glissez la mercuriale ici</div>
+        <div class="merc-drop-sub">Excel (.xlsx, .xls) ou PDF — max 10 Mo</div>
+      </div>
+      <input type="file" id="merc-file-input" accept=".xlsx,.xls,.pdf,.png,.jpg,.jpeg"
+             style="display:none" onchange="mercHandleFile(this.files[0])">
+
+      <!-- Statut -->
+      <div class="merc-status" id="merc-status"></div>
+
+      <!-- Résultats -->
+      <div class="merc-results" id="merc-results">
+        <div class="merc-summary" id="merc-summary"></div>
+        <div class="merc-select-row">
+          <span>Sélectionner :</span>
+          <button onclick="mercSelectAll(true)">Tout cocher</button>
+          <button onclick="mercSelectAll(false)">Tout décocher</button>
+          <button onclick="mercSelectOnly('down')">Baisses seulement</button>
+        </div>
+        <div class="merc-table-wrap">
+          <table class="merc-table">
+            <thead>
+              <tr>
+                <th style="width:32px">✓</th>
+                <th>Produit mercuriale</th>
+                <th>Correspondance inventaire</th>
+                <th>Ancien prix</th>
+                <th>Nouveau prix</th>
+                <th>Δ</th>
+              </tr>
+            </thead>
+            <tbody id="merc-tbody"></tbody>
+          </table>
+        </div>
+        <div class="merc-actions">
+          <button class="merc-btn cancel" onclick="closeMercuriale()">Annuler</button>
+          <button class="merc-btn primary" id="merc-apply-btn" onclick="mercApplySelected()">
+            ✅ Appliquer les prix sélectionnés
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="panel-inventaire" class="panel active">
   <div class="zone-scroll" id="zone-tabs"></div>
   <div class="controls">
@@ -1362,6 +1982,7 @@ tr:hover td { background:var(--rec-surface2); }
     <div class="legend-item"><span class="new-pill">NEW</span> Nouveau</div>
     <div class="legend-item"><span class="upd-pill">MAJ</span> Prix actualisé</div>
     <div class="legend-item"><span class="cross-pill">🔀</span> Même produit, fournisseurs différents</div>
+      <div class="legend-item"><span style="font-size:11px">⚠️</span> Unités différentes — comparer avec précaution</div>
   </div>
   <div class="table-wrap">
     <div class="product-list">
@@ -2276,7 +2897,7 @@ async function saveReception() {
     id:       Date.now(),
     date:     dateEl?.value || new Date().toISOString().slice(0,10),
     heure:    heureEl?.value || '',
-    fourn:    fournEl?.value.trim() || '',
+    fourn:    normalizeFournisseur(fournEl?.value) || '',
     produit:  prodEl?.value.trim() || '',
     qte:      qteEl?.value || '',
     unite:    uniteEl?.value || 'kg',
@@ -2477,7 +3098,766 @@ function exportReceptions() {
 
 
 <div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div>
-</div>
+<script>
+// ---------------------------------------------------------------------------
+// Données de référence
+// ---------------------------------------------------------------------------
+// DEFAULT_CODES défini dans le script principal
+
+// DEFAULT_SUPPLIERS défini dans le script principal
+
+// SEED_INVOICES défini dans le script principal
+
+// TAUX_OPTIONS défini dans le script principal
+
+// PIE_COLORS défini dans le script principal
+
+// ---------------------------------------------------------------------------
+// Utilitaires
+// ---------------------------------------------------------------------------
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function eur(n){ const v=Number.isFinite(n)?n:0; return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(v); }
+function monthKey(d){ return d?d.slice(0,7):""; }
+function monthLabel(key){
+  if(!key) return "";
+  const [y,m]=key.split("-");
+  const d=new Date(Number(y), Number(m)-1, 1);
+  const label=d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  return label.charAt(0).toUpperCase()+label.slice(1);
+}
+function computeLine(inv){
+  const ht=Number(inv.ht)||0, taux=Number(inv.taux)||0;
+  const tva=Math.round(ht*(taux/100)*100)/100;
+  const ttc=Math.round((ht+tva)*100)/100;
+  return {ht,tva,ttc};
+}
+
+// ---------------------------------------------------------------------------
+// Application
+// ---------------------------------------------------------------------------
+const App = {
+  invoices: [], suppliers: [], codes: [], apiKey: "",
+  tab: "dashboard", selectedMonth: "", ledgerCodeFilter: "",
+  entryMode: "manual", editingInvoiceId: null,
+  scan: { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] },
+  toastMsg: null, toastTimer: null,
+
+  init(){
+    try { this.invoices = JSON.parse(localStorage.getItem("ca_invoices")) || SEED_INVOICES.slice(); }
+    catch(e){ this.invoices = SEED_INVOICES.slice(); }
+    try { this.suppliers = JSON.parse(localStorage.getItem("ca_suppliers")) || DEFAULT_SUPPLIERS.slice(); }
+    catch(e){ this.suppliers = DEFAULT_SUPPLIERS.slice(); }
+    try { this.codes = JSON.parse(localStorage.getItem("ca_codes")) || DEFAULT_CODES.slice(); }
+    catch(e){ this.codes = DEFAULT_CODES.slice(); }
+    this.apiKey = localStorage.getItem("ca_api_key") || "";
+    const months = Array.from(new Set(this.invoices.map(i=>monthKey(i.date)))).sort();
+    this.selectedMonth = months.length ? months[months.length-1] : "";
+    this.saveAll();
+    this.render();
+  },
+  saveInvoices(){ localStorage.setItem("ca_invoices", JSON.stringify(this.invoices)); },
+  saveSuppliers(){ localStorage.setItem("ca_suppliers", JSON.stringify(this.suppliers)); },
+  saveCodes(){ localStorage.setItem("ca_codes", JSON.stringify(this.codes)); },
+  saveAll(){ this.saveInvoices(); this.saveSuppliers(); this.saveCodes(); },
+
+  toast(msg, type){
+    this.toastMsg = {msg, type: type||"success"};
+    this.renderToast();
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(()=>{ this.toastMsg=null; this.renderToast(); }, 2600);
+  },
+  renderToast(){
+    const el = document.getElementById("toast-holder");
+    if(!el) return;
+    if(!this.toastMsg){ el.innerHTML=""; return; }
+    el.innerHTML = `<div class="toast ${this.toastMsg.type==='error'?'error':''}">${esc(this.toastMsg.msg)}</div>`;
+  },
+
+  months(){ return Array.from(new Set(this.invoices.map(i=>monthKey(i.date)))).sort(); },
+  filteredInvoices(){
+    let list = this.invoices;
+    if (this.selectedMonth) list = list.filter(i=>monthKey(i.date)===this.selectedMonth);
+    return list;
+  },
+  totals(list){
+    let ht=0,tva=0,ttc=0;
+    list.forEach(i=>{ const c=computeLine(i); ht+=c.ht; tva+=c.tva; ttc+=c.ttc; });
+    return {ht,tva,ttc,count:list.length};
+  },
+  byCode(list){
+    const map={};
+    list.forEach(i=>{ const c=computeLine(i); map[i.code]=(map[i.code]||0)+c.ht; });
+    return Object.entries(map).map(([code,ht])=>({code,ht,libelle:(this.codes.find(c=>c.code===code)||{}).libelle||code})).sort((a,b)=>b.ht-a.ht);
+  },
+  bySupplier(list){
+    const map={};
+    list.forEach(i=>{ const c=computeLine(i); map[i.fournisseur]=(map[i.fournisseur]||0)+c.ht; });
+    return Object.entries(map).map(([nom,ht])=>({nom,ht})).sort((a,b)=>b.ht-a.ht);
+  },
+
+  setTab(t){ this.tab=t; this.render(); },
+  setMonth(v){ this.selectedMonth=v; this.render(); },
+  setLedgerFilter(v){ this.ledgerCodeFilter=v; this.render(); },
+  setEntryMode(m){ this.entryMode=m; this.resetScan(); this.render(); },
+
+  // ---- Factures ----
+  addInvoiceFromForm(prefix){
+    const date = document.getElementById(prefix+"-date").value;
+    const fournisseur = document.getElementById(prefix+"-fournisseur").value;
+    const bl = document.getElementById(prefix+"-bl").value.trim();
+    const ht = Number(document.getElementById(prefix+"-ht").value);
+    const taux = Number(document.getElementById(prefix+"-taux").value);
+    const code = document.getElementById(prefix+"-code").value;
+    const errEl = document.getElementById(prefix+"-error");
+    if(!date){ errEl.textContent="La date est obligatoire."; return; }
+    if(!fournisseur){ errEl.textContent="Le fournisseur est obligatoire."; return; }
+    if(!code){ errEl.textContent="Le code de ventilation est obligatoire."; return; }
+    if(!Number.isFinite(ht) || ht<=0){ errEl.textContent="Le montant HT doit être un nombre supérieur à 0."; return; }
+    if(this.editingInvoiceId){
+      this.invoices = this.invoices.map(i=> i.id===this.editingInvoiceId ? {...i,date,fournisseur,bl,ht,taux,code} : i);
+      this.editingInvoiceId = null;
+      this.toast("Facture mise à jour.");
+    } else {
+      this.invoices.push({id:uid(),date,fournisseur,bl,ht,taux,code});
+      this.toast("Facture enregistrée.");
+    }
+    this.saveInvoices();
+    this.render();
+  },
+  editInvoice(id){ this.editingInvoiceId = id; this.render(); },
+  cancelEdit(){ this.editingInvoiceId = null; this.render(); },
+  deleteInvoice(id){
+    if(!confirm("Supprimer cette facture ?")) return;
+    this.invoices = this.invoices.filter(i=>i.id!==id);
+    this.saveInvoices();
+    this.toast("Facture supprimée.");
+    this.render();
+  },
+  onSupplierPick(prefix){
+    const sel = document.getElementById(prefix+"-fournisseur").value;
+    const sup = this.suppliers.find(s=>s.nom===sel);
+    if(sup){
+      document.getElementById(prefix+"-code").value = sup.code;
+      const c = this.codes.find(c=>c.code===sup.code);
+      if(c) document.getElementById(prefix+"-taux").value = c.taux;
+    }
+  },
+  onCodePick(prefix){
+    const code = document.getElementById(prefix+"-code").value;
+    const c = this.codes.find(c=>c.code===code);
+    if(c) document.getElementById(prefix+"-taux").value = c.taux;
+  },
+
+  // ---- Fournisseurs ----
+  addSupplier(){
+    const nom = document.getElementById("new-sup-nom").value.trim();
+    const code = document.getElementById("new-sup-code").value;
+    if(!nom){ this.toast("Nom de fournisseur requis.","error"); return; }
+    this.suppliers.push({id:uid(), nom, code: code||this.codes[0].code});
+    this.saveSuppliers();
+    this.toast("Fournisseur ajouté.");
+    this.render();
+  },
+  deleteSupplier(id){
+    const sup = this.suppliers.find(s=>s.id===id);
+    const used = this.invoices.some(i=>i.fournisseur===(sup&&sup.nom));
+    if(used){ this.toast("Impossible : ce fournisseur a des factures enregistrées.","error"); return; }
+    this.suppliers = this.suppliers.filter(s=>s.id!==id);
+    this.saveSuppliers();
+    this.toast("Fournisseur supprimé.");
+    this.render();
+  },
+  updateSupplierCode(id, code){
+    this.suppliers = this.suppliers.map(s=> s.id===id ? {...s, code} : s);
+    this.saveSuppliers();
+  },
+
+  // ---- Plan de ventilation ----
+  addCode(){
+    const code = document.getElementById("new-code-code").value.trim();
+    const libelle = document.getElementById("new-code-libelle").value.trim();
+    const taux = Number(document.getElementById("new-code-taux").value);
+    const compteTva = document.getElementById("new-code-compteTva").value.trim() || "445660";
+    if(!code || !libelle){ this.toast("Code et libellé requis.","error"); return; }
+    if(this.codes.some(c=>c.code===code)){ this.toast("Ce code existe déjà.","error"); return; }
+    this.codes.push({code, libelle, taux, compteTva});
+    this.saveCodes();
+    this.toast("Code ajouté au plan de ventilation.");
+    this.render();
+  },
+  deleteCode(code){
+    const used = this.invoices.some(i=>i.code===code) || this.suppliers.some(s=>s.code===code);
+    if(used){ this.toast("Impossible : ce code est utilisé par des factures ou fournisseurs.","error"); return; }
+    this.codes = this.codes.filter(c=>c.code!==code);
+    this.saveCodes();
+    this.toast("Code supprimé.");
+    this.render();
+  },
+
+  // ---- Réglages / clé API ----
+  saveApiKey(){
+    const key = document.getElementById("api-key-input").value.trim();
+    this.apiKey = key;
+    localStorage.setItem("ca_api_key", key);
+    this.toast(key ? "Clé API enregistrée dans ce navigateur." : "Clé API effacée.");
+    this.render();
+  },
+
+  // ---- Scan ----
+  resetScan(){
+    if(this.scan.previewUrl) URL.revokeObjectURL(this.scan.previewUrl);
+    this.scan = { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] };
+  },
+  onScanFile(input){
+    const file = input.files && input.files[0];
+    input.value = "";
+    if(!file) return;
+    this.resetScan();
+    if(file.type.startsWith("image/")) this.scan.previewUrl = URL.createObjectURL(file);
+    this.analyzeInvoiceFile(file);
+  },
+  fileToBase64(file){
+    return new Promise((resolve,reject)=>{
+      const r = new FileReader();
+      r.onload = ()=> resolve(String(r.result).split(",")[1]||"");
+      r.onerror = ()=> reject(new Error("Lecture du fichier impossible."));
+      r.readAsDataURL(file);
+    });
+  },
+  resizeImageFile(file, maxDim){
+    const limit = maxDim||1600;
+    return new Promise((resolve,reject)=>{
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = ()=>{
+        let {width,height} = img;
+        if(width>limit||height>limit){ const s=limit/Math.max(width,height); width=Math.round(width*s); height=Math.round(height*s); }
+        const canvas=document.createElement("canvas"); canvas.width=width; canvas.height=height;
+        canvas.getContext("2d").drawImage(img,0,0,width,height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(b=> b?resolve(b):reject(new Error("Conversion image impossible.")), "image/jpeg", 0.87);
+      };
+      img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error("Image illisible.")); };
+      img.src = url;
+    });
+  },
+  matchOrCreateSupplier(rawName){
+    const name = (rawName||"").trim();
+    if(!name) return {supplier:null, isNew:false};
+    const lower = name.toLowerCase();
+    let found = this.suppliers.find(s=>s.nom.toLowerCase()===lower);
+    if(!found) found = this.suppliers.find(s=>lower.includes(s.nom.toLowerCase())||s.nom.toLowerCase().includes(lower));
+    if(found) return {supplier:found, isNew:false};
+    const created = {id:uid(), nom:name, code:this.codes[0].code};
+    this.suppliers.push(created);
+    this.saveSuppliers();
+    return {supplier:created, isNew:true};
+  },
+  async analyzeInvoiceFile(file){
+    // Clé API gérée par Supabase Edge Function
+    this.scan.loading = true; this.scan.error=""; this.scan.note=""; this.scan.common=null; this.scan.lines=[];
+    this.render();
+    try{
+      const isPdf = file.type === "application/pdf";
+      let base64, contentBlock;
+      if(isPdf){
+        base64 = await this.fileToBase64(file);
+        contentBlock = { type:"document", source:{ type:"base64", media_type:"application/pdf", data:base64 } };
+      } else {
+        const resized = await this.resizeImageFile(file);
+        base64 = await this.fileToBase64(resized);
+        contentBlock = { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:base64 } };
+      }
+      const codesListText = this.codes.map(c=>`${c.code} = ${c.libelle}`).join("\n");
+      const systemPrompt = "Tu es un assistant comptable qui ventile les factures fournisseurs d'un restaurant selon le plan de ventilation suivant (code = libellé) :\n"+codesListText+
+        "\n\nAnalyse la facture fournie (photo ou PDF) et découpe son montant en une ou plusieurs lignes de ventilation, une ligne par catégorie de produits réellement présente sur la facture. Pour chaque ligne, choisis le code EXACTEMENT parmi la liste ci-dessus, sans en inventer un nouveau. Si un seul type de produit est présent, renvoie une seule ligne. Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balises markdown, au format exact :\n"+
+        '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_bl":"...","lignes":[{"code":"...","montant_ht":0.00,"taux_tva":0}]}\n'+
+        "Les taux de TVA possibles sont 0, 5.5, 10 ou 20. Si une information est illisible ou absente, mets null.";
+
+      const resp = await fetch("https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-facture", {
+        method:"POST",
+        headers:{"content-type":"application/json"},
+        body: JSON.stringify({ base64: base64, media_type: isPdf ? "application/pdf" : (file.type || "image/jpeg") })
+      });
+      if(!resp.ok){
+        const errBody = await resp.text().catch(()=> "");
+        throw new Error("Le service d’analyse a répondu une erreur ("+resp.status+"). "+(errBody? "Vérifiez votre clé API." : ""));
+      }
+      const data = await resp.json();
+      const textBlock = (data.content||[]).find(b=>b.type==="text");
+      if(!textBlock || !textBlock.text) throw new Error("Aucune donnée exploitable n’a été retournée.");
+      const cleaned = textBlock.text.replace(/```json|```/g,"").trim();
+      const parsed = JSON.parse(cleaned);
+
+      const dateOk = typeof parsed.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date);
+      const {supplier, isNew} = this.matchOrCreateSupplier(parsed.fournisseur);
+      const fallbackCode = this.codes.find(c=>/autre/i.test(c.libelle)) || this.codes[0];
+      const rawLines = Array.isArray(parsed.lignes) ? parsed.lignes : [];
+      let lines = rawLines.map(l=>{
+        const codeMatch = this.codes.find(c=>c.code===l.code);
+        const ht = Number(l.montant_ht);
+        const rawTaux = Number(l.taux_tva);
+        const base = Number.isFinite(rawTaux)?rawTaux:0;
+        const taux = TAUX_OPTIONS.reduce((best,t)=> Math.abs(t-base)<Math.abs(best-base)?t:best, TAUX_OPTIONS[0]);
+        return { id:uid(), code: codeMatch? codeMatch.code : (fallbackCode?fallbackCode.code:this.codes[0].code), ht: (Number.isFinite(ht)&&ht>0)?ht:"", taux };
+      });
+      if(lines.length===0) lines=[{id:uid(), code: supplier?supplier.code:(fallbackCode?fallbackCode.code:this.codes[0].code), ht:"", taux:0}];
+
+      this.scan.common = { date: dateOk?parsed.date:new Date().toISOString().slice(0,10), fournisseur: supplier?supplier.nom:"", bl: parsed.numero_bl||"" };
+      this.scan.lines = lines;
+
+      const notes=[];
+      if(!dateOk) notes.push("date non reconnue (à corriger)");
+      if(lines.some(l=>l.ht==="")) notes.push("un ou plusieurs montants non reconnus (à saisir)");
+      if(lines.length>1) notes.push(`facture ventilée automatiquement sur ${lines.length} codes, à vérifier`);
+      if(isNew && supplier) notes.push(`nouveau fournisseur « ${supplier.nom} » ajouté automatiquement`);
+      this.scan.note = notes.length? notes.join(" · ") : "Facture analysée. Vérifiez les champs avant d’enregistrer.";
+      this.toast(notes.length? "Extraction partielle : vérifiez les champs." : "Facture analysée et ventilée.", notes.length?"error":"success");
+    } catch(e){
+      this.scan.error = e.message || "Échec de l’analyse de la facture.";
+    } finally {
+      this.scan.loading = false;
+      this.render();
+    }
+  },
+  scanAddLine(){
+    // sync current DOM values into state first
+    this.syncScanLinesFromDom();
+    this.scan.lines.push({id:uid(), code:this.codes[0].code, ht:"", taux:this.codes[0].taux});
+    this.render();
+  },
+  scanRemoveLine(id){
+    this.syncScanLinesFromDom();
+    this.scan.lines = this.scan.lines.filter(l=>l.id!==id);
+    this.render();
+  },
+  scanCodeChange(id, code){
+    this.syncScanLinesFromDom();
+    const c = this.codes.find(c=>c.code===code);
+    this.scan.lines = this.scan.lines.map(l=> l.id===id ? {...l, code, taux: c?c.taux:l.taux} : l);
+    this.render();
+  },
+  syncScanLinesFromDom(){
+    this.scan.lines = this.scan.lines.map(l=>{
+      const codeEl = document.getElementById("scan-line-code-"+l.id);
+      const htEl = document.getElementById("scan-line-ht-"+l.id);
+      const tauxEl = document.getElementById("scan-line-taux-"+l.id);
+      return {
+        id: l.id,
+        code: codeEl ? codeEl.value : l.code,
+        ht: htEl ? htEl.value : l.ht,
+        taux: tauxEl ? Number(tauxEl.value) : l.taux,
+      };
+    });
+  },
+  submitScan(){
+    this.syncScanLinesFromDom();
+    const date = document.getElementById("scan-common-date").value;
+    const fournisseur = document.getElementById("scan-common-fournisseur").value;
+    const bl = document.getElementById("scan-common-bl").value.trim();
+    const errEl = document.getElementById("scan-error");
+    if(!date){ errEl.textContent="La date est obligatoire."; return; }
+    if(!fournisseur){ errEl.textContent="Le fournisseur est obligatoire."; return; }
+    if(this.scan.lines.length===0){ errEl.textContent="Ajoutez au moins une ligne de ventilation."; return; }
+    for(const l of this.scan.lines){
+      const htNum = Number(l.ht);
+      if(!l.code){ errEl.textContent="Chaque ligne doit avoir un code."; return; }
+      if(!Number.isFinite(htNum) || htNum<=0){ errEl.textContent="Chaque ligne doit avoir un montant HT valide."; return; }
+    }
+    errEl.textContent = "";
+    const factureId = uid();
+    const records = this.scan.lines.map(l=>({ id:uid(), factureId, date, fournisseur, bl, ht:Number(l.ht), taux:Number(l.taux)||0, code:l.code }));
+    this.invoices.push(...records);
+    this.saveInvoices();
+    this.toast(records.length>1 ? `Facture ventilée sur ${records.length} codes et enregistrée.` : "Facture enregistrée.");
+    this.resetScan();
+    this.render();
+  },
+
+  // ---- Export Excel ----
+  exportExcel(){
+    const rows = this.invoices.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(i=>{
+      const c = computeLine(i);
+      const acc = this.codes.find(cc=>cc.code===i.code);
+      return { Date:i.date, Mois:monthLabel(monthKey(i.date)), Fournisseur:i.fournisseur, "N° BL":i.bl||"", Code:i.code,
+        Compte: acc?acc.libelle:"", "Taux TVA": i.taux+"%", HT:c.ht, TVA:c.tva, "Compte TVA": acc?(acc.compteTva||""):"", TTC:c.ttc };
+    });
+    const wsLedger = XLSX.utils.json_to_sheet(rows);
+    wsLedger["!cols"] = [{wch:11},{wch:16},{wch:26},{wch:12},{wch:8},{wch:36},{wch:9},{wch:10},{wch:10},{wch:11},{wch:10}];
+
+    const pivotMap={};
+    this.invoices.forEach(i=>{ const m=monthLabel(monthKey(i.date)); const c=computeLine(i); pivotMap[i.code]=pivotMap[i.code]||{}; pivotMap[i.code][m]=(pivotMap[i.code][m]||0)+c.ht; });
+    const monthCols = Array.from(new Set(this.invoices.map(i=>monthLabel(monthKey(i.date)))));
+    const pivotRows = Object.entries(pivotMap).map(([code,byMonth])=>{
+      const acc=this.codes.find(cc=>cc.code===code); const row={Code:code, Compte:acc?acc.libelle:""}; let total=0;
+      monthCols.forEach(m=>{ const v=Math.round((byMonth[m]||0)*100)/100; row[m]=v; total+=v; });
+      row["Total"]=Math.round(total*100)/100; return row;
+    });
+    const wsPivot = XLSX.utils.json_to_sheet(pivotRows);
+
+    const supplierMap={};
+    this.invoices.forEach(i=>{ const m=monthLabel(monthKey(i.date)); const c=computeLine(i); supplierMap[i.fournisseur]=supplierMap[i.fournisseur]||{}; supplierMap[i.fournisseur][m]=(supplierMap[i.fournisseur][m]||0)+c.ht; });
+    const supplierRows = Object.entries(supplierMap).map(([nom,byMonth])=>{
+      const row={Fournisseur:nom}; let total=0;
+      monthCols.forEach(m=>{ const v=Math.round((byMonth[m]||0)*100)/100; row[m]=v; total+=v; });
+      row["Total"]=Math.round(total*100)/100; return row;
+    });
+    const wsSupplier = XLSX.utils.json_to_sheet(supplierRows);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsLedger, "Cahier d'achat");
+    XLSX.utils.book_append_sheet(wb, wsPivot, "Synthese par code");
+    XLSX.utils.book_append_sheet(wb, wsSupplier, "Synthese fournisseur");
+    XLSX.writeFile(wb, `Cahier_Achat_${this.selectedMonth||"complet"}.xlsx`);
+    this.toast("Export Excel généré.");
+  },
+
+  // ---------------------------------------------------------------------------
+  // Rendu
+  // ---------------------------------------------------------------------------
+  invoiceFormHtml(prefix, initial){
+    const v = initial || { date:new Date().toISOString().slice(0,10), fournisseur:this.suppliers[0]?this.suppliers[0].nom:"", bl:"", ht:"", taux:this.codes[0]?this.codes[0].taux:0, code:this.suppliers[0]?this.suppliers[0].code:(this.codes[0]?this.codes[0].code:"") };
+    return `
+      <div class="row">
+        <label class="field"><span class="label">Date de facture</span>
+          <input type="date" id="${prefix}-date" value="${esc(v.date)}"></label>
+        <label class="field"><span class="label">Fournisseur</span>
+          <select id="${prefix}-fournisseur" onchange="CaApp.onSupplierPick('${prefix}')">
+            ${this.suppliers.map(s=>`<option value="${esc(s.nom)}" ${s.nom===v.fournisseur?'selected':''}>${esc(s.nom)}</option>`).join("")}
+          </select></label>
+        <label class="field"><span class="label">N° BL / facture</span><span class="hint">facultatif</span>
+          <input type="text" id="${prefix}-bl" value="${esc(v.bl)}" placeholder="BL-00214"></label>
+      </div>
+      <div class="row">
+        <label class="field"><span class="label">Montant HT (€)</span>
+          <input type="number" step="0.01" min="0" id="${prefix}-ht" value="${esc(v.ht)}" placeholder="0.00"></label>
+        <label class="field"><span class="label">Taux de TVA</span>
+          <select id="${prefix}-taux">
+            ${TAUX_OPTIONS.map(t=>`<option value="${t}" ${t===v.taux?'selected':''}>${t}%</option>`).join("")}
+          </select></label>
+        <label class="field"><span class="label">Code de ventilation</span>
+          <select id="${prefix}-code" onchange="CaApp.onCodePick('${prefix}')">
+            ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===v.code?'selected':''}>${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
+          </select></label>
+      </div>
+      <div id="${prefix}-error" class="error-text" style="margin-bottom:10px;"></div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="CaApp.addInvoiceFromForm('${prefix}')">✓ ${initial?'Mettre à jour':'Enregistrer la facture'}</button>
+        ${initial?`<button class="btn btn-ghost" onclick="CaApp.cancelEdit()">Annuler</button>`:''}
+      </div>`;
+  },
+
+  renderDashboard(){
+    const list = this.filteredInvoices();
+    const t = this.totals(list);
+    const byCode = this.byCode(list);
+    const bySupplier = this.bySupplier(list);
+    const maxHt = Math.max(1, ...byCode.map(c=>c.ht));
+    const supTotal = bySupplier.reduce((s,x)=>s+x.ht,0)||1;
+    if(list.length===0){
+      return `<div class="empty card">Aucune facture pour cette période. Ajoutez-en depuis l’onglet Saisie facture.</div>`;
+    }
+    return `
+      <div class="row" style="margin-bottom:8px;">
+        <div class="kpi"><div class="label">Total HT</div><div class="value">${eur(t.ht)}</div><div class="muted" style="font-size:12px;margin-top:4px;">${t.count} facture${t.count>1?'s':''}</div></div>
+        <div class="kpi"><div class="label">Total TVA</div><div class="value">${eur(t.tva)}</div></div>
+        <div class="kpi"><div class="label">Net à payer (TTC)</div><div class="value">${eur(t.ttc)}</div></div>
+        <div class="kpi"><div class="label">Fournisseurs actifs</div><div class="value">${bySupplier.length}</div></div>
+      </div>
+      <div class="row">
+        <div class="card" style="flex:1 1 380px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Répartition par code de ventilation (HT)</div>
+          ${byCode.map(c=>`
+            <div class="bar-row">
+              <div class="top"><span>${esc(c.code)} — ${esc(c.libelle)}</span><span>${eur(c.ht)}</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:${(c.ht/maxHt*100).toFixed(1)}%"></div></div>
+            </div>`).join("")}
+        </div>
+        <div class="card" style="flex:1 1 280px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Répartition par fournisseur (HT)</div>
+          ${bySupplier.map((s,idx)=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:6px 0;border-bottom:1px solid #f0ece0;">
+              <span><span class="dot" style="background:${PIE_COLORS[idx%PIE_COLORS.length]}"></span>${esc(s.nom)}</span>
+              <span class="muted">${eur(s.ht)} · ${(s.ht/supTotal*100).toFixed(0)}%</span>
+            </div>`).join("")}
+        </div>
+      </div>`;
+  },
+
+  renderSaisie(){
+    let html = `<div style="max-width:760px;">
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button class="btn ${this.entryMode==='manual'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('manual')">✎ Saisie manuelle</button>
+        <button class="btn ${this.entryMode==='scan'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('scan')">📷 Scanner une facture</button>
+      </div>`;
+    if(this.entryMode==='manual'){
+      html += `<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:16px;">Nouvelle facture</div>${this.invoiceFormHtml('manual', null)}</div>`;
+    } else {
+      html += this.renderScanPanel();
+    }
+    html += `</div>`;
+    return html;
+  },
+
+  renderScanPanel(){
+    const s = this.scan;
+    let apiKeyBox = `
+      <div class="card" style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Clé API Anthropic</div>
+        <div style="font-size:12px;color:#8a8478;margin-bottom:10px;">Nécessaire pour la lecture automatique des factures depuis ce fichier ouvert hors de Claude. Obtenez une clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>. Elle est stockée uniquement dans ce navigateur.</div>
+        <div style="display:flex;gap:8px;">
+          <input type="password" id="api-key-input" placeholder="sk-ant-..." value="${esc(this.apiKey)}" style="flex:1;">
+          <button class="btn btn-ghost" onclick="CaApp.saveApiKey()">Enregistrer</button>
+        </div>
+      </div>`;
+
+    let body = "";
+    if(!s.common && !s.loading){
+      body = `<div class="card">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Scanner une facture</div>
+        <div style="font-size:12.5px;color:#8a8478;margin-bottom:16px;">Prenez une photo ou importez un fichier (image ou PDF). Les montants seront extraits et ventilés automatiquement — vous pourrez les vérifier avant d’enregistrer.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <label class="btn btn-primary" style="cursor:pointer;">📷 Prendre une photo
+            <input type="file" accept="image/*" capture="environment" onchange="CaApp.onScanFile(this)" style="display:none;"></label>
+          <label class="btn btn-ghost" style="cursor:pointer;">⬆ Importer un fichier
+            <input type="file" accept="image/*,application/pdf" onchange="CaApp.onScanFile(this)" style="display:none;"></label>
+        </div>
+        ${s.error?`<div class="error-text" style="margin-top:16px;">⚠ ${esc(s.error)}</div>`:''}
+      </div>`;
+    } else if(s.loading){
+      body = `<div class="card" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 0;color:#8a8478;">
+        <div class="spin" style="font-size:22px;">⏳</div>
+        <div style="font-size:13px;">Analyse de la facture en cours…</div>
+      </div>`;
+    } else if(s.common){
+      const totals = s.lines.reduce((acc,l)=>{ const c=computeLine(l); return {ht:acc.ht+c.ht, tva:acc.tva+c.tva, ttc:acc.ttc+c.ttc}; }, {ht:0,tva:0,ttc:0});
+      const supplierOptionsHave = this.suppliers.some(sp=>sp.nom===s.common.fournisseur);
+      body = `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="font-size:14px;font-weight:600;">Vérifiez la facture scannée</div>
+          <button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>
+        </div>
+        ${s.note?`<div class="banner" style="margin-bottom:16px;">${esc(s.note)}</div>`:''}
+        <div class="row" style="align-items:flex-start;">
+          ${s.previewUrl?`<img src="${s.previewUrl}" alt="Aperçu" style="width:200px;max-height:280px;object-fit:contain;border:1px solid #ece5d5;border-radius:8px;background:#faf6ee;">`:''}
+          <div style="flex:1 1 380px;">
+            <div class="row">
+              <label class="field"><span class="label">Date de facture</span>
+                <input type="date" id="scan-common-date" value="${esc(s.common.date)}"></label>
+              <label class="field"><span class="label">Fournisseur</span>
+                <select id="scan-common-fournisseur">
+                  ${!supplierOptionsHave?`<option value="${esc(s.common.fournisseur)}" selected>${esc(s.common.fournisseur||'Sélectionner…')}</option>`:''}
+                  ${this.suppliers.map(sp=>`<option value="${esc(sp.nom)}" ${sp.nom===s.common.fournisseur?'selected':''}>${esc(sp.nom)}</option>`).join("")}
+                </select></label>
+              <label class="field"><span class="label">N° BL / facture</span><span class="hint">facultatif</span>
+                <input type="text" id="scan-common-bl" value="${esc(s.common.bl)}"></label>
+            </div>
+            <div style="font-size:12.5px;font-weight:600;color:#5b5346;margin-bottom:8px;">Ventilation détectée par code comptable</div>
+            <div id="scan-lines">
+              ${s.lines.map(l=>{
+                const c = computeLine(l);
+                return `<div class="line-row">
+                  <select id="scan-line-code-${l.id}" onchange="CaApp.scanCodeChange('${l.id}', this.value)">
+                    ${this.codes.map(c2=>`<option value="${esc(c2.code)}" ${c2.code===l.code?'selected':''}>${esc(c2.code)} — ${esc(c2.libelle)}</option>`).join("")}
+                  </select>
+                  <input type="number" step="0.01" min="0" id="scan-line-ht-${l.id}" value="${esc(l.ht)}" placeholder="HT">
+                  <select class="taux" id="scan-line-taux-${l.id}">
+                    ${TAUX_OPTIONS.map(t=>`<option value="${t}" ${t===l.taux?'selected':''}>${t}%</option>`).join("")}
+                  </select>
+                  <span class="muted" style="font-size:12.5px;min-width:90px;text-align:right;">TTC ${eur(c.ttc)}</span>
+                  <button class="btn-icon" onclick="CaApp.scanRemoveLine('${l.id}')">🗑</button>
+                </div>`;
+              }).join("")}
+            </div>
+            <button class="btn btn-ghost" style="margin-top:4px;" onclick="CaApp.scanAddLine()">+ Ajouter une ligne</button>
+            <div class="banner" style="display:flex;gap:24px;margin:14px 0;">
+              <div>Total HT : <strong>${eur(totals.ht)}</strong></div>
+              <div>Total TVA : <strong>${eur(totals.tva)}</strong></div>
+              <div>Total TTC : <strong>${eur(totals.ttc)}</strong></div>
+            </div>
+            <div id="scan-error" class="error-text" style="margin-bottom:10px;"></div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn btn-primary" onclick="CaApp.submitScan()">✓ Enregistrer la ventilation</button>
+              <button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">Annuler</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+    return apiKeyBox + body;
+  },
+
+  renderRegistre(){
+    let list = this.filteredInvoices();
+    if(this.ledgerCodeFilter) list = list.filter(i=>i.code===this.ledgerCodeFilter);
+    const groups = {};
+    list.forEach(i=>{ groups[i.fournisseur]=groups[i.fournisseur]||[]; groups[i.fournisseur].push(i); });
+    const grouped = Object.entries(groups).map(([fournisseur,items])=>({
+      fournisseur, items: items.sort((a,b)=>a.date.localeCompare(b.date)), total: items.reduce((s,i)=>s+computeLine(i).ht,0)
+    })).sort((a,b)=>a.fournisseur.localeCompare(b.fournisseur));
+
+    let html = `<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">
+      <span style="font-size:13px;color:#8a8478;">Filtrer par code :</span>
+      <select style="width:auto;" onchange="CaApp.setLedgerFilter(this.value)">
+        <option value="">Tous les codes</option>
+        ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===this.ledgerCodeFilter?'selected':''}>${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
+      </select>
+    </div>`;
+
+    if(grouped.length===0){ html += `<div class="empty card">Aucune facture à afficher.</div>`; return html; }
+
+    grouped.forEach(g=>{
+      html += `<div class="card" style="padding:0;margin-bottom:16px;overflow:hidden;">
+        <div class="group-head"><span>${esc(g.fournisseur)}</span><span>Sous-total HT : ${eur(g.total)}</span></div>
+        <table>
+          <thead><tr><th>Date</th><th>N° BL</th><th>Code</th><th class="num">HT</th><th class="num">TVA</th><th class="num">TTC</th><th></th></tr></thead>
+          <tbody>
+            ${g.items.map(inv=>{
+              const c = computeLine(inv);
+              return `<tr>
+                <td>${esc(inv.date)}</td>
+                <td class="muted">${esc(inv.bl)||'—'}</td>
+                <td>${esc(inv.code)}</td>
+                <td class="num">${eur(c.ht)}</td>
+                <td class="num muted">${eur(c.tva)}</td>
+                <td class="num" style="font-weight:600;">${eur(c.ttc)}</td>
+                <td style="text-align:right;white-space:nowrap;">
+                  <button class="btn-icon" onclick="CaApp.editInvoice('${inv.id}')">✎</button>
+                  <button class="btn-icon" onclick="CaApp.deleteInvoice('${inv.id}')">🗑</button>
+                </td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>`;
+    });
+    return html;
+  },
+
+  renderFournisseurs(){
+    return `<div class="row" style="align-items:flex-start;">
+      <div class="card" style="flex:1 1 420px;padding:0;overflow:hidden;">
+        <table>
+          <thead><tr><th>Fournisseur</th><th>Code par défaut</th><th class="num">Total HT</th><th></th></tr></thead>
+          <tbody>
+            ${this.suppliers.map(s=>{
+              const total = this.invoices.filter(i=>i.fournisseur===s.nom).reduce((sum,i)=>sum+computeLine(i).ht,0);
+              return `<tr>
+                <td>${esc(s.nom)}</td>
+                <td><select style="font-size:12.5px;padding:5px 8px;" onchange="CaApp.updateSupplierCode('${s.id}', this.value)">
+                  ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===s.code?'selected':''}>${esc(c.code)}</option>`).join("")}
+                </select></td>
+                <td class="num">${eur(total)}</td>
+                <td style="text-align:right;"><button class="btn-icon" onclick="CaApp.deleteSupplier('${s.id}')">🗑</button></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="flex:1 1 280px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Ajouter un fournisseur</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <input type="text" id="new-sup-nom" placeholder="Nom du fournisseur">
+          <select id="new-sup-code"><option value="">Code par défaut…</option>
+            ${this.codes.map(c=>`<option value="${esc(c.code)}">${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
+          </select>
+          <button class="btn btn-primary" onclick="CaApp.addSupplier()">+ Ajouter</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  renderPlan(){
+    return `<div class="row" style="align-items:flex-start;">
+      <div class="card" style="flex:1 1 460px;padding:0;overflow:hidden;">
+        <table>
+          <thead><tr><th>Code</th><th>Libellé (plan comptable)</th><th>TVA</th><th>Compte TVA</th><th></th></tr></thead>
+          <tbody>
+            ${this.codes.map(c=>`<tr>
+              <td class="num" style="text-align:left;">${esc(c.code)}</td>
+              <td>${esc(c.libelle)}</td>
+              <td>${c.taux}%</td>
+              <td class="muted">${esc(c.compteTva||'—')}</td>
+              <td style="text-align:right;"><button class="btn-icon" onclick="CaApp.deleteCode('${c.code}')">🗑</button></td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="flex:1 1 280px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Ajouter un code de ventilation</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <input type="text" id="new-code-code" placeholder="Code (ex : 601100)">
+          <input type="text" id="new-code-libelle" placeholder="Libellé du compte">
+          <select id="new-code-taux">${TAUX_OPTIONS.map(t=>`<option value="${t}">${t}%</option>`).join("")}</select>
+          <input type="text" id="new-code-compteTva" placeholder="Compte TVA déductible (ex : 445660)" value="445660">
+          <button class="btn btn-primary" onclick="CaApp.addCode()">+ Ajouter au plan</button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  render(){
+    const monthSelectHtml = (this.tab==='dashboard'||this.tab==='registre') ? `
+      <div style="margin-bottom:18px;display:flex;gap:10px;align-items:center;">
+        <span style="font-size:13px;color:#8a8478;font-weight:500;">Période :</span>
+        <select style="width:auto;" onchange="CaApp.setMonth(this.value)">
+          <option value="">Toutes les périodes</option>
+          ${this.months().map(m=>`<option value="${m}" ${m===this.selectedMonth?'selected':''}>${monthLabel(m)}</option>`).join("")}
+        </select>
+      </div>` : "";
+
+    let tabContent = "";
+    if(this.tab==='dashboard') tabContent = this.renderDashboard();
+    else if(this.tab==='saisie') tabContent = this.renderSaisie();
+    else if(this.tab==='registre') tabContent = this.renderRegistre();
+    else if(this.tab==='fournisseurs') tabContent = this.renderFournisseurs();
+    else if(this.tab==='plan') tabContent = this.renderPlan();
+
+    const tabs = [
+      {id:'dashboard', label:'Tableau de bord'},
+      {id:'saisie', label:'Saisie facture'},
+      {id:'registre', label:'Registre'},
+      {id:'fournisseurs', label:'Fournisseurs'},
+      {id:'plan', label:'Plan de ventilation'},
+    ];
+
+    document.getElementById("app").innerHTML = `
+      <div class="shell">
+        <div class="header">
+          <div><h1>Cahier d’achats</h1><p>Ventilation et suivi des factures fournisseurs</p></div>
+          <button class="btn btn-ghost" onclick="CaApp.exportExcel()">⬇ Exporter en Excel</button>
+        </div>
+        <div class="tabs">
+          ${tabs.map(t=>`<button class="tab-btn ${this.tab===t.id?'active':''}" onclick="CaApp.setTab('${t.id}')">${t.label}</button>`).join("")}
+        </div>
+        <div class="content">
+          ${monthSelectHtml}
+          ${this.editingInvoiceId ? this.renderEditModal() : ""}
+          ${tabContent}
+        </div>
+      </div>
+      <div id="toast-holder"></div>`;
+    this.renderToast();
+  },
+
+  renderEditModal(){
+    const inv = this.invoices.find(i=>i.id===this.editingInvoiceId);
+    if(!inv) return "";
+    return `<div class="modal-overlay" onclick="if(event.target===this){CaApp.cancelEdit();}">
+      <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="font-size:14px;font-weight:600;">Modifier la facture</div>
+          <button class="btn-icon" onclick="CaApp.cancelEdit()">✕</button>
+        </div>
+        ${this.invoiceFormHtml('manual', inv)}
+      </div>
+    </div>`;
+  },
+};
+
+// CaApp.init() appelé après chargement complet
+</script></div>
 <script>
 const ZONES={
   'FRIGO 1':{label:'Frigo 1',hclass:'h-froid',htext:'Froid +',color:'#378ADD'},
@@ -2491,6 +3871,25 @@ const ZONES={
   'AUTRE':{label:'Autre',hclass:'h-autre',htext:'Divers',color:'#888780'},
 };
 const CROSS_SUPPLIER_GROUPS={'F132':0,'N003':0,'F142':1,'P022':1,'N004':2,'F172':2,'N008':3,'P014':3,'F268':4,'P055':4,'F269':5,'P042':5,'F283':6,'N027':6,'F286':7,'F300':7,'F287':8,'N024':8,'F303':9,'P040':9,'N028':10,'N036':10};
+
+// Groupes dont les produits ont des unités hétérogènes (calculé dynamiquement)
+function getCrossGroupMixedUnits() {
+  const mixed = new Set();
+  // Regrouper les unités par groupe
+  const groupUnits = {};
+  DATA.forEach(function(d) {
+    const gid = CROSS_SUPPLIER_GROUPS[d.code];
+    if (gid === undefined) return;
+    if (!groupUnits[gid]) groupUnits[gid] = new Set();
+    const u = (d.unite || '').trim().toLowerCase();
+    if (u) groupUnits[gid].add(u);
+  });
+  // Marquer les groupes avec plus d'une unité distincte
+  Object.keys(groupUnits).forEach(function(gid) {
+    if (groupUnits[gid].size > 1) mixed.add(parseInt(gid));
+  });
+  return mixed;
+}
 
 // 11 palettes pour groupes cross-fournisseur
 const CROSS_GROUP_COLORS=[
@@ -3156,6 +4555,8 @@ function render(){
 
   // Tracker pour les séparateurs de groupes
   let lastGroupId=null;
+  // Groupes avec unités hétérogènes
+  const mixedUnitsGroups = getCrossGroupMixedUnits();
 
   tbody.innerHTML=filtered.map(d=>{
     const m=mont(d);
@@ -3168,7 +4569,10 @@ function render(){
     const gc=hasGroup?CROSS_GROUP_COLORS[gid%CROSS_GROUP_COLORS.length]:null;
     const rowBg=hasGroup?`background:${gc.bg};`:'';
     const borderLeft=hasGroup?`border-left:3px solid ${gc.border};`:'border-left:3px solid transparent;';
-    const crossBadge=hasGroup?`<span class="cross-pill" style="background:${gc.bg};color:${gc.text};border-color:${gc.border}">🔀 G${gid+1}</span>`:'';
+    const isMixed = hasGroup && mixedUnitsGroups.has(gid);
+    const mixedWarn = isMixed ? ' ⚠️' : '';
+    const mixedTitle = isMixed ? 'Unités différentes dans ce groupe — comparer avec précaution' : 'Même produit, fournisseurs différents';
+    const crossBadge=hasGroup?`<span class="cross-pill" style="background:${gc.bg};color:${gc.text};border-color:${gc.border};${isMixed?'outline:1px solid #c05621;':''}" title="${mixedTitle}">🔀 G${gid+1}${mixedWarn}</span>`:'';
 
     // Séparateur visuel entre groupes
     let separator='';
@@ -3428,13 +4832,13 @@ function buildInvoiceList(){
     INVOICES.map(inv=>`<div class="inv-card"><div class="inv-card-header"><div><div class="inv-card-title">${inv.fournisseur}</div><div style="font-size:11px;color:var(--text2)">${inv.date} · N° ${inv.id}</div></div><div class="inv-card-total">${inv.total.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div></div>${inv.items.map(it=>`<div class="inv-item"><span class="inv-item-name">${it.p}</span><span class="inv-item-price">${it.q} ${it.u} × ${it.px.toFixed(2)} €</span></div>`).join('')}</div>`).join('');
 }
 function switchTab(name,btn){
-  // Bloquer si l'écran d'accueil est actif
-  var hs=document.getElementById('home-screen');
-  if(hs && hs.style.display==='block') return;
+  // Afficher le bouton retour accueil dès qu'on est dans un module
+  var hf = document.getElementById('btn-home-float');
+  if(hf) hf.classList.add('visible');
   if(name==='reception-mp'){
     document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
     document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-    if(btn) btn.classList.add('active');
+    if(btn) if(btn) btn.classList.add('active');
     var p=document.getElementById('panel-reception-mp');
     if(p){p.classList.add('active');initReceptionModule();renderReceptionsMP();}
     return;
@@ -3447,7 +4851,7 @@ function switchTab(name,btn){
   if(name==='dashboard')buildDashboard();
   if(name==='prix'){initPrixPanel();renderPrixChart();}
   if(name==='carte-allergenes'){renderCartAlg();}
-  if(name==='recettes')renderRecettes();
+  if(name==='recettes'){if(typeof loadNewModules==='function')loadNewModules();renderRecettes();}
   if(name==='tracabilite')renderTracabilite();
   if(name==='dlc')renderDLC();
   if(name==='historique')renderHistorique();
@@ -4207,7 +5611,7 @@ function saveAllData(){
   try{localStorage.setItem(SEUILS_KEY,JSON.stringify(SEUILS_DATA));syncToCloud('seuils',SEUILS_DATA);}catch(e){}
   try{syncToCloud('temperatures', JSON.parse(localStorage.getItem(TEMP_KEY)||'[]'));
   localStorage.setItem(TEMP_KEY,JSON.stringify(TEMP_DATA));syncToCloud('temperatures',TEMP_DATA);}catch(e){}
-  try{localStorage.setItem(ALLERGENS_KEY,JSON.stringify(ALLERGEN_DATA));}catch(e){}
+  try{localStorage.setItem(ALLERGENS_KEY,JSON.stringify(ALLERGEN_DATA));syncToCloud('allergenes',ALLERGEN_DATA);}catch(e){}
   try{localStorage.setItem(CMD_KEY,JSON.stringify(CMD_DATA));syncToCloud('commande',CMD_DATA);}catch(e){}
 }
 
@@ -5565,7 +6969,7 @@ async function saveReception() {
     id:       Date.now(),
     date:     dateEl?.value || new Date().toISOString().slice(0,10),
     heure:    heureEl?.value || '',
-    fourn:    fournEl?.value.trim() || '',
+    fourn:    normalizeFournisseur(fournEl?.value) || '',
     produit:  prodEl?.value.trim() || '',
     qte:      qteEl?.value || '',
     unite:    uniteEl?.value || 'kg',
@@ -6275,8 +7679,8 @@ const CaApp = {
   renderSaisie(){
     let html = `<div style="max-width:760px;">
       <div style="display:flex;gap:8px;margin-bottom:16px;">
-        <button class="btn ${this.entryMode==='manual'?'btn-primary':'btn-ghost'}" onclick="App.setEntryMode('manual')">✎ Saisie manuelle</button>
-        <button class="btn ${this.entryMode==='scan'?'btn-primary':'btn-ghost'}" onclick="App.setEntryMode('scan')">📷 Scanner une facture</button>
+        <button class="btn ${this.entryMode==='manual'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('manual')">✎ Saisie manuelle</button>
+        <button class="btn ${this.entryMode==='scan'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('scan')">📷 Scanner une facture</button>
       </div>`;
     if(this.entryMode==='manual'){
       html += `<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:16px;">Nouvelle facture</div>${this.invoiceFormHtml('manual', null)}</div>`;
@@ -6547,84 +7951,13 @@ window.CaApp = CaApp;
 
 
 // ══ NAVIGATION TUILES ══
-function goHome() {
-  // Masquer tous les panneaux
-  document.querySelectorAll('.panel').forEach(function(p){
-    p.classList.remove('active');
-    p.style.display = 'none';
-  });
-  document.querySelectorAll('.tab-btn, .tab-more-item').forEach(function(b){ b.classList.remove('active'); });
-  // Masquer les stats-row et tab-bar originales
-  document.querySelectorAll('.stats-row, .tab-bar, .tab-bar-wrap, .restore-banner, .footer-bar').forEach(function(el){
-    el.style.display = 'none';
-  });
-  // Afficher l'écran d'accueil
-  var hs = document.getElementById('home-screen');
-  if(hs){ hs.style.display = 'block'; hs.classList.add('active'); }
-  // Mettre à jour bottom nav
-  updateBottomNav('home');
-  // Mettre à jour les stats
-  updateHomeStats();
-}
 
-function goToModule(name) {
-  // Masquer écran d'accueil
-  var hs = document.getElementById('home-screen');
-  if(hs){ hs.style.display = 'none'; hs.classList.remove('active'); }
-  // Restaurer les éléments de l'app
-  document.querySelectorAll('.stats-row, .tab-bar, .tab-bar-wrap').forEach(function(el){
-    el.style.display = 'flex';
-  });
-  document.querySelectorAll('.panel').forEach(function(p){
-    p.style.display = 'none';
-  });
-  // Naviguer vers le module
-  if(name === 'reception-mp' || name === 'factures' || name === 'tracabilite' ||
-     name === 'historique' || name === 'prix' || name === 'carte-allergenes' || name === 'pieces') {
-    switchTabMore(name, null);
-  } else {
-    switchTab(name, null);
-  }
-  updateBottomNav(name);
-}
 
-function updateBottomNav(active) {
-  var map = { home:'bn-home', inventaire:'bn-inventaire', 'reception-mp':'bn-reception', factures:'bn-factures', dlc:'bn-plus' };
-  document.querySelectorAll('.bn-item').forEach(function(b){ b.classList.remove('active'); });
-  var id = map[active] || 'bn-inventaire';
-  var el = document.getElementById(id);
-  if(el) el.classList.add('active');
-}
 
-function updateHomeStats() {
-  try {
-    // Valeur et références
-    var total = 0, refs = DATA.length, sansPrix = 0;
-    DATA.forEach(function(d){ if(d.prix && d.qte) total += d.prix * d.qte; });
-    var v2 = document.getElementById('hs-valeur2');
-    var v = document.getElementById('hs-valeur');
-    var r = document.getElementById('hs-refs');
-    var r2 = document.getElementById('hs-refs2');
-    if(v) v.textContent = total > 0 ? total.toFixed(0) + ' €' : '—';
-    if(v2) v2.textContent = refs;
-    if(r) r.textContent = refs;
-    if(r2) r2.textContent = refs;
-    if(v2) v2.textContent = total > 0 ? new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(total) : '—';
-    // DLC alertes
-    var today = new Date().toISOString().slice(0,10);
-    var warn7 = new Date(); warn7.setDate(warn7.getDate()+7);
-    var warnStr = warn7.toISOString().slice(0,10);
-    var dlcCount = 0;
-    if(typeof DLC_DATA !== 'undefined') {
-      Object.values(DLC_DATA).forEach(function(d){ if(d.dlc && d.dlc <= warnStr) dlcCount++; });
-    }
-    var dlcEl = document.getElementById('hs-dlc');
-    var dlcDot = document.getElementById('hs-dlc-dot');
-    if(dlcEl) dlcEl.textContent = dlcCount > 0 ? dlcCount : '✓';
-    if(dlcEl) dlcEl.style.color = dlcCount > 0 ? '#ef4444' : '#52B788';
-    if(dlcDot) dlcDot.style.display = dlcCount > 0 ? 'block' : 'none';
-  } catch(e) {}
-}
+
+
+
+
 
 // Synchroniser le dot Supabase avec le nouveau header
 function updateSyncDot(color) {
@@ -6638,12 +7971,891 @@ function updateSyncDot(color) {
 }
 
 // Démarrer sur l'écran d'accueil
-window.addEventListener('load', function(){
-  setTimeout(function(){
-    goHome();
-    updateHomeStats();
-  }, 2000); // Après initSync (1500ms)
+
+
+
+// ══ NAVIGATION TUILES ══
+function tileGoTo(name) {
+  // 1. Masquer l'écran d'accueil
+  var hs = document.getElementById('home-screen');
+  if (hs) hs.style.display = 'none';
+  
+  // 2. Afficher le contenu de l'app
+  var header = document.querySelector('.app-header');
+  if (header) header.style.display = '';
+  
+  // 3. Naviguer vers le bon module
+  var moreModules = ['reception-mp','factures','tracabilite','historique','prix','carte-allergenes','pieces'];
+  if (moreModules.indexOf(name) >= 0) {
+    switchTabMore(name, null);
+  } else {
+    switchTab(name, null);
+  }
+}
+
+function showHomeScreen() {
+  // Masquer tous les panneaux
+  document.querySelectorAll('.panel').forEach(function(p) {
+    p.classList.remove('active');
+  });
+  document.querySelectorAll('.tab-btn, .tab-more-item').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  
+  // Afficher l'écran d'accueil
+  var hs = document.getElementById('home-screen');
+  if (hs) hs.style.display = 'block';
+  
+  // Mettre à jour les stats
+  try {
+    var total = 0;
+    DATA.forEach(function(d) { if(d.prix && d.qte) total += d.prix * d.qte; });
+    var refs = DATA.length;
+    var el = document.getElementById('hs-valeur');
+    if (el) el.textContent = refs > 0 ? Math.round(total).toLocaleString('fr-FR') + ' €' : '—';
+    var el2 = document.getElementById('hs-refs');
+    if (el2) el2.textContent = refs || '—';
+    var el3 = document.getElementById('hs-refs2');
+    if (el3) el3.textContent = refs || '539';
+    var el4 = document.getElementById('hs-valeur2');
+    if (el4) el4.textContent = refs > 0 ? Math.round(total).toLocaleString('fr-FR') + ' € HT' : '— € HT';
+  } catch(e) {}
+}
+
+// Bouton 🏠 dans le header
+function goHomeScreen() {
+  showHomeScreen();
+  var hf = document.getElementById('btn-home-float');
+  if(hf) hf.classList.remove('visible');
+}
+
+
+// ══ AUTHENTIFICATION SUPABASE AUTH ══
+const SUPA_AUTH_URL = 'https://pbydidazdjqqihkolzgc.supabase.co/auth/v1';
+// Même clé que SUPA_KEY utilisée pour les données — une seule clé pour tout
+const SUPA_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBieWRpZGF6ZGpxcWloa29semdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgwNDI4MDQsImV4cCI6MjEwMzYxODgwNH0.xrrlnV6-7gBwQyC3UMKsEd5wTDsyBhCjc7tZevIaQWE';
+let currentSession = null;
+
+async function doLogin() {
+  var email = document.getElementById('login-email').value.trim();
+  var password = document.getElementById('login-password').value;
+  var btn = document.getElementById('login-btn');
+  var errEl = document.getElementById('login-error');
+  
+  if (!email || !password) {
+    showLoginError('Veuillez saisir votre email et mot de passe.');
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = 'Connexion…';
+  errEl.style.display = 'none';
+  
+  try {
+    var resp = await fetch(SUPA_AUTH_URL + '/token?grant_type=password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPA_ANON_KEY
+      },
+      body: JSON.stringify({ email: email, password: password })
+    });
+    
+    var data = await resp.json();
+    
+    if (!resp.ok || data.error) {
+      showLoginError(data.error_description || data.message || 'Identifiants incorrects.');
+      btn.disabled = false;
+      btn.textContent = 'Se connecter';
+      return;
+    }
+    
+    // Succès — stocker la session
+    currentSession = data;
+    localStorage.setItem('haccp_session', JSON.stringify({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: Date.now() + (data.expires_in * 1000)
+    }));
+    
+    // Masquer l'écran de connexion
+    document.getElementById('login-screen').style.display = 'none';
+    
+    // Mettre à jour les headers Supabase avec le token
+    updateSupabaseAuth(data.access_token);
+    
+    console.log('[AUTH] Connecté:', data.user?.email);
+    
+  } catch(e) {
+    showLoginError('Erreur de connexion. Vérifiez votre connexion internet.');
+    btn.disabled = false;
+    btn.textContent = 'Se connecter';
+  }
+}
+
+async function doMagicLink() {
+  var email = document.getElementById('login-email').value.trim();
+  if (!email) {
+    showLoginError('Saisissez votre email pour recevoir un lien de connexion.');
+    return;
+  }
+  
+  var btn = event && event.target;
+  try {
+    // Endpoint correct Supabase Auth v2 : /otp avec type magiclink
+    var resp = await fetch(SUPA_AUTH_URL + '/otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON_KEY },
+      body: JSON.stringify({ email: email, create_user: false })
+    });
+    
+    var errEl = document.getElementById('login-error');
+    if (resp.ok || resp.status === 204) {
+      errEl.style.display = 'block';
+      errEl.style.background = '#eaf3de';
+      errEl.style.color = '#27500a';
+      errEl.textContent = '✅ Lien envoyé à ' + email + ' — vérifiez votre boîte mail (et les spams).';
+    } else {
+      var data = {};
+      try { data = await resp.json(); } catch(e2) {}
+      showLoginError('Échec envoi lien : ' + (data.msg || data.error_description || data.message || 'Erreur ' + resp.status) + '. Vérifiez que le compte existe.');
+    }
+  } catch(e) {
+    showLoginError('Erreur réseau — impossible d\'envoyer le lien. Vérifiez votre connexion.');
+  }
+}
+
+
+// ══ MON COMPTE ══
+function openAccount() {
+  var overlay = document.getElementById('account-overlay');
+  var emailEl = document.getElementById('account-email-display');
+  if (overlay) overlay.classList.add('open');
+  // Afficher l'email de l'utilisateur connecté
+  try {
+    var id = getCurrentUserIdentifier();
+    if (emailEl) emailEl.textContent = id !== DEVICE_ID ? '✉️ ' + id : 'Non connecté';
+  } catch(e) {}
+  // Reset les champs
+  var p1 = document.getElementById('acc-pwd1');
+  var p2 = document.getElementById('acc-pwd2');
+  var msg = document.getElementById('acc-pwd-msg');
+  if (p1) p1.value = '';
+  if (p2) p2.value = '';
+  if (msg) { msg.className = 'account-msg'; msg.textContent = ''; }
+}
+
+function closeAccount() {
+  var overlay = document.getElementById('account-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function toggleAccPwd(inputId, btn) {
+  var inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+async function changePassword() {
+  var pwd1 = document.getElementById('acc-pwd1').value;
+  var pwd2 = document.getElementById('acc-pwd2').value;
+  var btn = document.getElementById('acc-pwd-btn');
+  var msg = document.getElementById('acc-pwd-msg');
+
+  msg.className = 'account-msg';
+  msg.textContent = '';
+
+  if (!pwd1 || pwd1.length < 8) {
+    msg.textContent = 'Le mot de passe doit contenir au moins 8 caractères.';
+    msg.className = 'account-msg err'; return;
+  }
+  if (pwd1 !== pwd2) {
+    msg.textContent = 'Les mots de passe ne correspondent pas.';
+    msg.className = 'account-msg err'; return;
+  }
+
+  // Récupérer le token depuis la session
+  var token = null;
+  try {
+    if (window.currentSession && window.currentSession.access_token) {
+      token = window.currentSession.access_token;
+    } else {
+      var stored = JSON.parse(localStorage.getItem('haccp_session') || '{}');
+      token = stored.access_token;
+    }
+  } catch(e) {}
+
+  if (!token) {
+    msg.textContent = 'Session expirée — reconnectez-vous d\'abord.';
+    msg.className = 'account-msg err'; return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement…';
+
+  try {
+    var resp = await fetch(SUPA_AUTH_URL + '/user', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPA_ANON_KEY,
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ password: pwd1 })
+    });
+
+    var data = {};
+    try { data = await resp.json(); } catch(e2) {}
+
+    if (resp.ok) {
+      msg.textContent = '✅ Mot de passe modifié avec succès !';
+      msg.className = 'account-msg ok';
+      document.getElementById('acc-pwd1').value = '';
+      document.getElementById('acc-pwd2').value = '';
+    } else {
+      msg.textContent = 'Erreur : ' + (data.msg || data.message || data.error_description || 'Réessayez.');
+      msg.className = 'account-msg err';
+    }
+  } catch(e) {
+    msg.textContent = 'Erreur réseau — vérifiez votre connexion.';
+    msg.className = 'account-msg err';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Enregistrer le mot de passe';
+}
+
+function toggleLoginPwd(btn) {
+  var inp = document.getElementById('login-password');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🙈';
+    btn.title = 'Masquer';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁';
+    btn.title = 'Afficher';
+  }
+}
+
+function showLoginError(msg) {
+  var el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = '#fbeaf0';
+  el.style.color = '#72243e';
+}
+
+function updateSupabaseAuth(token) {
+  // Mettre à jour le token dans les headers de toutes les requêtes Supabase
+  window._supabaseAuthToken = token;
+}
+
+function getAuthHeaders() {
+  var headers = {
+    'apikey': SUPA_ANON_KEY,
+    'Content-Type': 'application/json'
+  };
+  if (window._supabaseAuthToken) {
+    headers['Authorization'] = 'Bearer ' + window._supabaseAuthToken;
+  }
+  return headers;
+}
+
+function checkExistingSession() {
+  try {
+    var stored = localStorage.getItem('haccp_session');
+    if (!stored) return false;
+    var session = JSON.parse(stored);
+    
+    // Vérifier si le token est encore valide (avec 5 min de marge)
+    if (session.expires_at && Date.now() < session.expires_at - 300000) {
+      currentSession = session;
+      updateSupabaseAuth(session.access_token);
+      document.getElementById('login-screen').style.display = 'none';
+      return true;
+    }
+    // Token expiré — tenter de le renouveler
+    if (session.refresh_token) {
+      refreshSession(session.refresh_token);
+      return true; // Optimiste — on masque l'écran pendant le refresh
+    }
+  } catch(e) {}
+  return false;
+}
+
+async function refreshSession(refreshToken) {
+  try {
+    var resp = await fetch(SUPA_AUTH_URL + '/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON_KEY },
+      body: JSON.stringify({ refresh_token: refreshToken })
+    });
+    var data = await resp.json();
+    if (resp.ok && data.access_token) {
+      currentSession = data;
+      localStorage.setItem('haccp_session', JSON.stringify({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: Date.now() + (data.expires_in * 1000)
+      }));
+      updateSupabaseAuth(data.access_token);
+      document.getElementById('login-screen').style.display = 'none';
+    } else {
+      // Refresh échoué — afficher l'écran de connexion
+      localStorage.removeItem('haccp_session');
+      document.getElementById('login-screen').style.display = 'flex';
+    }
+  } catch(e) {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+}
+
+// ══ INSCRIPTION AVEC RESTRICTION DOMAINE ══
+const ALLOWED_EMAIL_DOMAINS = ['lasalleamanger.fr', 'sp-conseil.fr', 'gmail.com'];
+
+function showSignup() {
+  document.getElementById('signup-form').style.display = 'block';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+function hideSignup() {
+  document.getElementById('signup-form').style.display = 'none';
+  document.getElementById('signup-email').value = '';
+  document.getElementById('signup-password').value = '';
+}
+
+function isEmailAllowed(email) {
+  var domain = email.split('@')[1];
+  return ALLOWED_EMAIL_DOMAINS.indexOf(domain) >= 0;
+}
+
+async function doSignup() {
+  var email = document.getElementById('signup-email').value.trim().toLowerCase();
+  var password = document.getElementById('signup-password').value;
+  var btn = document.getElementById('signup-btn');
+  
+  // Validation email
+  if (!email || !email.includes('@')) {
+    showLoginError('Veuillez saisir une adresse email valide.');
+    return;
+  }
+  
+  // Restriction domaine
+  if (!isEmailAllowed(email)) {
+    showLoginError('Inscription réservée aux adresses @lasalleamanger.fr ou @gmail.com.');
+    return;
+  }
+  
+  // Validation mot de passe
+  if (!password || password.length < 8) {
+    showLoginError('Le mot de passe doit contenir au moins 8 caractères.');
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = 'Création du compte…';
+  
+  try {
+    var resp = await fetch(SUPA_AUTH_URL + '/signup', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPA_ANON_KEY
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        data: { app: 'haccp-lsm', created_via: 'app' }
+      })
+    });
+    
+    var data = await resp.json();
+    
+    if (!resp.ok || data.error) {
+      showLoginError(data.msg || data.error_description || 'Erreur lors de la création du compte.');
+      btn.disabled = false;
+      btn.textContent = 'Créer mon compte';
+      return;
+    }
+    
+    // Succès — compte créé mais en attente de validation admin
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-error').style.background = '#eaf3de';
+    document.getElementById('login-error').style.color = '#27500a';
+    document.getElementById('login-error').textContent = 
+      '✅ Compte créé ! Vérifiez votre email pour confirmer votre adresse, puis attendez la validation de l\'administrateur.';
+    
+    btn.disabled = false;
+    btn.textContent = 'Créer mon compte';
+    
+    // Revenir au formulaire de connexion
+    setTimeout(function() {
+      hideSignup();
+      document.getElementById('login-email').value = email;
+    }, 3000);
+    
+  } catch(e) {
+    showLoginError('Erreur réseau. Réessayez.');
+    btn.disabled = false;
+    btn.textContent = 'Créer mon compte';
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('haccp_session');
+  currentSession = null;
+  window._supabaseAuthToken = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+}
+
+// Vérifier la session au démarrage
+window.addEventListener('DOMContentLoaded', function() {
+  if (!checkExistingSession()) {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
 });
+
+
+// ── Normalisation fournisseur ──
+function normalizeFournisseur(str) {
+  if (!str) return '';
+  // 1. Nettoyer les espaces
+  str = str.trim();
+  // 2. Tout en minuscules d'abord, PUIS capitaliser chaque mot
+  str = str.toLowerCase().replace(/(?:^|\s)\S/g, function(c) { return c.toUpperCase(); });
+  // 3. Corrections spécifiques (après normalisation)
+  var map = {
+    'Micand': 'Micand',
+    'Pomona': 'Pomona',
+    'Transgourmet': 'Transgourmet',
+    'France Boissons': 'France Boissons',
+    'Sysco': 'SYSCO',
+    'Union Primeurs': 'Union Primeurs',
+    'Promocash': 'Promocash',
+    'Promocash ': 'Promocash',
+  };
+  return map[str] || str;
+}
+
+
+// ══ GESTION HORS-LIGNE ══
+var _isOnline = navigator.onLine;
+var _pendingSync = false;
+
+function updateOnlineStatus() {
+  var wasOffline = !_isOnline;
+  _isOnline = navigator.onLine;
+  var banner = document.getElementById('offline-banner');
+
+  if (!_isOnline) {
+    // Passage hors-ligne
+    if (banner) banner.classList.add('show');
+    var dot = document.getElementById('sync-dot');
+    if (dot) { dot.style.background = '#f59e0b'; dot.title = 'Hors-ligne'; }
+    _pendingSync = true;
+  } else {
+    // Retour en ligne
+    if (banner) banner.classList.remove('show');
+    if (_pendingSync) {
+      _pendingSync = false;
+      // Sync automatique dès la reconnexion
+      setTimeout(function() {
+        if (typeof initSync === 'function') initSync();
+        showSyncToast('🔄 Reconnecté — synchronisation en cours…');
+      }, 1000);
+    }
+  }
+}
+
+// Écouter les événements réseau
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// État initial
+document.addEventListener('DOMContentLoaded', function() {
+  updateOnlineStatus();
+});
+
+// Intercepter syncToCloud pour gérer le mode hors-ligne
+var _originalSyncToCloud = null;
+function patchSyncToCloud() {
+  if (typeof syncToCloud !== 'function' || _originalSyncToCloud) return;
+  _originalSyncToCloud = syncToCloud;
+  syncToCloud = function(module, data) {
+    if (!_isOnline) {
+      // Hors-ligne : sauvegarder localement uniquement (déjà fait avant l'appel)
+      _pendingSync = true;
+      console.log('[OFFLINE] Sync différée pour:', module);
+      return;
+    }
+    return _originalSyncToCloud(module, data);
+  };
+}
+
+// Patcher après le chargement complet
+window.addEventListener('load', function() {
+  setTimeout(patchSyncToCloud, 2000);
+});
+
+
+// ══ MODULE MERCURIALE ══
+let _mercMatches = []; // [{mercLine, dataProduct, checked}]
+
+function openMercuriale() {
+  document.getElementById('mercuriale-overlay').classList.add('open');
+  mercReset();
+}
+function closeMercuriale() {
+  document.getElementById('mercuriale-overlay').classList.remove('open');
+}
+function mercReset() {
+  document.getElementById('merc-status').className = 'merc-status';
+  document.getElementById('merc-status').textContent = '';
+  document.getElementById('merc-results').classList.remove('show');
+  document.getElementById('merc-file-input').value = '';
+  _mercMatches = [];
+}
+
+// ── Drag & Drop ──
+function mercHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('merc-drop').classList.remove('dragover');
+  var file = e.dataTransfer.files[0];
+  if (file) mercHandleFile(file);
+}
+
+// ── Point d'entrée principal ──
+async function mercHandleFile(file) {
+  if (!file) return;
+  mercReset();
+  var status = document.getElementById('merc-status');
+  status.className = 'merc-status loading';
+  status.textContent = '⏳ Lecture du fichier…';
+
+  try {
+    var ext = file.name.split('.').pop().toLowerCase();
+    var lines = [];
+
+    if (ext === 'xlsx' || ext === 'xls') {
+      lines = await mercParseExcel(file);
+    } else {
+      // PDF ou image → Edge Function scan-mercuriale
+      lines = await mercScanPDF(file);
+    }
+
+    if (!lines || lines.length === 0) {
+      status.className = 'merc-status error';
+      status.textContent = '❌ Aucune ligne produit trouvée dans ce fichier.';
+      return;
+    }
+
+    status.textContent = '⏳ Rapprochement avec l\'inventaire (' + lines.length + ' lignes)…';
+
+    // Rapprochement
+    _mercMatches = mercMatch(lines);
+
+    var matched = _mercMatches.filter(function(m) { return m.dataProduct; }).length;
+    status.className = 'merc-status ok';
+    status.textContent = '✅ ' + lines.length + ' lignes extraites — ' + matched + ' correspondances trouvées dans l\'inventaire.';
+
+    mercRenderResults();
+  } catch(e) {
+    status.className = 'merc-status error';
+    status.textContent = '❌ Erreur : ' + (e.message || e);
+    console.error('[MERC]', e);
+  }
+}
+
+// ── Parse Excel côté navigateur ──
+async function mercParseExcel(file) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var data = new Uint8Array(e.target.result);
+        var wb = XLSX.read(data, { type: 'array' });
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        // Détecter les colonnes (désignation + prix)
+        var lines = mercParseExcelRows(rows);
+        resolve(lines);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function mercParseExcelRows(rows) {
+  if (!rows || rows.length < 2) return [];
+  var lines = [];
+
+  // Chercher la ligne d'en-tête
+  var headerRow = -1;
+  var colDesig = -1, colPrix = -1, colRef = -1, colUnite = -1;
+  var prixKws = ['prix', 'tarif', 'pu', 'p.u', 'p/u', 'prix ht', 'tarif ht', 'montant'];
+  var desigKws = ['designation', 'désignation', 'libelle', 'libellé', 'produit', 'article', 'description'];
+  var refKws = ['ref', 'référence', 'code', 'art', 'ean'];
+  var uniteKws = ['unite', 'unité', 'uc', 'cond', 'conditionnement'];
+
+  for (var i = 0; i < Math.min(10, rows.length); i++) {
+    var row = rows[i].map(function(c) { return String(c).toLowerCase().trim(); });
+    var foundPrix = row.findIndex(function(c) { return prixKws.some(function(k) { return c.includes(k); }); });
+    var foundDesig = row.findIndex(function(c) { return desigKws.some(function(k) { return c.includes(k); }); });
+    if (foundPrix >= 0 && foundDesig >= 0) {
+      headerRow = i;
+      colDesig = foundDesig;
+      colPrix = foundPrix;
+      colRef = row.findIndex(function(c) { return refKws.some(function(k) { return c.includes(k); }); });
+      colUnite = row.findIndex(function(c) { return uniteKws.some(function(k) { return c.includes(k); }); });
+      break;
+    }
+  }
+
+  // Si pas d'en-tête trouvé, heuristique : col 0 = désig, chercher col numérique
+  var startRow = headerRow >= 0 ? headerRow + 1 : 1;
+  if (headerRow < 0) {
+    colDesig = 0;
+    // Trouver la première colonne avec des valeurs numériques
+    for (var c = 1; c < (rows[1] || []).length; c++) {
+      var val = parseFloat(String(rows[startRow][c]).replace(',', '.'));
+      if (!isNaN(val) && val > 0) { colPrix = c; break; }
+    }
+  }
+
+  if (colDesig < 0 || colPrix < 0) return [];
+
+  for (var r = startRow; r < rows.length; r++) {
+    var row2 = rows[r];
+    var desig = String(row2[colDesig] || '').trim();
+    var prixRaw = String(row2[colPrix] || '').replace(',', '.').replace(/[^0-9.]/g, '');
+    var prix = parseFloat(prixRaw);
+    if (!desig || isNaN(prix) || prix <= 0) continue;
+    lines.push({
+      designation: desig,
+      reference: colRef >= 0 ? String(row2[colRef] || '').trim() : '',
+      prix_ht: prix,
+      unite: colUnite >= 0 ? String(row2[colUnite] || '').trim() : '',
+      conditionnement: ''
+    });
+  }
+  return lines;
+}
+
+// ── Scan PDF via Edge Function ──
+async function mercScanPDF(file) {
+  var status = document.getElementById('merc-status');
+  status.textContent = '⏳ Analyse IA de la mercuriale…';
+
+  var base64 = await new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      resolve(e.target.result.split(',')[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  var mediaType = file.type || 'application/pdf';
+  // Compresser si image
+  if (mediaType.startsWith('image/')) {
+    base64 = await new Promise(function(resolve, reject) {
+      var img = new Image();
+      img.onload = function() {
+        var MAX = 1200;
+        var w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+      };
+      img.onerror = reject;
+      img.src = 'data:' + mediaType + ';base64,' + base64;
+    });
+    mediaType = 'image/jpeg';
+  }
+
+  var resp = await fetch('https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-mercuriale', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64: base64, media_type: mediaType })
+  });
+
+  if (!resp.ok) throw new Error('Erreur serveur ' + resp.status);
+  var data = await resp.json();
+  if (data.error) throw new Error(data.error);
+  return data.lignes || [];
+}
+
+// ── Rapprochement fuzzy avec DATA[] ──
+function mercMatch(lines) {
+  return lines.map(function(line) {
+    var best = null;
+    var bestScore = 0;
+    var desigNorm = mercNorm(line.designation);
+
+    DATA.forEach(function(d) {
+      var score = mercSimilarity(desigNorm, mercNorm(d.produit));
+      // Bonus si même référence fournisseur
+      if (line.reference && d.code && mercNorm(line.reference) === mercNorm(d.code)) score = Math.max(score, 0.85);
+      if (score > bestScore) { bestScore = score; best = d; }
+    });
+
+    return {
+      mercLine: line,
+      dataProduct: bestScore >= 0.55 ? best : null,
+      score: bestScore,
+      checked: bestScore >= 0.55 && best !== null
+    };
+  });
+}
+
+function mercNorm(str) {
+  return (str || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function mercSimilarity(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  // Jaccard sur les mots
+  var wa = new Set(a.split(' ').filter(function(w) { return w.length > 2; }));
+  var wb = new Set(b.split(' ').filter(function(w) { return w.length > 2; }));
+  if (wa.size === 0 || wb.size === 0) return 0;
+  var inter = [...wa].filter(function(w) { return wb.has(w); }).length;
+  var union = new Set([...wa, ...wb]).size;
+  return inter / union;
+}
+
+// ── Affichage des résultats ──
+function mercRenderResults() {
+  var matched = _mercMatches.filter(function(m) { return m.dataProduct; });
+  var unmatched = _mercMatches.filter(function(m) { return !m.dataProduct; });
+  var withChange = matched.filter(function(m) {
+    return m.dataProduct && m.dataProduct.prix !== null && Math.abs(m.mercLine.prix_ht - m.dataProduct.prix) > 0.001;
+  });
+
+  // Résumé
+  document.getElementById('merc-summary').innerHTML = [
+    ['📋', _mercMatches.length, 'lignes extraites'],
+    ['✅', matched.length, 'correspondances'],
+    ['💰', withChange.length, 'prix différents'],
+    ['❓', unmatched.length, 'non trouvés'],
+  ].map(function(s) {
+    return '<div class="merc-stat"><div class="merc-stat-val">' + s[0] + ' ' + s[1] + '</div><div class="merc-stat-lbl">' + s[2] + '</div></div>';
+  }).join('');
+
+  // Tableau — matched en premier, puis unmatched
+  var rows = '';
+  var idx = 0;
+  _mercMatches.forEach(function(m, i) {
+    var line = m.mercLine;
+    var prod = m.dataProduct;
+    var checked = m.checked ? 'checked' : '';
+    var rowClass = prod ? 'match-found' : 'match-none';
+
+    var oldPrix = prod && prod.prix !== null ? prod.prix : null;
+    var newPrix = line.prix_ht;
+    var delta = oldPrix !== null ? newPrix - oldPrix : null;
+    var pctStr = delta !== null && oldPrix > 0 ? (delta >= 0 ? '+' : '') + (delta / oldPrix * 100).toFixed(1) + '%' : '—';
+    var deltaClass = delta === null ? 'merc-price-same' : delta > 0.005 ? 'merc-price-up' : delta < -0.005 ? 'merc-price-down' : 'merc-price-same';
+
+    var oldPrixStr = oldPrix !== null ? oldPrix.toFixed(2) + ' €' : '—';
+    var uniteStr = line.unite ? ' / ' + line.unite : '';
+
+    rows += '<tr class="' + rowClass + '">' +
+      '<td><input type="checkbox" class="merc-check" data-idx="' + i + '" ' + checked + (prod ? '' : ' disabled') + ' onchange="_mercMatches[' + i + '].checked=this.checked;mercUpdateApplyBtn()"></td>' +
+      '<td><div style="font-weight:500">' + line.designation + '</div>' +
+        (line.conditionnement ? '<div style="font-size:11px;color:var(--text2)">' + line.conditionnement + '</div>' : '') + '</td>' +
+      '<td>' + (prod ? '<span style="font-size:12px">' + prod.produit + '</span><br><span style="font-size:11px;color:var(--text2)">' + (prod.fournisseur || '') + ' · ' + prod.code + '</span>' : '<span style="color:var(--text3);font-size:12px">— non trouvé —</span>') + '</td>' +
+      '<td class="merc-price-old">' + oldPrixStr + '</td>' +
+      '<td class="merc-price-new">' + newPrix.toFixed(2) + ' €' + uniteStr + '</td>' +
+      '<td class="' + deltaClass + '" style="font-weight:600;white-space:nowrap">' + pctStr + '</td>' +
+    '</tr>';
+    idx++;
+  });
+
+  document.getElementById('merc-tbody').innerHTML = rows;
+  document.getElementById('merc-results').classList.add('show');
+  mercUpdateApplyBtn();
+}
+
+function mercUpdateApplyBtn() {
+  var n = _mercMatches.filter(function(m) { return m.checked; }).length;
+  var btn = document.getElementById('merc-apply-btn');
+  btn.disabled = n === 0;
+  btn.textContent = n > 0 ? '✅ Appliquer ' + n + ' prix sélectionné' + (n > 1 ? 's' : '') : '✅ Appliquer les prix sélectionnés';
+}
+
+function mercSelectAll(state) {
+  _mercMatches.forEach(function(m, i) {
+    if (m.dataProduct) {
+      m.checked = state;
+      var cb = document.querySelector('input[data-idx="' + i + '"]');
+      if (cb) cb.checked = state;
+    }
+  });
+  mercUpdateApplyBtn();
+}
+
+function mercSelectOnly(type) {
+  _mercMatches.forEach(function(m, i) {
+    if (!m.dataProduct) return;
+    var delta = m.dataProduct.prix !== null ? m.mercLine.prix_ht - m.dataProduct.prix : null;
+    var select = type === 'down' ? (delta !== null && delta < -0.005) : false;
+    m.checked = select;
+    var cb = document.querySelector('input[data-idx="' + i + '"]');
+    if (cb) cb.checked = select;
+  });
+  mercUpdateApplyBtn();
+}
+
+// ── Application des prix ──
+function mercApplySelected() {
+  var toApply = _mercMatches.filter(function(m) { return m.checked && m.dataProduct; });
+  if (toApply.length === 0) return;
+
+  var msg = 'Mettre à jour ' + toApply.length + ' prix dans l\'inventaire ?\n\nCette action est irréversible. Confirmez ?';
+  if (!confirm(msg)) return;
+
+  var updated = 0;
+  toApply.forEach(function(m) {
+    var code = m.dataProduct.code;
+    var newPrix = m.mercLine.prix_ht;
+    // Mettre à jour dans DATA[]
+    var idx = DATA.findIndex(function(d) { return d.code === code; });
+    if (idx >= 0) {
+      DATA[idx].prix = newPrix;
+      DATA[idx].status = 'updated';
+      updated++;
+    }
+  });
+
+  // Sauvegarder et synchroniser
+  if (typeof saveAll === 'function') saveAll();
+  if (typeof syncProductsToCloud === 'function') syncProductsToCloud();
+  if (typeof render === 'function') render();
+  if (typeof updateStats === 'function') updateStats();
+
+  var status = document.getElementById('merc-status');
+  status.className = 'merc-status ok';
+  status.textContent = '✅ ' + updated + ' prix mis à jour dans l\'inventaire !';
+  document.getElementById('merc-results').classList.remove('show');
+
+  showSyncToast('💰 ' + updated + ' prix mis à jour depuis la mercuriale');
+}
 
 function closeAddProduct(){
   document.getElementById('addprod-overlay').classList.remove('open');
@@ -7196,11 +9408,13 @@ function updateAllergenPills(code){
 }
 
 function resetAllergenToPresets(){
-  if(!confirm('Réinitialiser tous les allergènes aux valeurs pré-remplies ? Vos modifications seront perdues.'))return;
-  ALLERGEN_DATA={};
-  Object.entries(ALLERGEN_PRESETS).forEach(([code,algs])=>{ALLERGEN_DATA[code]=[...algs];});
-  saveAllData(); renderAllergens();
-  alert('Allergènes réinitialisés ✓');
+  if(!confirm('Recharger les allergènes depuis la base de données ? Vos modifications locales seront perdues.'))return;
+  try {
+    const stored = localStorage.getItem(ALLERGENS_KEY);
+    if(stored) { ALLERGEN_DATA = JSON.parse(stored); }
+    saveAllData(); renderAllergens();
+    alert('Allergènes rechargés depuis Supabase ✓');
+  } catch(e) { alert('Erreur: ' + e.message); }
 }
 
 function exportAllergenPDF(){
@@ -7372,6 +9586,15 @@ const TRAC_KEY='haccp_tracabilite_v1';
 const PRIX_HISTO_KEY='haccp_prix_historique_v1';
 
 let RECETTES_DATA=[];   // [{id,nom,cat,couverts,prixVente,ingredients:[{code,qte}],createdAt}]
+
+// Recettes PDF migrées dans Supabase haccp_store (id="recettes")
+
+// Les recettes sont chargées depuis Supabase via pullCloud()
+// Cette fonction est conservée pour compatibilité mais ne charge plus de données codées en dur
+function initRecettesPDF() {
+  // Recettes migrées dans Supabase — rien à faire ici
+  console.log('[RECETTES] Source: Supabase haccp_store');
+}
 let TRAC_DATA=[];       // [{id,type,code,produit,qte,unite,date,resp,note}]
 let PRIX_HISTO_DATA={}; // {code:[{date,prix},...]}
 
@@ -8714,18 +10937,19 @@ function toggleTabMore(btn){
   btn.classList.toggle('active-more',!open);
 }
 function switchTabMore(name,btn){
-  var hs=document.getElementById('home-screen');
-  if(hs && hs.style.display==='block') return;
+  var hf = document.getElementById('btn-home-float');
+  if(hf) hf.classList.add('visible');
   // Fermer le menu
-  document.getElementById('tab-more-menu').style.display='none';
+  var moreMenu = document.getElementById('tab-more-menu');
+  if(moreMenu) moreMenu.style.display='none';
   document.querySelector('.tab-more-btn')?.classList.remove('active-more');
   // Désactiver tous les onglets principaux et secondaires
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-more-item').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  // Activer le panel et marquer le bouton "Plus ▾" comme actif
+  // Activer le panel
   document.getElementById('panel-'+name)?.classList.add('active');
-  btn.classList.add('active');
+  if(btn) btn.classList.add('active'); // Guard contre null
   document.querySelector('.tab-more-btn')?.classList.add('active-more');
   // Init du panel
   if(name==='tracabilite')renderTracabilite();
@@ -9931,7 +12155,7 @@ Veuillez trouver ci-joint les documents d'inventaire HACCP..."></textarea>
       <!-- Fournisseur -->
       <div class="addprod-field">
         <label class="addprod-label" for="ap-fourn">Fournisseur</label>
-        <input class="addprod-input" id="ap-fourn" type="text" placeholder="Ex : SYSCO, POMONA…" list="ap-fourn-list">
+        <input class="addprod-input" id="ap-fourn" type="text" onblur="this.value=normalizeFournisseur(this.value)" placeholder="Ex : SYSCO, POMONA…" list="ap-fourn-list">
         <datalist id="ap-fourn-list"></datalist>
       </div>
       <!-- Seuil stock minimum -->

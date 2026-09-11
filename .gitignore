@@ -1,0 +1,4 @@
+*.zip
+netlify/
+netlify.toml
+.DS_Store
