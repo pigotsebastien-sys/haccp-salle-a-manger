@@ -1364,7 +1364,7 @@ tr:hover td { background:var(--rec-surface2); }
         }
       }
       if (n) showSyncToast('🔄 '+n+' module(s) mis à jour');
-    } catch(e) { console.warn('[SYNC] pull:', e.message); }
+    } catch(e) { logSyncError('pull', e); }
   }
 
   // ── Appliquer un module reçu ──
@@ -8421,6 +8421,28 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 
+// ── Normalisation unités ──
+function normalizeUnite(str) {
+  if (!str) return '';
+  var s = str.trim().toUpperCase().replace(/\./g, '');
+  var map = {
+    'KG':'KG','KILO':'KG','KILOS':'KG','KILOGRAMME':'KG','KILOGRAMMES':'KG',
+    'G':'G','GR':'G','GRS':'G','GRAMME':'G','GRAMMES':'G',
+    'L':'L','LT':'L','LTR':'L','LITRE':'L','LITRES':'L','LTS':'L',
+    'CL':'CL','ML':'ML',
+    'PCE':'PCE','PCS':'PCE','PC':'PCE','PIECE':'PCE','PIECES':'PCE',
+    'PIÈCE':'PCE','PIÈCES':'PCE','U':'PCE','UNIT':'PCE','UNITE':'PCE','UN':'PCE',
+    'BTL':'BTL','BOUTEILLE':'BTL','BOUTEILLES':'BTL',
+    'BTE':'BTE','BOITE':'BTE','BOÎTE':'BTE','BOITES':'BTE','BOÎTES':'BTE',
+    'CTN':'CTN','CARTON':'CTN','CARTONS':'CTN','CAR':'CTN',
+    'SAC':'SAC','SACS':'SAC','POT':'POT','POTS':'POT',
+    'BDL':'BDL','BOTTE':'BDL','BOTTES':'BDL',
+    'PORT':'PORT','PORTION':'PORT','PORTIONS':'PORT',
+    'PLT':'PLT','PALETTE':'PLT','PALETTES':'PLT',
+  };
+  return map[s] || s;
+}
+
 // ── Normalisation fournisseur ──
 function normalizeFournisseur(str) {
   if (!str) return '';
@@ -8856,6 +8878,49 @@ function mercApplySelected() {
 
   showSyncToast('💰 ' + updated + ' prix mis à jour depuis la mercuriale');
 }
+
+
+// ══ LOGGING ET ALERTES ══
+var _errorLog = [];
+var _syncFailCount = 0;
+
+function logError(context, error) {
+  var entry = { ts: new Date().toISOString(), context: context, message: error && error.message ? error.message : String(error) };
+  _errorLog.push(entry);
+  if (_errorLog.length > 50) _errorLog.shift();
+  console.error('[HACCP/' + context + ']', error);
+  try { localStorage.setItem('haccp_error_log', JSON.stringify(_errorLog.slice(-20))); } catch(e) {}
+}
+
+function logSyncError(module, error) {
+  _syncFailCount++;
+  logError('SYNC/' + module, error);
+  if (_syncFailCount >= 3) {
+    var msg = '⚠️ Sync instable — ' + _syncFailCount + ' erreurs récentes';
+    var existing = document.getElementById('_sync_alert');
+    if (!existing) {
+      var t = document.createElement('div');
+      t.id = '_sync_alert';
+      t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#faeeda;color:#633806;border:1px solid #f59e0b;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;z-index:9999;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.15)';
+      t.textContent = msg + ' — Cliquez pour ignorer';
+      t.onclick = function() { t.remove(); };
+      document.body && document.body.appendChild(t);
+    }
+  }
+  var dot = document.getElementById('sync-dot');
+  if (dot) { dot.style.background = '#f59e0b'; dot.title = 'Erreur sync: ' + String(error); }
+}
+
+function logSyncSuccess() { _syncFailCount = 0; var a = document.getElementById('_sync_alert'); if (a) a.remove(); }
+
+window.haccpDiag = function() {
+  console.group('HACCP Diagnostic');
+  console.log('Erreurs:', _errorLog.slice(-10));
+  console.log('Echecs sync:', _syncFailCount);
+  console.log('Produits:', typeof DATA !== 'undefined' ? DATA.length : 'N/A');
+  console.groupEnd();
+  return { errorLog: _errorLog, syncFailCount: _syncFailCount };
+};
 
 function closeAddProduct(){
   document.getElementById('addprod-overlay').classList.remove('open');
@@ -12145,7 +12210,7 @@ Veuillez trouver ci-joint les documents d'inventaire HACCP..."></textarea>
       <!-- Unité -->
       <div class="addprod-field">
         <label class="addprod-label" for="ap-unite">Unité</label>
-        <input class="addprod-input" id="ap-unite" type="text" placeholder="Ex : KG, L, PCE, BTE…">
+        <input class="addprod-input" id="ap-unite" type="text" placeholder="Ex : KG, L, PCE, BTE…" onblur="this.value=normalizeUnite(this.value)">
       </div>
       <!-- Quantité -->
       <div class="addprod-field">
