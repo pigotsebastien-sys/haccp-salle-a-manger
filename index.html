@@ -1262,6 +1262,41 @@ tr:hover td { background:var(--rec-surface2); }
 .merc-select-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; font-size: 12px; color: var(--text2); }
 .merc-select-row button { font-size: 12px; padding: 4px 8px; border: .5px solid var(--border2); border-radius: 6px; background: var(--bg2); cursor: pointer; }
 
+
+/* ── Menu Plus — groupes ── */
+.tab-more-menu { flex-direction: column; gap: 0; padding: 8px 12px; }
+.tab-more-group { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.tab-more-group-label {
+  width: 100%; font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 2px 0 4px; margin-top: 2px;
+}
+.tab-more-separator {
+  height: .5px; background: var(--border); margin: 4px 0; width: 100%;
+}
+
+
+/* ── KPI bande compacte ── */
+.kpi-strip {
+  display: flex; align-items: center;
+  padding: 8px 16px; gap: 0;
+  border-bottom: .5px solid var(--border);
+  background: var(--bg2);
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.kpi-strip::-webkit-scrollbar { display: none; }
+.kpi-item {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 14px; flex-shrink: 0;
+}
+.kpi-item.kpi-main { padding-left: 0; }
+.kpi-val { font-size: 16px; font-weight: 700; line-height: 1.2; }
+.kpi-lbl { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-top: 1px; }
+.kpi-warn { color: var(--pink-text); }
+.kpi-muted { color: var(--text3); font-size: 13px; }
+.kpi-sep { width: .5px; height: 28px; background: var(--border); flex-shrink: 0; }
+@media(min-width:480px) { .kpi-val { font-size: 18px; } .kpi-item { padding: 0 18px; } }
+
 </style>
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
@@ -1779,11 +1814,26 @@ if ('serviceWorker' in navigator) {
   <button onclick="dismissRestoreBanner()">OK</button>
 </div>
 
-<div class="stats-row">
-  <div class="stat-card"><div class="stat-label">Valeur HT</div><div class="stat-value" id="stat-total">—</div></div>
-  <div class="stat-card"><div class="stat-label">Références</div><div class="stat-value" id="stat-refs">—</div><div class="stat-sub" id="stat-new-lbl"></div></div>
-  <div class="stat-card"><div class="stat-label">Sans quantité</div><div class="stat-value" id="stat-vides">—</div></div>
-  <div class="stat-card"><div class="stat-label">MAJ prix</div><div class="stat-value" id="stat-upd">—</div><div class="stat-sub">Juin 2026</div></div>
+<div class="kpi-strip">
+  <div class="kpi-item kpi-main">
+    <span class="kpi-val" id="stat-total">—</span>
+    <span class="kpi-lbl">Valeur HT</span>
+  </div>
+  <div class="kpi-sep"></div>
+  <div class="kpi-item">
+    <span class="kpi-val" id="stat-refs">—</span>
+    <span class="kpi-lbl">Refs <span id="stat-new-lbl" style="color:var(--success-text);font-weight:600"></span></span>
+  </div>
+  <div class="kpi-sep"></div>
+  <div class="kpi-item">
+    <span class="kpi-val kpi-warn" id="stat-vides">—</span>
+    <span class="kpi-lbl">Sans qté</span>
+  </div>
+  <div class="kpi-sep"></div>
+  <div class="kpi-item">
+    <span class="kpi-val kpi-muted" id="stat-upd">—</span>
+    <span class="kpi-lbl">MAJ prix</span>
+  </div>
 </div>
 
 <div class="tab-bar-wrap"><div class="tab-bar">
@@ -1797,13 +1847,24 @@ if ('serviceWorker' in navigator) {
 </div>
 <!-- Dropdown onglets secondaires -->
 <div id="tab-more-menu" class="tab-more-menu" style="display:none">
-  <button class="tab-more-item" onclick="switchTabMore('tracabilite',this)">📋 Traçabilité</button>
-  <button class="tab-more-item" onclick="switchTabMore('historique',this)">📈 Historique</button>
-  <button class="tab-more-item" onclick="switchTabMore('prix',this)">💰 Comparateur prix</button>
-  <button class="tab-more-item" onclick="switchTabMore('carte-allergenes',this)">🍽 Étiquettes allergènes</button>
-  <button class="tab-more-item" id="tab-factures-btn" onclick="switchTabMore('factures',this)">📄 Factures</button>
-  <button class="tab-more-item" onclick="switchTabMore('reception-mp',this)">🚚 Réception MP</button>
-  <button class="tab-more-item" onclick="switchTabMore('pieces',this)">📎 Pièces comptables</button>
+  <div class="tab-more-group">
+    <div class="tab-more-group-label">📥 Opérations</div>
+    <button class="tab-more-item" onclick="switchTabMore('reception-mp',this)">🚚 Réception MP</button>
+    <button class="tab-more-item" id="tab-factures-btn" onclick="switchTabMore('factures',this)">📄 Factures</button>
+    <button class="tab-more-item" onclick="switchTabMore('pieces',this)">📎 Pièces comptables</button>
+  </div>
+  <div class="tab-more-separator"></div>
+  <div class="tab-more-group">
+    <div class="tab-more-group-label">📊 Analyse</div>
+    <button class="tab-more-item" onclick="switchTabMore('tracabilite',this)">📋 Traçabilité</button>
+    <button class="tab-more-item" onclick="switchTabMore('historique',this)">📈 Historique</button>
+    <button class="tab-more-item" onclick="switchTabMore('prix',this)">💰 Comparateur prix</button>
+  </div>
+  <div class="tab-more-separator"></div>
+  <div class="tab-more-group">
+    <div class="tab-more-group-label">🏷️ Affichage</div>
+    <button class="tab-more-item" onclick="switchTabMore('carte-allergenes',this)">🍽 Étiquettes allergènes</button>
+  </div>
 </div>
 
 
@@ -4608,6 +4669,7 @@ function render(){
 
   // Tracker pour les séparateurs de groupes
   let lastGroupId=null;
+  let lastZone=null;
   // Groupes avec unités hétérogènes
   const mixedUnitsGroups = getCrossGroupMixedUnits();
 
@@ -4618,6 +4680,18 @@ function render(){
 
     // Cross-supplier highlighting
     const gid=CROSS_SUPPLIER_GROUPS[d.code];
+    // En-tête de zone collant
+    let zoneHeader='';
+    if(d.zone!==lastZone){
+      lastZone=d.zone;
+      const zoneLabel=ZONES[d.zone]?.label||d.zone||'Autre';
+      const zoneColor=ZONES[d.zone]?.color||'#888';
+      zoneHeader=`<tr class="zone-sticky-header" data-zone="${d.zone}">
+        <td colspan="5" style="background:${zoneColor}18;color:${zoneColor};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;position:sticky;top:0;z-index:2;border-bottom:.5px solid ${zoneColor}44">
+          ${zoneLabel}
+        </td>
+      </tr>`;
+    }
     const hasGroup=gid!==undefined;
     const gc=hasGroup?CROSS_GROUP_COLORS[gid%CROSS_GROUP_COLORS.length]:null;
     const rowBg=hasGroup?`background:${gc.bg};`:'';
