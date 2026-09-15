@@ -4855,7 +4855,7 @@ function switchTab(name,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');document.getElementById('panel-'+name).classList.add('active');
-  if(name==='pieces')detectCameraContext();
+  if(name==='pieces'){try{const r=localStorage.getItem(PIECES_KEY);PIECES=r?JSON.parse(r):[];}catch(e){PIECES=[];} renderPieces(); detectCameraContext();}
   if(name==='bilan'){clearTimeout(bilanTimer);buildBilan();}
   if(name==='dashboard')buildDashboard();
   if(name==='prix'){initPrixPanel();renderPrixChart();}
@@ -11047,7 +11047,7 @@ function switchTabMore(name,btn){
   if(name==='historique')renderHistorique();
   if(name==='prix'){initPrixPanel();setTimeout(renderPrixChart,100);}
   if(name==='carte-allergenes')renderCartAlg();
-  if(name==='pieces')detectCameraContext();
+  if(name==='pieces'){try{const r=localStorage.getItem(PIECES_KEY);PIECES=r?JSON.parse(r):[];}catch(e){PIECES=[];} renderPieces(); detectCameraContext();}
   if(name==='reception-mp'){recLoad();renderReceptions();recRenderCal();}
   if(name==='factures'){
     var caDiv=document.getElementById('panel-factures-ca');
