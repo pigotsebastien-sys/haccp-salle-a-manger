@@ -1613,6 +1613,17 @@ tr:hover td { background:var(--rec-surface2); }
   }, 3000);
 });
   </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js')
+      .then(function(reg) { console.log('[SW] Enregistré:', reg.scope); })
+      .catch(function(e) { console.warn('[SW] Échec:', e); });
+  });
+}
+</script>
+
 </head>
 <body role="application" aria-label="Inventaire HACCP La Salle à Manger">
 <button id="btn-home-float" onclick="goHomeScreen()" title="Retour accueil">🏠</button>
@@ -1781,7 +1792,7 @@ tr:hover td { background:var(--rec-surface2); }
   <button class="tab-btn" data-tab="dlc" onclick="switchTab('dlc',this)">🌡 DLC<span id="dlc-tab-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;margin-left:4px;vertical-align:middle"></span></button>
   <button class="tab-btn" data-tab="recettes" onclick="switchTab('recettes',this)">👨‍🍳 Recettes</button>
   <button class="tab-btn" data-tab="commande" onclick="switchTab('commande',this)">🛒 Commandes</button>
-  <button class="tab-btn" data-tab="allergenes" onclick="switchTab('allergenes',this)">⚠️ Allergènes</button>
+  <button class="tab-btn" data-tab="allergenes" onclick="switchTab('allergenes',this)">⚠️ Déclaration allergènes</button>
   <button class="tab-btn tab-more-btn" onclick="toggleTabMore(this)" aria-label="Plus d'onglets">Plus ▾</button>
 </div>
 <!-- Dropdown onglets secondaires -->
@@ -1789,9 +1800,9 @@ tr:hover td { background:var(--rec-surface2); }
   <button class="tab-more-item" onclick="switchTabMore('tracabilite',this)">📋 Traçabilité</button>
   <button class="tab-more-item" onclick="switchTabMore('historique',this)">📈 Historique</button>
   <button class="tab-more-item" onclick="switchTabMore('prix',this)">💰 Comparateur prix</button>
-  <button class="tab-more-item" onclick="switchTabMore('carte-allergenes',this)">🍽 Carte allergènes</button>
+  <button class="tab-more-item" onclick="switchTabMore('carte-allergenes',this)">🍽 Étiquettes allergènes</button>
   <button class="tab-more-item" id="tab-factures-btn" onclick="switchTabMore('factures',this)">📄 Factures</button>
-  <button class="tab-more-item" onclick="switchTabMore('reception-mp',this)">🚚 Facture</button>
+  <button class="tab-more-item" onclick="switchTabMore('reception-mp',this)">🚚 Réception MP</button>
   <button class="tab-more-item" onclick="switchTabMore('pieces',this)">📎 Pièces comptables</button>
 </div>
 
@@ -1867,7 +1878,7 @@ tr:hover td { background:var(--rec-surface2); }
     </div>
     <div class="tile-sm" onclick="tileGoTo('allergenes')">
       <div class="tile-sm-icon">⚠️</div>
-      <div class="tile-sm-label">Allergènes</div>
+      <div class="tile-sm-label">Déclaration</div>
     </div>
     <div class="tile-sm" onclick="tileGoTo('tracabilite')">
       <div class="tile-sm-icon">📋</div>
@@ -5072,6 +5083,7 @@ const VOICE_NAV = {
   'allergènes':     ()=>switchTabByName('allergenes'),
   'allergenes':     ()=>switchTabByName('allergenes'),
   'carte allergènes':()=>switchTabByName('carte-allergenes'),
+  'étiquettes allergènes':()=>switchTabByName('carte-allergenes'),
   'carte allergenes':()=>switchTabByName('carte-allergenes'),
   'factures':       ()=>switchTabByName('factures'),
   'pièces':         ()=>switchTabByName('pieces'),
@@ -10984,7 +10996,7 @@ function exportCarteAlgPDF(){
 
 </style></head><body>
   <div class="header">
-    <h1>🍽 Carte des Allergènes</h1>
+    <h1>🍽 Étiquettes Allergènes</h1>
     <div class="subtitle">La Salle à Manger · 6 rue Emile Guyemard · 38000 Grenoble</div>
     <div class="legal">Conformément au Règlement UE n°1169/2011 — Édition du ${dateStr}</div>
   </div>`;
