@@ -3385,10 +3385,17 @@ const App = {
         throw new Error("Le service d’analyse a répondu une erreur ("+resp.status+"). "+(errBody? "Vérifiez votre clé API." : ""));
       }
       const data = await resp.json();
-      const textBlock = (data.content||[]).find(b=>b.type==="text");
-      if(!textBlock || !textBlock.text) throw new Error("Aucune donnée exploitable n’a été retournée.");
-      const cleaned = textBlock.text.replace(/```json|```/g,"").trim();
-      const parsed = JSON.parse(cleaned);
+      if(data.error) throw new Error('Erreur analyse : ' + data.error);
+      // Edge Function renvoie JSON direct {date, fournisseur, lignes}
+      // Compatibilite ancien format {content:[{type:"text",...}]}
+      let parsed = data;
+      if(data.content && Array.isArray(data.content)) {
+        const textBlock = data.content.find(b=>b.type==="text");
+        if(!textBlock || !textBlock.text) throw new Error("Aucune donnée exploitable retournée.");
+        const cleaned = textBlock.text.replace(/```json|```/g,"").trim();
+        parsed = JSON.parse(cleaned);
+      }
+      if(!parsed || (!parsed.lignes && !parsed.date)) throw new Error("Réponse inattendue — réessayez.");
 
       const dateOk = typeof parsed.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date);
       const {supplier, isNew} = this.matchOrCreateSupplier(parsed.fournisseur);
@@ -3416,6 +3423,8 @@ const App = {
       this.toast(notes.length? "Extraction partielle : vérifiez les champs." : "Facture analysée et ventilée.", notes.length?"error":"success");
     } catch(e){
       this.scan.error = e.message || "Échec de l’analyse de la facture.";
+      this.scan.loading = false;
+      this.render(); // Afficher l'erreur immédiatement
     } finally {
       this.scan.loading = false;
       this.render();
@@ -7476,10 +7485,17 @@ const CaApp = {
         throw new Error("Le service d’analyse a répondu une erreur ("+resp.status+"). "+(errBody? "Vérifiez votre clé API." : ""));
       }
       const data = await resp.json();
-      const textBlock = (data.content||[]).find(b=>b.type==="text");
-      if(!textBlock || !textBlock.text) throw new Error("Aucune donnée exploitable n’a été retournée.");
-      const cleaned = textBlock.text.replace(/```json|```/g,"").trim();
-      const parsed = JSON.parse(cleaned);
+      if(data.error) throw new Error('Erreur analyse : ' + data.error);
+      // Edge Function renvoie JSON direct {date, fournisseur, lignes}
+      // Compatibilite ancien format {content:[{type:"text",...}]}
+      let parsed = data;
+      if(data.content && Array.isArray(data.content)) {
+        const textBlock = data.content.find(b=>b.type==="text");
+        if(!textBlock || !textBlock.text) throw new Error("Aucune donnée exploitable retournée.");
+        const cleaned = textBlock.text.replace(/```json|```/g,"").trim();
+        parsed = JSON.parse(cleaned);
+      }
+      if(!parsed || (!parsed.lignes && !parsed.date)) throw new Error("Réponse inattendue — réessayez.");
 
       const dateOk = typeof parsed.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date);
       const {supplier, isNew} = this.matchOrCreateSupplier(parsed.fournisseur);
@@ -7507,6 +7523,8 @@ const CaApp = {
       this.toast(notes.length? "Extraction partielle : vérifiez les champs." : "Facture analysée et ventilée.", notes.length?"error":"success");
     } catch(e){
       this.scan.error = e.message || "Échec de l’analyse de la facture.";
+      this.scan.loading = false;
+      this.render(); // Afficher l'erreur immédiatement
     } finally {
       this.scan.loading = false;
       this.render();
