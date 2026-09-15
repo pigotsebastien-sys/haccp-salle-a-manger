@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#1a2c4a">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -16,8 +16,9 @@
 // Générer et injecter le favicon SVG dynamiquement
 (function(){
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-    <rect width="64" height="64" rx="14" fill="#1A3A5C"/>
-    <text x="32" y="44" text-anchor="middle" font-size="36">🍽</text>
+    <rect width="64" height="64" rx="14" fill="#1a2c4a"/>
+    <text x="32" y="34" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="22" font-weight="900" fill="#ffffff">SP</text>
+    <text x="32" y="50" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="700" fill="#52B788">CONSEIL</text>
   </svg>`;
   const url='data:image/svg+xml,'+encodeURIComponent(svg);
   const link=document.createElement('link');
@@ -1297,6 +1298,28 @@ tr:hover td { background:var(--rec-surface2); }
 .kpi-sep { width: .5px; height: 28px; background: var(--border); flex-shrink: 0; }
 @media(min-width:480px) { .kpi-val { font-size: 18px; } .kpi-item { padding: 0 18px; } }
 
+
+/* ── Optimisations mobile/tablette cuisine ── */
+/* Boutons plus grands pour les doigts avec gants */
+@media(max-width:768px) {
+  .btn { min-height: 44px; padding: 10px 14px; }
+  .tab-btn { min-height: 48px; font-size: 14px; }
+  .tab-more-item { min-height: 44px; font-size: 14px; padding: 10px 16px; }
+  .qte-input { min-height: 48px; font-size: 18px; }
+  /* KPI plus lisible */
+  .kpi-val { font-size: 20px; }
+  .kpi-lbl { font-size: 11px; }
+  /* Tuiles accueil plus grandes */
+  .tile-sm { padding: 16px 8px 14px; }
+  .tile-sm-icon { font-size: 28px; }
+  .tile-sm-label { font-size: 12px; }
+}
+/* Éviter le zoom sur les inputs iOS */
+input[type="text"], input[type="email"], input[type="password"],
+input[type="number"], input[type="date"], select, textarea {
+  font-size: 16px !important;
+}
+
 </style>
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
@@ -1511,12 +1534,15 @@ tr:hover td { background:var(--rec-surface2); }
         } catch(e2) {}
       };
 
-      ws.onerror = function() { console.warn('[SYNC] WS erreur'); };
+      ws.onerror = function() {
+        updateSyncDot('orange');
+      };
 
       ws.onclose = function() {
-        console.log('[SYNC] WS déconnecté — reconnexion dans 3s');
         clearInterval(wsPingTimer);
         clearTimeout(wsReconnTimer);
+        // Dot orange pendant la reconnexion (pas d'alerte — reconnexion normale)
+        updateSyncDot('orange');
         wsReconnTimer = setTimeout(connectWS, 3000);
       };
 
