@@ -10002,8 +10002,12 @@ let _recetteIngredients=[];
 
 function calcRecetteCout(r){
   return (r.ingredients||[]).reduce((s,ing)=>{
-    const prod=DATA.find(d=>d.code===ing.code);
-    return s+(prod?prod.prix*ing.qte:0);
+    if (ing.code) {
+      const prod = DATA.find(d=>d.code===ing.code);
+      return s + (prod && prod.prix ? prod.prix * parseFloat(ing.qte||0) : 0);
+    }
+    // Ingrédient libre (recettes PDF) - pas de prix calculable
+    return s;
   },0);
 }
 
@@ -10151,11 +10155,15 @@ function renderRecettes(){
       </div>
       <div class="recette-card-body" id="rec-body-${r.id}">
         ${r.ingredients.map(ing=>{
-          const prod=DATA.find(d=>d.code===ing.code);
-          const c=prod?prod.prix*ing.qte:0;
+          const prod = ing.code ? DATA.find(d=>d.code===ing.code) : null;
+          const nom = prod ? prod.produit : (ing.designation || ing.code || '?');
+          const unite = prod ? prod.unite : (ing.unite || '');
+          const prixU = prod ? prod.prix : null;
+          const c = prod && prixU ? prixU * parseFloat(ing.qte||0) : 0;
+          const coutStr = prixU ? `${ing.qte} ${unite} × ${prixU.toFixed(2)}€ = <b>${c.toFixed(2)}€</b>` : `${ing.qte} ${unite}`;
           return`<div class="recette-ing-row">
-            <span class="recette-ing-name">${prod?prod.produit:ing.code}</span>
-            <span class="recette-ing-cost">${ing.qte} ${prod?prod.unite:''} × ${prod?prod.prix.toFixed(2):0}€ = <b>${c.toFixed(2)}€</b></span>
+            <span class="recette-ing-name">${nom}</span>
+            <span class="recette-ing-cost">${coutStr}</span>
           </div>`;
         }).join('')}
         <div class="recette-total-row">
