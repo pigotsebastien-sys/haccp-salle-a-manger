@@ -1,7 +1,7 @@
-// Service Worker — HACCP LSM — Mode hors-ligne
-// Stratégie: Cache-First pour l'app shell, Network-First pour les données Supabase
+// Service Worker — HACCP LSM — Mode hors-ligne + mise à jour automatique
+// Version incrémentée à chaque déploiement pour forcer le rafraîchissement
 
-const CACHE_NAME = 'haccp-lsm-v7';
+const CACHE_VERSION = 'haccp-lsm-v8';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,40 +11,46 @@ const APP_SHELL = [
   './apple-touch-icon.png',
 ];
 
-// ── Installation : mise en cache de l'app shell ──
+// ── Installation ──
 self.addEventListener('install', function(e) {
+  // skipWaiting() immédiat pour remplacer l'ancien SW sans attendre
   self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
+    caches.open(CACHE_VERSION).then(function(cache) {
       return cache.addAll(APP_SHELL);
     })
   );
 });
 
-// ── Activation : supprimer les anciens caches ──
+// ── Activation : supprimer anciens caches + notifier les clients ──
 self.addEventListener('activate', function(e) {
   e.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(k) { return k !== CACHE_NAME; })
+        keys.filter(function(k) { return k !== CACHE_VERSION; })
             .map(function(k) { return caches.delete(k); })
       );
     }).then(function() {
       return self.clients.claim();
+    }).then(function() {
+      // Notifier tous les onglets ouverts qu'une nouvelle version est disponible
+      return self.clients.matchAll({ type: 'window' }).then(function(clients) {
+        clients.forEach(function(client) {
+          client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION });
+        });
+      });
     })
   );
 });
 
-// ── Fetch : stratégie selon la ressource ──
+// ── Fetch : Cache-First pour app shell, Network-First pour Supabase ──
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
 
-  // 1. Requêtes Supabase (données) → Network-First avec fallback silencieux
-  //    On ne met pas en cache les données Supabase — c'est localStorage qui joue ce rôle
+  // Supabase → réseau direct, fallback JSON vide hors-ligne
   if (url.includes('supabase.co')) {
     e.respondWith(
       fetch(e.request).catch(function() {
-        // Hors-ligne : retourner une réponse vide pour ne pas bloquer l'app
         return new Response(JSON.stringify([]), {
           headers: { 'Content-Type': 'application/json' }
         });
@@ -53,34 +59,29 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // 2. App shell (HTML, JS, CSS, icônes) → Cache-First
-  //    L'app fonctionne hors-ligne grâce au cache
+  // App shell → Cache-First avec revalidation en arrière-plan
   if (e.request.method === 'GET') {
     e.respondWith(
       caches.match(e.request).then(function(cached) {
-        // Mettre à jour le cache en arrière-plan (stale-while-revalidate)
         var networkFetch = fetch(e.request).then(function(response) {
           if (response && response.status === 200) {
             var toCache = response.clone();
-            caches.open(CACHE_NAME).then(function(cache) {
+            caches.open(CACHE_VERSION).then(function(cache) {
               cache.put(e.request, toCache);
             });
           }
           return response;
         }).catch(function() { return null; });
-
-        // Retourner le cache immédiatement si disponible, sinon attendre le réseau
         return cached || networkFetch;
       })
     );
     return;
   }
 
-  // 3. Tout le reste → réseau direct
   e.respondWith(fetch(e.request));
 });
 
-// ── Message : forcer la mise à jour du cache ──
+// ── Message depuis l'app ──
 self.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'SKIP_WAITING') {
     self.skipWaiting();

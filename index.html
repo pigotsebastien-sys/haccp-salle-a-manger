@@ -1778,7 +1778,7 @@ tr:hover td { background:var(--rec-surface2); }
 <div class="tab-bar-wrap"><div class="tab-bar">
   <button class="tab-btn active" data-tab="inventaire" onclick="switchTab('inventaire',this)">Inventaire</button>
   <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard',this)">📊 Bilan</button>
-  <button class="tab-btn" data-tab="dlc" onclick="switchTab('dlc',this)">🌡 DLC</button>
+  <button class="tab-btn" data-tab="dlc" onclick="switchTab('dlc',this)">🌡 DLC<span id="dlc-tab-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;margin-left:4px;vertical-align:middle"></span></button>
   <button class="tab-btn" data-tab="recettes" onclick="switchTab('recettes',this)">👨‍🍳 Recettes</button>
   <button class="tab-btn" data-tab="commande" onclick="switchTab('commande',this)">🛒 Commandes</button>
   <button class="tab-btn" data-tab="allergenes" onclick="switchTab('allergenes',this)">⚠️ Allergènes</button>
@@ -4549,6 +4549,39 @@ function getFiltered(){
   }
   return items;
 }
+function updateDlcTabDot(){
+  try {
+    var today = new Date();
+    var warn = new Date(); warn.setDate(warn.getDate()+7);
+    var warnStr = warn.toISOString().slice(0,10);
+    var todayStr = today.toISOString().slice(0,10);
+    var urgent = 0;
+    if(typeof DLC_DATA !== 'undefined') {
+      Object.values(DLC_DATA).forEach(function(d) {
+        if(d.dlc && d.dlc <= warnStr) urgent++;
+      });
+    }
+    var dot = document.getElementById('dlc-tab-dot');
+    if(dot) {
+      if(urgent > 0) {
+        dot.style.display = 'inline-block';
+        dot.title = urgent + ' produit(s) DLC < 7 jours';
+        dot.style.background = urgent > 0 ? '#ef4444' : '#f59e0b';
+      } else {
+        dot.style.display = 'none';
+      }
+    }
+    // Aussi mettre à jour la tuile DLC sur l'accueil
+    var hsDlc = document.getElementById('hs-dlc');
+    if(hsDlc) {
+      hsDlc.textContent = urgent > 0 ? urgent : '✓';
+      hsDlc.style.color = urgent > 0 ? '#ef4444' : '#52B788';
+    }
+    var hsDot = document.getElementById('hs-dlc-dot');
+    if(hsDot) hsDot.style.display = urgent > 0 ? 'block' : 'none';
+  } catch(e) {}
+}
+
 function updateStats(){
   const tot=DATA.reduce((s,d)=>s+(mont(d)||0),0);
   document.getElementById('stat-total').textContent=tot.toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
@@ -5536,6 +5569,8 @@ function closeReset(){
 }
 
 function confirmReset(){
+  // Double confirmation obligatoire pour action irréversible HACCP
+  if(!confirm('⚠️ ACTION IRRÉVERSIBLE\n\nToutes les quantités de l\'inventaire seront remises à zéro.\nCette action affecte des données de conformité légale HACCP.\n\nConfirmez-vous ?')) return;
   DATA.forEach(d=>{d.qte=null;});
   lastAction=null;
   // Vider tous les champs de saisie visibles
