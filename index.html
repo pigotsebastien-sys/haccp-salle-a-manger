@@ -8124,16 +8124,7 @@ window.CaApp = CaApp;
 
 
 
-// Synchroniser le dot Supabase avec le nouveau header
-function updateSyncDot(color) {
-  var dot = document.getElementById('hd-sync-dot');
-  if(dot) {
-    dot.style.background = color === 'green' ? '#52B788' : color === 'orange' ? '#f59e0b' : '#ef4444';
-  }
-  // Aussi mettre à jour l'ancien dot si présent
-  var oldDot = document.querySelector('.sync-dot');
-  if(oldDot) oldDot.style.background = color === 'green' ? '#52B788' : color === 'orange' ? '#f59e0b' : '#ef4444';
-}
+// Doublon mort de updateSyncDot (voir la définition ligne ~1644) retiré le 18/09/2026
 
 // Démarrer sur l'écran d'accueil
 
