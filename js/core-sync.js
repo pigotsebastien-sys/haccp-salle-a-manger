@@ -61,12 +61,21 @@
   let lastTs = {};
 
   // ── REST fetch helper ──
+  // IMPORTANT (corrigé le 19/09/2026) : utiliser le token de l'utilisateur connecté
+  // (window._supabaseAuthToken, posé par updateSupabaseAuth() dans app.js après
+  // connexion) plutôt que la clé anonyme fixe. Les règles RLS de haccp_store et
+  // haccp_products exigent auth.role()='authenticated' pour écrire (INSERT/UPDATE/
+  // DELETE) — avec la clé anonyme, ces écritures étaient silencieusement ignorées
+  // par Postgres (0 ligne modifiée, aucune erreur), donc rien n'était jamais
+  // réellement synchronisé entre appareils. La clé apikey reste toujours la clé
+  // anonyme (identifiant du projet, pas de rôle) ; seul le Authorization change.
   function supa(path, opts) {
+    const authToken = window._supabaseAuthToken || SUPA_KEY;
     return fetch(SUPA_URL + path, {
       ...opts,
       headers: {
         apikey: SUPA_KEY,
-        Authorization: 'Bearer ' + SUPA_KEY,
+        Authorization: 'Bearer ' + authToken,
         'Content-Type': 'application/json',
         Prefer: 'return=minimal',
         ...(opts && opts.headers || {})
@@ -148,13 +157,21 @@
     for (const [id, data] of Object.entries(q)) {
       try {
         const ts = new Date().toISOString();
-        await supa('/rest/v1/haccp_store?id=eq.'+id, {
+        const r = await supa('/rest/v1/haccp_store?id=eq.'+id, {
           method: 'PATCH',
           body: JSON.stringify({data, updated_by: getCurrentUserIdentifier(), updated_at: ts})
         });
+        if (!r.ok) {
+          // Écriture refusée (session expirée, token invalide...) — ne pas se taire :
+          // sans ce contrôle, un échec silencieux fait perdre la modification sans
+          // que personne ne s'en aperçoive (voir correctif du 19/09/2026).
+          console.warn('[SYNC] push refusé pour', id, '— HTTP', r.status, '— la modification n\'est PAS enregistrée sur le serveur.');
+          updateSyncDot('red');
+          continue;
+        }
         localStorage.setItem(SYNC_MODULES[id]+'_sync_ts', Date.now());
         lastTs[id] = ts;
-      } catch(e) { console.warn('[SYNC] push:', id, e.message); }
+      } catch(e) { console.warn('[SYNC] push:', id, e.message); updateSyncDot('red'); }
     }
   }
 
@@ -300,7 +317,7 @@
   async function pushProductToCloud(item) {
     if (!syncEnabled) return;
     try {
-      await supa('/rest/v1/haccp_products?code=eq.' + item.code, {
+      const r = await supa('/rest/v1/haccp_products?code=eq.' + item.code, {
         method: 'PATCH',
         body: JSON.stringify({
           produit: item.produit,
@@ -312,7 +329,11 @@
           status: item.status || ''
         })
       });
-    } catch(e) { console.warn('[SYNC] pushProduct:', e.message); }
+      if (!r.ok) {
+        console.warn('[SYNC] pushProduct refusé pour', item.code, '— HTTP', r.status, '— la modification n\'est PAS enregistrée sur le serveur.');
+        updateSyncDot('red');
+      }
+    } catch(e) { console.warn('[SYNC] pushProduct:', e.message); updateSyncDot('red'); }
   }
 
   function updateSyncDot(color) {
