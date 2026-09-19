@@ -4313,6 +4313,41 @@ async function doMagicLink() {
   }
 }
 
+// Ajouté le 19/09/2026 : "Mot de passe oublié" appelait en réalité doMagicLink()
+// (un lien de connexion sans mot de passe), qui ne permet jamais de choisir un
+// nouveau mot de passe. Voici le vrai flux de réinitialisation Supabase
+// (endpoint /recover), couplé à handleAuthCallback() qui ouvre l'écran
+// "changer le mot de passe" quand l'utilisateur revient depuis l'email.
+async function doForgotPassword() {
+  var email = document.getElementById('login-email').value.trim();
+  if (!email) {
+    showLoginError('Saisissez votre email pour réinitialiser votre mot de passe.');
+    return;
+  }
+
+  try {
+    var resp = await fetch(SUPA_AUTH_URL + '/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_ANON_KEY },
+      body: JSON.stringify({ email: email })
+    });
+
+    var errEl = document.getElementById('login-error');
+    if (resp.ok || resp.status === 204) {
+      errEl.style.display = 'block';
+      errEl.style.background = '#eaf3de';
+      errEl.style.color = '#27500a';
+      errEl.textContent = '✅ Email de réinitialisation envoyé à ' + email + ' — cliquez sur le lien reçu pour choisir un nouveau mot de passe.';
+    } else {
+      var data = {};
+      try { data = await resp.json(); } catch(e2) {}
+      showLoginError('Échec envoi : ' + (data.msg || data.error_description || data.message || 'Erreur ' + resp.status) + '. Vérifiez que le compte existe.');
+    }
+  } catch(e) {
+    showLoginError('Erreur réseau — impossible d\'envoyer l\'email. Vérifiez votre connexion.');
+  }
+}
+
 
 // ══ MON COMPTE ══
 function openAccount() {
@@ -4601,9 +4636,63 @@ function doLogout() {
   document.getElementById('login-password').value = '';
 }
 
+// ── Récupération d'un lien envoyé par email (connexion / réinitialisation) ──
+// Ajouté le 19/09/2026 : ni le lien "Recevoir un lien de connexion" (magiclink)
+// ni un éventuel lien "mot de passe oublié" (recovery) envoyé depuis Supabase
+// n'étaient traités au retour sur le site — Supabase renvoie le token dans le
+// fragment d'URL (#access_token=...&type=...), mais rien ne le lisait, donc
+// l'utilisateur retombait systématiquement sur l'écran de connexion normal,
+// comme si le lien n'avait servi à rien.
+function handleAuthCallback() {
+  try {
+    var hash = window.location.hash || '';
+    if (!hash || hash.indexOf('access_token=') === -1) return false;
+    var params = new URLSearchParams(hash.replace(/^#/, ''));
+    var accessToken = params.get('access_token');
+    var refreshToken = params.get('refresh_token');
+    var expiresIn = parseInt(params.get('expires_in') || '3600', 10);
+    var type = params.get('type'); // 'magiclink', 'recovery', 'signup', ...
+    if (!accessToken) return false;
+
+    // Nettoyer l'URL tout de suite (éviter de garder le token visible/rejouable)
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+
+    currentSession = { access_token: accessToken, refresh_token: refreshToken };
+    localStorage.setItem('haccp_session', JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: Date.now() + (expiresIn * 1000)
+    }));
+    updateSupabaseAuth(accessToken);
+    document.getElementById('login-screen').style.display = 'none';
+
+    if (type === 'recovery') {
+      // Lien de réinitialisation : on connecte l'utilisateur avec le token
+      // temporaire ET on ouvre directement l'écran "changer le mot de passe",
+      // au lieu de le laisser dans l'appli sans lui proposer de choisir un
+      // nouveau mot de passe.
+      setTimeout(function() {
+        try {
+          openAccount();
+          var msg = document.getElementById('acc-pwd-msg');
+          if (msg) {
+            msg.className = 'account-msg';
+            msg.textContent = '🔑 Choisissez votre nouveau mot de passe ci-dessous.';
+          }
+        } catch(e) {}
+      }, 300);
+    }
+    console.log('[AUTH] Lien email traité — type:', type);
+    return true;
+  } catch(e) {
+    console.warn('[AUTH] handleAuthCallback:', e.message);
+    return false;
+  }
+}
+
 // Vérifier la session au démarrage
 window.addEventListener('DOMContentLoaded', function() {
-  if (!checkExistingSession()) {
+  if (!handleAuthCallback() && !checkExistingSession()) {
     document.getElementById('login-screen').style.display = 'flex';
   }
 });
