@@ -1,10 +1,17 @@
 // Service Worker — HACCP LSM — Mode hors-ligne + mise à jour automatique
 // Version incrémentée à chaque déploiement pour forcer le rafraîchissement
 
-const CACHE_VERSION = 'haccp-lsm-v8';
+const CACHE_VERSION = 'haccp-lsm-v9';
 const APP_SHELL = [
   './',
   './index.html',
+  './style.css',
+  './js/core-sync.js',
+  './js/app.js',
+  './js/ca-app.js',
+  './js/reception.js',
+  './js/favicon.js',
+  './js/sw-register.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -59,20 +66,19 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // App shell → Cache-First avec revalidation en arrière-plan
-  if (e.request.method === 'GET') {
+  // App (HTML/JS/CSS du site) → Network-First : chaque appareil reçoit
+  // immédiatement la dernière version du code ; le cache sert seulement hors-ligne.
+  // (Avant : Cache-First → tablettes/téléphones gardaient l'ancien code.)
+  if (e.request.method === 'GET' && url.startsWith(self.location.origin)) {
     e.respondWith(
-      caches.match(e.request).then(function(cached) {
-        var networkFetch = fetch(e.request).then(function(response) {
-          if (response && response.status === 200) {
-            var toCache = response.clone();
-            caches.open(CACHE_VERSION).then(function(cache) {
-              cache.put(e.request, toCache);
-            });
-          }
-          return response;
-        }).catch(function() { return null; });
-        return cached || networkFetch;
+      fetch(e.request).then(function(response) {
+        if (response && response.status === 200) {
+          var toCache = response.clone();
+          caches.open(CACHE_VERSION).then(function(cache) { cache.put(e.request, toCache); });
+        }
+        return response;
+      }).catch(function() {
+        return caches.match(e.request, { ignoreSearch: true });
       })
     );
     return;
