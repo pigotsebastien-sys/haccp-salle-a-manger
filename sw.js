@@ -1,7 +1,7 @@
 // Service Worker — HACCP LSM — Mode hors-ligne + mise à jour automatique
 // Version incrémentée à chaque déploiement pour forcer le rafraîchissement
 
-const CACHE_VERSION = 'haccp-lsm-v10';
+const CACHE_VERSION = 'haccp-lsm-v11';
 const APP_SHELL = [
   './',
   './index.html',
@@ -71,7 +71,7 @@ self.addEventListener('fetch', function(e) {
   // (Avant : Cache-First → tablettes/téléphones gardaient l'ancien code.)
   if (e.request.method === 'GET' && url.startsWith(self.location.origin)) {
     e.respondWith(
-      fetch(e.request).then(function(response) {
+      fetch(e.request, { cache: 'no-cache' }).then(function(response) {
         if (response && response.status === 200) {
           var toCache = response.clone();
           caches.open(CACHE_VERSION).then(function(cache) { cache.put(e.request, toCache); });
