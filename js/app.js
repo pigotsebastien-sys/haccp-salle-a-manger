@@ -4532,7 +4532,9 @@ async function refreshSession(refreshToken) {
       document.getElementById('login-screen').style.display = 'flex';
     }
   } catch(e) {
-    document.getElementById('login-screen').style.display = 'flex';
+    // Erreur réseau (appareil hors-ligne / sortie de veille) : on garde la session
+    // et on réessaiera ; n'afficher l'écran de connexion que si le serveur refuse.
+    console.warn('[AUTH] Renouvellement impossible (réseau) — nouvel essai plus tard.');
   }
 }
 
