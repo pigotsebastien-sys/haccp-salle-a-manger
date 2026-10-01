@@ -519,6 +519,41 @@
   }
   window.addEventListener('load', function() { setTimeout(refreshInvBackupButton, 500); });
 
+
+  // ── Diagnostic visible : état de la synchro de cet appareil ──
+  const APP_SYNC_LABEL = 'Synchro v2 (01/10)';
+  function syncStatusText() {
+    const raw = localStorage.getItem('haccp_session');
+    let email = null;
+    try { email = raw ? JSON.parse(atob(JSON.parse(raw).access_token.split('.')[1])).email : null; } catch(e) {}
+    const pending = Object.keys(lsGet(INV_PENDING_KEY, {})).length;
+    const last = lastTs.inventaire ? new Date(lastTs.inventaire).toLocaleTimeString('fr-FR') : '—';
+    return [
+      'Version : ' + APP_SYNC_LABEL,
+      'Compte : ' + (email && window._supabaseAuthToken ? email : '❌ NON CONNECTÉ (les saisies ne sont pas partagées)'),
+      'Serveur : ' + (syncEnabled ? '✓ joignable' : '❌ injoignable'),
+      'Temps réel : ' + (ws && ws.readyState === 1 ? '✓ actif' : '… reconnexion'),
+      'Saisies en attente d\'envoi : ' + pending,
+      'Dernière mise à jour inventaire : ' + last
+    ].join('\n');
+  }
+  async function syncNowButton() {
+    const fb = document.getElementById('save-feedback');
+    if (fb) { fb.className = 'voice-feedback'; fb.style.whiteSpace = 'pre-line'; fb.textContent = '🔄 Synchronisation…'; }
+    try { await resyncNow(); await flushQueue(); } catch(e) {}
+    if (fb) {
+      const pending = Object.keys(lsGet(INV_PENDING_KEY, {})).length;
+      fb.className = (window._supabaseAuthToken && syncEnabled && !pending) ? 'voice-feedback ok' : 'voice-feedback err';
+      fb.style.whiteSpace = 'pre-line';
+      fb.textContent = syncStatusText();
+    }
+    refreshInvBackupButton();
+  }
+  window.addEventListener('load', function() {
+    const v = document.getElementById('app-sync-version');
+    if (v) v.textContent = APP_SYNC_LABEL;
+  });
+
   // ── UI ──
 
   // Charger, mettre à jour ET ajouter les produits depuis Supabase
