@@ -108,7 +108,7 @@
 <div class="app-header" style="position:sticky;top:0;z-index:100">
   <div class="header-top">
     <div>
-      <h1>🍽 Inventaire HACCP <span id="sync-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-left:6px;vertical-align:middle;transition:background .3s" title="Connexion..."></span></h1>
+      <h1>🍽 Inventaire HACCP <span id="sync-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-left:6px;vertical-align:middle;transition:background .3s" title="Connexion..."></span> <small id="app-sync-version" style="font-size:10px;opacity:.6;font-weight:400"></small></h1>
       <p id='header-date-line'>La Salle à Manger · Grenoble</p>
     </div>
     <div class="header-actions">
@@ -964,6 +964,7 @@
       <button class="va-btn" style="background:var(--info-bg);color:var(--info-text);font-weight:600;width:100%" onclick="exportInventoryJSON()">⬇️ Télécharger une copie (.json)</button>
       <button class="va-btn" style="background:var(--bg2);width:100%" onclick="document.getElementById('import-file-input').click()">📂 Ouvrir / Importer (.json)</button>
       <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" onchange="importInventoryJSON(this)">
+      <button class="va-btn" style="width:100%;background:var(--green-bg);color:var(--green-text);font-weight:600" onclick="syncNowButton()">🔄 Synchroniser maintenant (et voir l'état)</button>
       <button class="va-btn" id="inv-backup-btn" style="display:none;width:100%;background:var(--info-bg);color:var(--info-text)" onclick="restoreInvBackup()">♻️ Récupérer l'inventaire de cet appareil (avant synchro)</button>
       <button class="va-btn" style="width:100%" onclick="clearAutoSave()">🗑 Effacer la sauvegarde automatique</button>
     </div>
