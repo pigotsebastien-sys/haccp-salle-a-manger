@@ -495,8 +495,18 @@ select{min-height:36px;touch-action:manipulation}
   --rec-warn:     #D97706;
   --rec-ok:       #2D6A4F;
 }
-*, *::before, *::after { box-sizing: border-box; }
-body { font-family: 'DM Sans', system-ui, sans-serif; background:#F7F5F0; color:var(--rec-text); margin:0; padding:16px; }
+/* Corrigé le 19/09/2026 : cette section vient de l'ancien module Réception
+   autonome (module_reception_standalone.html), fusionné ici lors de l'éclatement
+   du fichier unique. Elle redéfinissait `*` (déjà fait ligne 3, sans effet) et
+   surtout `body` — un second `body{...}` global qui, arrivant après celui de la
+   ligne 4, gagnait la cascade sur TOUTE l'appli : padding:16px ajouté en plus du
+   padding déjà propre à chaque panneau (.table-wrap, .inv-list...), fond fixe
+   #F7F5F0 (jamais sombre, casse le mode nuit) et police DM Sans au lieu de
+   var(--font). C'est la cause la plus probable du débordement horizontal /
+   bandeau blanc constaté sur tablette et mobile (deux paddings latéraux cumulés
+   au lieu d'un). Supprimé ; l'identité visuelle "réception" (fond crème, police
+   DM Sans) reste disponible via les classes .rec-* déjà scopées, qui ne
+   dépendent pas de ce body{} global. */
 
 /* ── Composants UI ────────────────────────────────────────────────── */
 .rec-form-group { display:flex; flex-direction:column; gap:5px; }
