@@ -3811,7 +3811,7 @@ const CaApp = {
         <label class="field"><span class="label">Date de facture</span>
           <input type="date" id="${prefix}-date" value="${esc(v.date)}"></label>
         <label class="field"><span class="label">Fournisseur</span>
-          <select id="${prefix}-fournisseur" onchange="App.onSupplierPick('${prefix}')">
+          <select id="${prefix}-fournisseur" onchange="CaApp.onSupplierPick('${prefix}')">
             ${this.suppliers.map(s=>`<option value="${esc(s.nom)}" ${s.nom===v.fournisseur?'selected':''}>${esc(s.nom)}</option>`).join("")}
           </select></label>
         <label class="field"><span class="label">N° BL / facture</span><span class="hint">facultatif</span>
@@ -3825,14 +3825,14 @@ const CaApp = {
             ${TAUX_OPTIONS.map(t=>`<option value="${t}" ${t===v.taux?'selected':''}>${t}%</option>`).join("")}
           </select></label>
         <label class="field"><span class="label">Code de ventilation</span>
-          <select id="${prefix}-code" onchange="App.onCodePick('${prefix}')">
+          <select id="${prefix}-code" onchange="CaApp.onCodePick('${prefix}')">
             ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===v.code?'selected':''}>${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
           </select></label>
       </div>
       <div id="${prefix}-error" class="error-text" style="margin-bottom:10px;"></div>
       <div style="display:flex; gap:10px;">
-        <button class="btn btn-primary" onclick="App.addInvoiceFromForm('${prefix}')">✓ ${initial?'Mettre à jour':'Enregistrer la facture'}</button>
-        ${initial?`<button class="btn btn-ghost" onclick="App.cancelEdit()">Annuler</button>`:''}
+        <button class="btn btn-primary" onclick="CaApp.addInvoiceFromForm('${prefix}')">✓ ${initial?'Mettre à jour':'Enregistrer la facture'}</button>
+        ${initial?`<button class="btn btn-ghost" onclick="CaApp.cancelEdit()">Annuler</button>`:''}
       </div>`;
   },
 
@@ -3896,7 +3896,7 @@ const CaApp = {
         <div style="font-size:12px;color:#8a8478;margin-bottom:10px;">Nécessaire pour la lecture automatique des factures depuis ce fichier ouvert hors de Claude. Obtenez une clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>. Elle est stockée uniquement dans ce navigateur.</div>
         <div style="display:flex;gap:8px;">
           <input type="password" id="api-key-input" placeholder="sk-ant-..." value="${esc(this.apiKey)}" style="flex:1;">
-          <button class="btn btn-ghost" onclick="App.saveApiKey()">Enregistrer</button>
+          <button class="btn btn-ghost" onclick="CaApp.saveApiKey()">Enregistrer</button>
         </div>
       </div>`;
 
@@ -3907,9 +3907,9 @@ const CaApp = {
         <div style="font-size:12.5px;color:#8a8478;margin-bottom:16px;">Prenez une photo ou importez un fichier (image ou PDF). Les montants seront extraits et ventilés automatiquement — vous pourrez les vérifier avant d’enregistrer.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <label class="btn btn-primary" style="cursor:pointer;">📷 Prendre une photo
-            <input type="file" accept="image/*" capture="environment" onchange="App.onScanFile(this)" style="display:none;"></label>
+            <input type="file" accept="image/*" capture="environment" onchange="CaApp.onScanFile(this)" style="display:none;"></label>
           <label class="btn btn-ghost" style="cursor:pointer;">⬆ Importer un fichier
-            <input type="file" accept="image/*,application/pdf" onchange="App.onScanFile(this)" style="display:none;"></label>
+            <input type="file" accept="image/*,application/pdf" onchange="CaApp.onScanFile(this)" style="display:none;"></label>
         </div>
         ${s.error?`<div class="error-text" style="margin-top:16px;">⚠ ${esc(s.error)}</div>`:''}
       </div>`;
@@ -3924,7 +3924,7 @@ const CaApp = {
       body = `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <div style="font-size:14px;font-weight:600;">Vérifiez la facture scannée</div>
-          <button class="btn btn-ghost" onclick="App.resetScan(); App.render();">↻ Scanner une autre facture</button>
+          <button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>
         </div>
         ${s.note?`<div class="banner" style="margin-bottom:16px;">${esc(s.note)}</div>`:''}
         <div class="row" style="align-items:flex-start;">
@@ -3946,7 +3946,7 @@ const CaApp = {
               ${s.lines.map(l=>{
                 const c = computeLine(l);
                 return `<div class="line-row">
-                  <select id="scan-line-code-${l.id}" onchange="App.scanCodeChange('${l.id}', this.value)">
+                  <select id="scan-line-code-${l.id}" onchange="CaApp.scanCodeChange('${l.id}', this.value)">
                     ${this.codes.map(c2=>`<option value="${esc(c2.code)}" ${c2.code===l.code?'selected':''}>${esc(c2.code)} — ${esc(c2.libelle)}</option>`).join("")}
                   </select>
                   <input type="number" step="0.01" min="0" id="scan-line-ht-${l.id}" value="${esc(l.ht)}" placeholder="HT">
@@ -3954,11 +3954,11 @@ const CaApp = {
                     ${TAUX_OPTIONS.map(t=>`<option value="${t}" ${t===l.taux?'selected':''}>${t}%</option>`).join("")}
                   </select>
                   <span class="muted" style="font-size:12.5px;min-width:90px;text-align:right;">TTC ${eur(c.ttc)}</span>
-                  <button class="btn-icon" onclick="App.scanRemoveLine('${l.id}')">🗑</button>
+                  <button class="btn-icon" onclick="CaApp.scanRemoveLine('${l.id}')">🗑</button>
                 </div>`;
               }).join("")}
             </div>
-            <button class="btn btn-ghost" style="margin-top:4px;" onclick="App.scanAddLine()">+ Ajouter une ligne</button>
+            <button class="btn btn-ghost" style="margin-top:4px;" onclick="CaApp.scanAddLine()">+ Ajouter une ligne</button>
             <div class="banner" style="display:flex;gap:24px;margin:14px 0;">
               <div>Total HT : <strong>${eur(totals.ht)}</strong></div>
               <div>Total TVA : <strong>${eur(totals.tva)}</strong></div>
@@ -3966,8 +3966,8 @@ const CaApp = {
             </div>
             <div id="scan-error" class="error-text" style="margin-bottom:10px;"></div>
             <div style="display:flex;gap:10px;">
-              <button class="btn btn-primary" onclick="App.submitScan()">✓ Enregistrer la ventilation</button>
-              <button class="btn btn-ghost" onclick="App.resetScan(); App.render();">Annuler</button>
+              <button class="btn btn-primary" onclick="CaApp.submitScan()">✓ Enregistrer la ventilation</button>
+              <button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">Annuler</button>
             </div>
           </div>
         </div>
@@ -3987,7 +3987,7 @@ const CaApp = {
 
     let html = `<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">
       <span style="font-size:13px;color:#8a8478;">Filtrer par code :</span>
-      <select style="width:auto;" onchange="App.setLedgerFilter(this.value)">
+      <select style="width:auto;" onchange="CaApp.setLedgerFilter(this.value)">
         <option value="">Tous les codes</option>
         ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===this.ledgerCodeFilter?'selected':''}>${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
       </select>
@@ -4011,8 +4011,8 @@ const CaApp = {
                 <td class="num muted">${eur(c.tva)}</td>
                 <td class="num" style="font-weight:600;">${eur(c.ttc)}</td>
                 <td style="text-align:right;white-space:nowrap;">
-                  <button class="btn-icon" onclick="App.editInvoice('${inv.id}')">✎</button>
-                  <button class="btn-icon" onclick="App.deleteInvoice('${inv.id}')">🗑</button>
+                  <button class="btn-icon" onclick="CaApp.editInvoice('${inv.id}')">✎</button>
+                  <button class="btn-icon" onclick="CaApp.deleteInvoice('${inv.id}')">🗑</button>
                 </td>
               </tr>`;
             }).join("")}
@@ -4033,11 +4033,11 @@ const CaApp = {
               const total = this.invoices.filter(i=>i.fournisseur===s.nom).reduce((sum,i)=>sum+computeLine(i).ht,0);
               return `<tr>
                 <td>${esc(s.nom)}</td>
-                <td><select style="font-size:12.5px;padding:5px 8px;" onchange="App.updateSupplierCode('${s.id}', this.value)">
+                <td><select style="font-size:12.5px;padding:5px 8px;" onchange="CaApp.updateSupplierCode('${s.id}', this.value)">
                   ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===s.code?'selected':''}>${esc(c.code)}</option>`).join("")}
                 </select></td>
                 <td class="num">${eur(total)}</td>
-                <td style="text-align:right;"><button class="btn-icon" onclick="App.deleteSupplier('${s.id}')">🗑</button></td>
+                <td style="text-align:right;"><button class="btn-icon" onclick="CaApp.deleteSupplier('${s.id}')">🗑</button></td>
               </tr>`;
             }).join("")}
           </tbody>
@@ -4050,7 +4050,7 @@ const CaApp = {
           <select id="new-sup-code"><option value="">Code par défaut…</option>
             ${this.codes.map(c=>`<option value="${esc(c.code)}">${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
           </select>
-          <button class="btn btn-primary" onclick="App.addSupplier()">+ Ajouter</button>
+          <button class="btn btn-primary" onclick="CaApp.addSupplier()">+ Ajouter</button>
         </div>
       </div>
     </div>`;
@@ -4067,7 +4067,7 @@ const CaApp = {
               <td>${esc(c.libelle)}</td>
               <td>${c.taux}%</td>
               <td class="muted">${esc(c.compteTva||'—')}</td>
-              <td style="text-align:right;"><button class="btn-icon" onclick="App.deleteCode('${c.code}')">🗑</button></td>
+              <td style="text-align:right;"><button class="btn-icon" onclick="CaApp.deleteCode('${c.code}')">🗑</button></td>
             </tr>`).join("")}
           </tbody>
         </table>
@@ -4079,7 +4079,7 @@ const CaApp = {
           <input type="text" id="new-code-libelle" placeholder="Libellé du compte">
           <select id="new-code-taux">${TAUX_OPTIONS.map(t=>`<option value="${t}">${t}%</option>`).join("")}</select>
           <input type="text" id="new-code-compteTva" placeholder="Compte TVA déductible (ex : 445660)" value="445660">
-          <button class="btn btn-primary" onclick="App.addCode()">+ Ajouter au plan</button>
+          <button class="btn btn-primary" onclick="CaApp.addCode()">+ Ajouter au plan</button>
         </div>
       </div>
     </div>`;
@@ -4089,7 +4089,7 @@ const CaApp = {
     const monthSelectHtml = (this.tab==='dashboard'||this.tab==='registre') ? `
       <div style="margin-bottom:18px;display:flex;gap:10px;align-items:center;">
         <span style="font-size:13px;color:#8a8478;font-weight:500;">Période :</span>
-        <select style="width:auto;" onchange="App.setMonth(this.value)">
+        <select style="width:auto;" onchange="CaApp.setMonth(this.value)">
           <option value="">Toutes les périodes</option>
           ${this.months().map(m=>`<option value="${m}" ${m===this.selectedMonth?'selected':''}>${monthLabel(m)}</option>`).join("")}
         </select>
@@ -4114,10 +4114,10 @@ const CaApp = {
       <div class="shell">
         <div class="header">
           <div><h1>Cahier d’achats</h1><p>Ventilation et suivi des factures fournisseurs</p></div>
-          <button class="btn btn-ghost" onclick="App.exportExcel()">⬇ Exporter en Excel</button>
+          <button class="btn btn-ghost" onclick="CaApp.exportExcel()">⬇ Exporter en Excel</button>
         </div>
         <div class="tabs">
-          ${tabs.map(t=>`<button class="tab-btn ${this.tab===t.id?'active':''}" onclick="App.setTab('${t.id}')">${t.label}</button>`).join("")}
+          ${tabs.map(t=>`<button class="tab-btn ${this.tab===t.id?'active':''}" onclick="CaApp.setTab('${t.id}')">${t.label}</button>`).join("")}
         </div>
         <div class="content">
           ${monthSelectHtml}
@@ -4132,11 +4132,11 @@ const CaApp = {
   renderEditModal(){
     const inv = this.invoices.find(i=>i.id===this.editingInvoiceId);
     if(!inv) return "";
-    return `<div class="modal-overlay" onclick="if(event.target===this){App.cancelEdit();}">
+    return `<div class="modal-overlay" onclick="if(event.target===this){CaApp.cancelEdit();}">
       <div class="modal">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div style="font-size:14px;font-weight:600;">Modifier la facture</div>
-          <button class="btn-icon" onclick="App.cancelEdit()">✕</button>
+          <button class="btn-icon" onclick="CaApp.cancelEdit()">✕</button>
         </div>
         ${this.invoiceFormHtml('manual', inv)}
       </div>
