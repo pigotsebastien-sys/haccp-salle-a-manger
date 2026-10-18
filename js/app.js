@@ -800,6 +800,87 @@ function render(){
   document.getElementById('footer-count').textContent=filtered.length+' référence'+(filtered.length>1?'s':'');
 }
 function updInput(inp){upd(inp.dataset.code,inp.value);}
+
+// ══════════════════════════════════════════════════════════
+// INVENTAIRE RAPIDE (18/10/2026) — un produit à la fois, gros boutons,
+// passage automatique au suivant. Sur tablette (≥ 768 px), la liste de la
+// zone s'affiche à gauche pour voir l'avancement et sauter à un produit.
+// ══════════════════════════════════════════════════════════
+let _qList=[],_qIdx=0;
+function _qOrder(a,b){const z=Object.keys(ZONES);const zi=x=>{const i=z.indexOf(x);return i<0?z.length:i;};return zi(a.zone)-zi(b.zone)||a.produit.localeCompare(b.produit,'fr',{sensitivity:'base'});}
+function openQuickInv(){
+  const sel=document.getElementById('quick-zone');
+  sel.innerHTML='<option value="TOUT">Toutes les zones</option>'+Object.keys(ZONES).filter(z=>DATA.some(d=>d.zone===z)).map(z=>`<option value="${esc(z)}">${esc(ZONES[z].label)} (${DATA.filter(d=>d.zone===z).length})</option>`).join('');
+  sel.value=(activeZone&&activeZone!=='TOUT'&&DATA.some(d=>d.zone===activeZone))?activeZone:'TOUT';
+  document.getElementById('quick-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  quickRebuild();
+}
+function closeQuickInv(){
+  document.getElementById('quick-overlay').classList.remove('open');
+  document.body.style.overflow='';
+  render();updateStats();scheduleBilanRebuild();
+}
+function quickRebuild(){
+  const z=document.getElementById('quick-zone').value;
+  const onlyMissing=document.getElementById('quick-missing').checked;
+  // Liste figée à l'ouverture : un produit saisi ne disparaît pas sous les doigts
+  _qList=DATA.filter(d=>(z==='TOUT'||d.zone===z)&&(!onlyMissing||d.qte===null||d.qte===undefined)).sort(_qOrder).map(d=>d.code);
+  _qIdx=0;
+  quickRender();
+}
+function _qItem(){return DATA.find(d=>d.code===_qList[_qIdx]);}
+function quickRender(){
+  const card=document.getElementById('quick-card'),list=document.getElementById('quick-list');
+  const items=_qList.map(c=>DATA.find(d=>d.code===c)).filter(Boolean);
+  const done=items.filter(d=>d.qte!==null&&d.qte!==undefined).length;
+  const pct=items.length?Math.round(done/items.length*100):0;
+  document.getElementById('quick-progress-fill').style.width=pct+'%';
+  document.getElementById('quick-progress-txt').textContent=items.length?`${done} / ${items.length} produits comptés (${pct} %) — produit ${_qIdx+1} sur ${items.length}`:'';
+  list.innerHTML=items.map((d,i)=>`<button class="quick-li${i===_qIdx?' current':''}${d.qte!=null?' done':''}" onclick="quickGo(${i})">
+      <span class="quick-li-name">${esc(d.produit)}</span><span class="quick-li-q">${d.qte!=null?esc(d.qte)+' '+esc(d.unite||''):'—'}</span></button>`).join('');
+  const cur=list.querySelector('.current');if(cur&&cur.scrollIntoView)cur.scrollIntoView({block:'nearest'});
+  const d=_qItem();
+  if(!d){card.innerHTML=`<div class="quick-empty">${items.length?'':'Aucun produit à compter avec ces filtres.'}<br><br><button class="quick-big primary" onclick="closeQuickInv()">✓ Terminer</button></div>`;return;}
+  card.innerHTML=`
+    <div class="quick-zone-pill" style="background:${(ZONES[d.zone]||{color:'#888'}).color}22;color:${(ZONES[d.zone]||{color:'#555'}).color}">${esc((ZONES[d.zone]||{label:d.zone}).label)}</div>
+    <div class="quick-name">${esc(d.produit)}</div>
+    <div class="quick-meta">${esc(d.code)}${d.fournisseur?' · '+esc(d.fournisseur):''} · ${d.prix?d.prix.toFixed(2)+' € / '+esc(d.unite||'u.'):'prix non renseigné'}</div>
+    <div class="quick-input-row">
+      <button class="quick-step" onclick="quickStep(-1)">−1</button>
+      <button class="quick-step" onclick="quickStep(-0.5)">−½</button>
+      <input id="quick-qte" class="quick-qte" type="number" inputmode="decimal" min="0" step="0.01" value="${d.qte!=null?d.qte:''}" placeholder="0" onkeydown="if(event.key==='Enter'){event.preventDefault();quickNext(true);}">
+      <button class="quick-step" onclick="quickStep(0.5)">+½</button>
+      <button class="quick-step" onclick="quickStep(1)">+1</button>
+    </div>
+    <div class="quick-unit">${esc(d.unite||'')}</div>
+    <div class="quick-actions">
+      <button class="quick-big" onclick="quickPrev()" ${_qIdx===0?'disabled':''}>◀ Précédent</button>
+      <button class="quick-big" onclick="quickSetZero()">0</button>
+      <button class="quick-big" onclick="quickNext(false)">Passer ▶</button>
+      <button class="quick-big primary" onclick="quickNext(true)">✓ Valider et suivant</button>
+    </div>`;
+  const inp=document.getElementById('quick-qte');
+  if(inp&&window.matchMedia('(pointer:fine)').matches)setTimeout(()=>{inp.focus();inp.select();},30);
+}
+function quickStep(delta){
+  const inp=document.getElementById('quick-qte');
+  const v=parseFloat(String(inp.value).replace(',','.'))||0;
+  inp.value=Math.max(0,Math.round((v+delta)*100)/100);
+}
+function quickSetZero(){document.getElementById('quick-qte').value='0';quickNext(true);}
+function _qSave(){
+  const d=_qItem();const inp=document.getElementById('quick-qte');
+  if(!d||!inp)return;
+  const raw=String(inp.value).trim();
+  if(raw==='')return; // champ vide : on ne modifie pas la quantité existante
+  upd(d.code,raw);
+  const field=document.querySelector(`input.qte-input[data-code="${CSS.escape(d.code)}"]`);
+  if(field)field.value=d.qte!=null?d.qte:'';
+}
+function quickNext(save){if(save)_qSave();if(_qIdx<_qList.length-1)_qIdx++;else _qIdx=_qList.length;quickRender();}
+function quickPrev(){_qSave();if(_qIdx>0)_qIdx--;quickRender();}
+function quickGo(i){_qSave();_qIdx=i;quickRender();}
 let bilanTimer=null;
 function scheduleBilanRebuild(){
   // Rebuild le bilan seulement si l'onglet bilan est actif (ou après 1s sinon)
@@ -1650,7 +1731,7 @@ function buildPrintPage(){
   DATA.forEach(d=>{(byZone[d.zone]=byZone[d.zone]||[]).push(d);});
 
   let html=`<div class="print-header">
-    <h1>🍽 Inventaire SP Conseil — La Salle à Manger</h1>
+    <h1>🍽 Inventaire — La Salle à Manger · Grenoble</h1>
     <p>Grenoble · ${now.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</p>
     <div class="print-meta">
       <span>Édité le ${dateStr} à ${timeStr}</span>
@@ -1727,7 +1808,7 @@ function buildPrintPage(){
     <div class="print-sig"><div class="line"></div>Date / Visa</div>
   </div>`;
 
-  html+=`<div class="print-footer-note">Document généré automatiquement — Inventaire SP Conseil · La Salle à Manger, Grenoble.</div>`;
+  html+=`<div class="print-footer-note">Document généré automatiquement — Inventaire La Salle à Manger, Grenoble.</div>`;
 
   document.getElementById('print-page').innerHTML=html;
 }
@@ -1949,7 +2030,7 @@ function closeSave(){
 function exportInventoryJSON(){
   const now=new Date();
   const payload={
-    app:'Inventaire SP Conseil - La Salle à Manger - Grenoble',
+    app:'Inventaire - La Salle à Manger - Grenoble',
     exportedAt:now.toISOString(),
     totalHT:DATA.reduce((s,d)=>s+(mont(d)||0),0),
     items:DATA.map(d=>({code:d.code,produit:d.produit,zone:d.zone,qte:(d.qte===undefined?null:d.qte)}))
@@ -1966,6 +2047,52 @@ function exportInventoryJSON(){
   const fb=document.getElementById('save-feedback');
   fb.className='voice-feedback ok';
   fb.textContent='✓ Fichier de sauvegarde exporté : '+a.download;
+}
+
+// ── Sauvegardes complètes (18/10/2026) ──
+function _downloadJSON(obj,name){
+  const url=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+// Toutes les données présentes sur cet appareil (tous les modules + catalogue)
+function exportFullBackup(){
+  const modules={};
+  if(typeof SYNC_MODULES!=='undefined')Object.entries(SYNC_MODULES).forEach(([id,key])=>{
+    try{const r=localStorage.getItem(key);if(r)modules[id]=JSON.parse(r);}catch(e){}
+  });
+  _downloadJSON({app:'Inventaire - La Salle à Manger - Grenoble',type:'sauvegarde-complete',exportedAt:new Date().toISOString(),
+    produits:DATA.map(d=>({code:d.code,zone:d.zone,cat:d.cat,produit:d.produit,unite:d.unite,prix:d.prix,fournisseur:d.fournisseur,status:d.status,qte:d.qte??null})),
+    modules},'sauvegarde_complete_'+localISODate()+'.json');
+  const fb=document.getElementById('save-feedback');
+  if(fb){fb.className='voice-feedback ok';fb.textContent='✓ Sauvegarde complète téléchargée (catalogue + tous les modules de cet appareil).';}
+}
+// Copies faites automatiquement chaque dimanche par Supabase (12 conservées)
+async function showServerBackups(){
+  const box=document.getElementById('server-backups');
+  if(box.style.display==='block'){box.style.display='none';return;}
+  box.style.display='block';box.innerHTML='<div class="voice-hint">Chargement…</div>';
+  try{
+    await ensureFreshToken(false);
+    const r=await supa('/rest/v1/rpc/haccp_list_backups',{method:'POST',headers:{Prefer:'return=representation'},body:'{}'});
+    if(!r.ok)throw new Error(r.status===401||r.status===403?'connectez-vous avec un compte autorisé':'erreur '+r.status);
+    const rows=await r.json();
+    box.innerHTML=rows.length?'<div style="border:.5px solid var(--border);border-radius:var(--radius);overflow:hidden">'+rows.map(b=>
+      `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:13px">
+        <span>${new Date(b.taken_at).toLocaleString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})} <small style="color:var(--text3)">${esc(b.kind)} · ${b.taille_ko} Ko</small></span>
+        <button class="dlc-btn-sm" onclick="downloadServerBackup(${Number(b.id)})">⬇️ Télécharger</button></div>`).join('')+'</div>'
+      :'<div class="voice-hint">Aucune sauvegarde pour l\'instant (la première est faite le dimanche suivant).</div>';
+  }catch(e){box.innerHTML='<div class="voice-feedback err">❌ '+esc(e.message)+'</div>';}
+}
+async function downloadServerBackup(id){
+  try{
+    await ensureFreshToken(false);
+    const r=await supa('/rest/v1/rpc/haccp_get_backup',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({p_id:id})});
+    if(!r.ok)throw new Error('erreur '+r.status);
+    const data=await r.json();
+    if(!data)throw new Error('sauvegarde introuvable');
+    _downloadJSON(Object.assign({app:'Inventaire - La Salle à Manger - Grenoble',type:'sauvegarde-serveur'},data),'sauvegarde_serveur_'+String(data.taken_at).slice(0,10)+'.json');
+  }catch(e){alert('Téléchargement impossible : '+e.message);}
 }
 
 function importInventoryJSON(input){
@@ -2053,7 +2180,7 @@ function buildSavePayload(){
   const qtes={};
   DATA.forEach(d=>{ qtes[d.code]=(d.qte!==null&&d.qte!==undefined)?d.qte:null; });
   return JSON.stringify({
-    app:'Inventaire SP Conseil - La Salle à Manger - Grenoble',
+    app:'Inventaire - La Salle à Manger - Grenoble',
     exportedAt:new Date().toISOString(),
     version:2,
     qtes,
@@ -4561,6 +4688,54 @@ function openAccount() {
   if (p1) p1.value = '';
   if (p2) p2.value = '';
   if (msg) { msg.className = 'account-msg'; msg.textContent = ''; }
+  var tm = document.getElementById('team-msg');
+  if (tm) { tm.className = 'account-msg'; tm.textContent = ''; }
+  teamRefresh();
+}
+
+// ── Accès de l'équipe (administrateur) — 18/10/2026 ──
+async function _rpc(name, args) {
+  await ensureFreshToken(false);
+  const r = await supa('/rest/v1/rpc/' + name, { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(args || {}) });
+  const txt = await r.text();
+  let data = null; try { data = txt ? JSON.parse(txt) : null; } catch(e) {}
+  if (!r.ok) throw new Error((data && (data.message || data.hint)) || ('erreur ' + r.status));
+  return data;
+}
+async function teamRefresh() {
+  const sec = document.getElementById('team-section');
+  if (!sec) return;
+  try {
+    if (!(await _rpc('haccp_is_admin'))) { sec.style.display = 'none'; return; }
+    sec.style.display = '';
+    const users = await _rpc('haccp_list_users') || [];
+    document.getElementById('team-list').innerHTML = users.map(u =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 0;border-bottom:.5px solid var(--border);font-size:13px">
+        <span>${esc(u.email)}${u.is_admin ? ' <small style="color:var(--info-text)">(administrateur)</small>' : ''}<br>
+        <small style="color:var(--text3)">${u.compte_cree ? '✅ compte créé' : '⏳ compte pas encore créé'}</small></span>
+        ${u.is_admin ? '' : `<button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="teamRemove(${jsArg(u.email)})">Retirer</button>`}
+      </div>`).join('');
+  } catch (e) { sec.style.display = 'none'; }
+}
+async function teamAdd() {
+  const inp = document.getElementById('team-email'), msg = document.getElementById('team-msg');
+  const email = (inp.value || '').trim().toLowerCase();
+  if (!email) return;
+  try {
+    await _rpc('haccp_add_user', { p_email: email });
+    inp.value = '';
+    msg.className = 'account-msg ok'; msg.textContent = '✅ ' + email + ' peut maintenant créer son compte et se connecter.';
+    teamRefresh();
+  } catch (e) { msg.className = 'account-msg err'; msg.textContent = '❌ ' + e.message; }
+}
+async function teamRemove(email) {
+  if (!confirm('Retirer l\'accès de ' + email + ' ?\nIl ne pourra plus voir ni modifier les données.')) return;
+  const msg = document.getElementById('team-msg');
+  try {
+    await _rpc('haccp_remove_user', { p_email: email });
+    msg.className = 'account-msg ok'; msg.textContent = 'Accès retiré pour ' + email + '.';
+    teamRefresh();
+  } catch (e) { msg.className = 'account-msg err'; msg.textContent = '❌ ' + e.message; }
 }
 
 function closeAccount() {
@@ -5720,7 +5895,75 @@ function deleteSnapshot(id){
   HISTO_DATA=HISTO_DATA.filter(h=>h.id!==id);
   saveAllData();renderHistorique();
 }
+// ══════════════════════════════════════════════════════════
+// CONSOMMATION ET RATIO MATIÈRE (18/10/2026)
+// Consommation = stock de début + achats de la période − stock de fin,
+// séparée entre nourriture et boissons/café. Les achats viennent du Cahier
+// d'achats (codes 601100 = nourriture, 601200/601400 = boissons et café).
+// ══════════════════════════════════════════════════════════
+const CONSO_BEV_ZONES=['BOISSONS','CAFETERIE'];
+const CONSO_CODES={nourriture:['601100'],boissons:['601200','601400']};
+function _stockSplit(items){
+  const r={nourriture:0,boissons:0};
+  (items||[]).forEach(i=>{if(i.qte==null||!i.prix)return;const v=i.qte*i.prix;r[CONSO_BEV_ZONES.includes(i.zone)?'boissons':'nourriture']+=v;});
+  return r;
+}
+function _achatsEntre(debutISO,finISO){
+  let inv=[];try{inv=JSON.parse(localStorage.getItem('ca_invoices'))||[];}catch(e){}
+  const d0=localISODate(new Date(debutISO)),d1=localISODate(new Date(finISO));
+  const r={nourriture:0,boissons:0,exclus:0,nb:0};
+  inv.forEach(i=>{
+    if(!i.date||i.date<=d0||i.date>d1)return; // achats APRÈS l'inventaire de début, jusqu'à celui de fin inclus
+    const ht=Number(i.ht)||0;
+    if(CONSO_CODES.nourriture.includes(i.code)){r.nourriture+=ht;r.nb++;}
+    else if(CONSO_CODES.boissons.includes(i.code)){r.boissons+=ht;r.nb++;}
+    else r.exclus+=ht;
+  });
+  return r;
+}
+function renderConsommation(){
+  const box=document.getElementById('conso-card');if(!box)return;
+  if(!HISTO_DATA.length){box.innerHTML='';return;}
+  const prevD=box.querySelector('#conso-debut')?.value,prevF=box.querySelector('#conso-fin')?.value;
+  const caN=box.querySelector('#conso-ca-n')?.value||'',caB=box.querySelector('#conso-ca-b')?.value||'';
+  const snaps=[...HISTO_DATA].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const optSnap=s=>`<option value="${esc(String(s.id))}">${esc(s.label)} — ${new Date(s.date).toLocaleDateString('fr-FR')}</option>`;
+  const debut=snaps.find(s=>String(s.id)===prevD)||snaps[Math.max(0,snaps.length-1)];
+  const finId=prevF||'actuel';
+  const fin=finId==='actuel'?{label:'Inventaire actuel',date:new Date().toISOString(),items:DATA}:(snaps.find(s=>String(s.id)===finId)||{label:'Inventaire actuel',date:new Date().toISOString(),items:DATA});
+  const sD=_stockSplit(debut.items),sF=_stockSplit(fin.items);
+  const ach=_achatsEntre(debut.date,fin.date);
+  const conso={nourriture:sD.nourriture+ach.nourriture-sF.nourriture,boissons:sD.boissons+ach.boissons-sF.boissons};
+  const ca={nourriture:parseFloat(String(caN).replace(',','.')),boissons:parseFloat(String(caB).replace(',','.'))};
+  const f=v=>v.toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+  const ratio=k=>ca[k]>0?Math.round(conso[k]/ca[k]*1000)/10+' %':'—';
+  const totCA=(ca.nourriture>0?ca.nourriture:0)+(ca.boissons>0?ca.boissons:0);
+  const ratioTot=totCA>0?Math.round((conso.nourriture+conso.boissons)/totCA*1000)/10+' %':'—';
+  const ligne=(lib,n,b)=>`<tr><td>${lib}</td><td class="num">${n}</td><td class="num">${b}</td></tr>`;
+  const avertNeg=(conso.nourriture<0||conso.boissons<0)?'<div class="conso-warn">⚠️ Consommation négative : il manque probablement des factures dans le Cahier d\'achats, ou l\'inventaire de fin contient des erreurs.</div>':'';
+  box.innerHTML=`<div class="conso-title">🧮 Consommation et ratio matière</div>
+    <div class="conso-sel">
+      <label>Inventaire de début<select id="conso-debut" onchange="renderConsommation()">${snaps.map(optSnap).join('')}</select></label>
+      <label>Inventaire de fin<select id="conso-fin" onchange="renderConsommation()"><option value="actuel">Inventaire actuel (en cours)</option>${snaps.map(optSnap).join('')}</select></label>
+    </div>
+    <table class="conso-table"><tr><th></th><th class="num">🍴 Nourriture</th><th class="num">🥤 Boissons & café</th></tr>
+      ${ligne('Stock de début',f(sD.nourriture),f(sD.boissons))}
+      ${ligne('+ Achats HT de la période ('+ach.nb+' factures)',f(ach.nourriture),f(ach.boissons))}
+      ${ligne('− Stock de fin',f(sF.nourriture),f(sF.boissons))}
+      <tr class="conso-total"><td>= Consommation</td><td class="num">${f(conso.nourriture)}</td><td class="num">${f(conso.boissons)}</td></tr>
+      <tr><td>Chiffre d'affaires HT de la période</td>
+        <td class="num"><input id="conso-ca-n" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA nourriture" value="${esc(caN)}" onchange="renderConsommation()"></td>
+        <td class="num"><input id="conso-ca-b" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA boissons" value="${esc(caB)}" onchange="renderConsommation()"></td></tr>
+      <tr class="conso-total"><td>Ratio matière</td><td class="num">${ratio('nourriture')}</td><td class="num">${ratio('boissons')}</td></tr>
+    </table>
+    <div class="conso-foot">Ratio global : <b>${ratioTot}</b>${ach.exclus?` · ${f(ach.exclus)} d'autres achats (entretien, matériel…) non comptés`:''}<br>
+    Période : achats datés du lendemain de « ${esc(debut.label)} » jusqu'au ${new Date(fin.date).toLocaleDateString('fr-FR')} inclus. Les stocks sont valorisés aux prix enregistrés dans chaque inventaire.</div>${avertNeg}`;
+  if(prevD)box.querySelector('#conso-debut').value=prevD;
+  box.querySelector('#conso-fin').value=finId;
+}
+
 function renderHistorique(){
+  renderConsommation();
   const el=document.getElementById('histo-list');
   if(!HISTO_DATA.length){
     el.innerHTML='<div class="histo-empty">Aucun inventaire archivé.<br><br>Cliquez sur <b>📸 Archiver l\'inventaire actuel</b> après chaque inventaire mensuel pour conserver un historique et comparer les consommations.</div>';
@@ -7653,7 +7896,7 @@ function openSendCenter(){
   // Objet par défaut
   const now=new Date();
   const dateLabel=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  document.getElementById('send-subject').value=`Inventaire SP Conseil — La Salle à Manger — ${dateLabel}`;
+  document.getElementById('send-subject').value=`Inventaire — La Salle à Manger · Grenoble — ${dateLabel}`;
   document.getElementById('send-msg').value='Bonjour,\n\nVeuillez trouver ci-joint les documents d\'inventaire HACCP de La Salle à Manger.\n\nCordialement,';
   // Reset format
   _sendFormat='excel';
@@ -7734,7 +7977,7 @@ async function doSend(action){
       await new Promise(r=>setTimeout(r,50));
       const to=document.getElementById('send-to').value.trim();
       const cc=document.getElementById('send-cc').value.trim();
-      const subject=document.getElementById('send-subject').value.trim()||'Inventaire SP Conseil — La Salle à Manger';
+      const subject=document.getElementById('send-subject').value.trim()||'Inventaire — La Salle à Manger · Grenoble';
       const msg=document.getElementById('send-msg').value.trim();
       const now=new Date();
       const dateLabel=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});

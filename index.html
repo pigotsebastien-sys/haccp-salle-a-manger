@@ -12,13 +12,13 @@
 <meta name="apple-mobile-web-app-title" content="SP Conseil">
 <link rel="manifest" href="manifest.json">
 <title>Inventaire SP Conseil — La Salle à Manger Grenoble</title>
-<script src="js/favicon.js?v=20261018c"></script>
-<link rel="stylesheet" href="style.css?v=20261018c">
+<script src="js/favicon.js?v=20261018d"></script>
+<link rel="stylesheet" href="style.css?v=20261018d">
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
-  <script src="js/core-sync.js?v=20261018c"></script>
+  <script src="js/core-sync.js?v=20261018d"></script>
 
-<script src="js/sw-register.js?v=20261018c"></script>
+<script src="js/sw-register.js?v=20261018d"></script>
 
 </head>
 <body role="application" aria-label="Inventaire SP Conseil — La Salle à Manger">
@@ -115,6 +115,7 @@
       <button class="btn" onclick="doLogout()" title="Déconnexion" style="font-size:14px;padding:6px 10px">🔓</button>
       <button class="btn" onclick="goHomeScreen()" title="Accueil" style="font-size:16px;padding:6px 10px">🏠</button>
       <button class="btn" onclick="openVoice()" style="background:var(--info-bg);color:var(--info-text);border-color:transparent;font-weight:600">🎙 Saisie</button>
+      <button class="btn" onclick="openQuickInv()" title="Inventaire rapide : un produit à la fois" style="background:var(--amber-bg);color:var(--amber-text);border-color:transparent;font-weight:700">⚡ Inventaire rapide</button>
       <button class="btn btn-addprod" onclick="openAddProduct()">+ Produit</button>
       <button class="btn" onclick="openMercuriale()" title="Comparer une mercuriale fournisseur" style="background:var(--amber-bg);color:var(--amber-text);border-color:transparent;font-weight:600">📋 Mercuriale</button>
       <button class="btn btn-send" onclick="openSendCenter()" title="Envoyer par email">✉️ Envoyer</button>
@@ -159,6 +160,18 @@
         Enregistrer le mot de passe
       </button>
       <div class="account-msg" id="acc-pwd-msg"></div>
+    </div>
+
+    <!-- Accès de l'équipe (administrateur uniquement) -->
+    <div class="account-section" id="team-section" style="display:none">
+      <div class="account-label">👥 Accès de l'équipe</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Seules ces adresses peuvent se connecter et voir les données. Après l'ajout, la personne crée son compte depuis l'écran de connexion (« Créer un compte »).</div>
+      <div id="team-list" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px">
+        <input class="account-input" id="team-email" type="email" placeholder="prenom@exemple.fr" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')teamAdd()">
+        <button class="account-btn" style="width:auto;margin:0;padding:0 14px" onclick="teamAdd()">Ajouter</button>
+      </div>
+      <div class="account-msg" id="team-msg"></div>
     </div>
 
     <!-- Déconnexion -->
@@ -285,6 +298,10 @@
   <!-- Modules secondaires -->
   <div class="tiles-section-title">Autres modules</div>
   <div class="tiles-grid">
+    <div class="tile-sm" onclick="tileGoTo('inventaire');openQuickInv()">
+      <div class="tile-sm-icon">⚡</div>
+      <div class="tile-sm-label">Inventaire rapide</div>
+    </div>
     <div class="tile-sm" onclick="tileGoTo('dlc')">
       <div class="tile-sm-icon">🌡</div>
       <div class="tile-sm-label">DLC</div>
@@ -739,6 +756,7 @@
       </div>
     </div>
     <div id="histo-compare-bar" style="display:none"></div>
+    <div id="conso-card" class="conso-card"></div>
     <div id="histo-list"></div>
   </div>
 </div>
@@ -949,6 +967,22 @@
 </div>
 
 
+<!-- INVENTAIRE RAPIDE (téléphone + tablette) -->
+<div id="quick-overlay" class="quick-overlay" role="dialog" aria-modal="true" aria-label="Inventaire rapide">
+  <div class="quick-top">
+    <div class="quick-title">⚡ Inventaire rapide</div>
+    <select id="quick-zone" class="quick-select" onchange="quickRebuild()"></select>
+    <label class="quick-check"><input type="checkbox" id="quick-missing" onchange="quickRebuild()"> Sans quantité seulement</label>
+    <button class="quick-close" onclick="closeQuickInv()" aria-label="Fermer">✕</button>
+  </div>
+  <div class="quick-progress"><div class="quick-progress-fill" id="quick-progress-fill"></div></div>
+  <div class="quick-progress-txt" id="quick-progress-txt"></div>
+  <div class="quick-body">
+    <div class="quick-list" id="quick-list"></div>
+    <div class="quick-card" id="quick-card"></div>
+  </div>
+</div>
+
 <!-- PAGE IMPRIMABLE (générée dynamiquement, visible uniquement à l'impression) -->
 <div class="print-page" id="print-page"></div>
 
@@ -970,6 +1004,9 @@
       <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" onchange="importInventoryJSON(this)">
       <button class="va-btn" style="width:100%;background:var(--green-bg);color:var(--green-text);font-weight:600" onclick="syncNowButton()">🔄 Synchroniser maintenant (et voir l'état)</button>
       <button class="va-btn" id="inv-backup-btn" style="display:none;width:100%;background:var(--info-bg);color:var(--info-text)" onclick="restoreInvBackup()">♻️ Récupérer l'inventaire de cet appareil (avant synchro)</button>
+      <button class="va-btn" style="width:100%;background:var(--info-bg);color:var(--info-text);font-weight:600" onclick="showServerBackups()">☁️ Sauvegardes hebdomadaires du serveur</button>
+      <div id="server-backups" style="display:none;width:100%"></div>
+      <button class="va-btn" style="width:100%" onclick="exportFullBackup()">📦 Télécharger toutes les données de cet appareil</button>
       <button class="va-btn" style="width:100%" onclick="clearAutoSave()">🗑 Effacer la sauvegarde automatique</button>
     </div>
     <div class="voice-feedback" id="save-feedback"></div>
@@ -1257,7 +1294,7 @@
 
 
 <div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div></div>
-<script src="js/app.js?v=20261018c"></script>
+<script src="js/app.js?v=20261018d"></script>
 
 <!-- CENTRE D'ENVOI EMAIL ══════════════════════════════ -->
 <div class="send-overlay" id="send-overlay">

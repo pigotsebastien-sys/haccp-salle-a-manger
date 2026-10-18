@@ -1246,3 +1246,59 @@ input[type="number"], input[type="date"], select, textarea {
   font-size: 16px !important;
 }
 
+
+/* ══ INVENTAIRE RAPIDE (téléphone + tablette) — 18/10/2026 ══ */
+.quick-overlay{position:fixed;inset:0;z-index:700;background:var(--bg);display:none;flex-direction:column;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+.quick-overlay.open{display:flex}
+.quick-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:.5px solid var(--border)}
+.quick-title{font-size:16px;font-weight:700;margin-right:auto}
+.quick-select{min-height:40px;font-size:14px}
+.quick-check{font-size:13px;display:flex;align-items:center;gap:6px;color:var(--text2)}
+.quick-check input{width:20px;height:20px}
+.quick-close{width:40px;height:40px;border-radius:50%;border:none;background:var(--bg2);font-size:18px;cursor:pointer;color:var(--text2)}
+.quick-progress{height:6px;background:var(--bg2)}
+.quick-progress-fill{height:100%;width:0;background:var(--green-text);transition:width .3s}
+.quick-progress-txt{font-size:12px;color:var(--text2);padding:6px 14px}
+.quick-body{flex:1;min-height:0;display:flex}
+.quick-list{display:none}
+.quick-card{flex:1;overflow-y:auto;padding:16px 16px 24px;display:flex;flex-direction:column;align-items:stretch;max-width:640px;margin:0 auto;width:100%}
+.quick-zone-pill{align-self:flex-start;font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:.04em}
+.quick-name{font-size:24px;font-weight:800;line-height:1.2;margin:12px 0 6px}
+.quick-meta{font-size:13px;color:var(--text2);margin-bottom:18px}
+.quick-input-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) minmax(0,2fr) repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
+.quick-step{min-height:64px;font-size:20px;font-weight:700;border-radius:14px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;touch-action:manipulation}
+.quick-step:active{background:var(--info-bg)}
+.quick-qte{min-height:64px;font-size:32px;font-weight:800;text-align:center;border-radius:14px;border:2px solid var(--info-text);background:var(--bg);color:var(--text);width:100%;min-width:0}
+.quick-unit{text-align:center;font-size:14px;color:var(--text2);margin:6px 0 18px}
+.quick-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.quick-big{min-height:56px;font-size:16px;font-weight:700;border-radius:14px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;touch-action:manipulation}
+.quick-big.primary{grid-column:1/-1;background:var(--green-text);color:#fff;border-color:transparent;min-height:64px;font-size:18px}
+.quick-big:disabled{opacity:.4}
+.quick-empty{text-align:center;padding:40px 10px;color:var(--text2);font-size:15px}
+/* Tablette / ordinateur : liste de la zone à gauche */
+@media (min-width:768px){
+  .quick-list{display:block;width:34%;max-width:380px;overflow-y:auto;border-right:.5px solid var(--border);background:var(--bg2)}
+  .quick-li{display:flex;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:11px 14px;border:none;border-bottom:.5px solid var(--border);background:transparent;color:var(--text);font-size:14px;cursor:pointer}
+  .quick-li.done .quick-li-q{color:var(--green-text);font-weight:700}
+  .quick-li.current{background:var(--info-bg);color:var(--info-text);font-weight:700}
+  .quick-li-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .quick-li-q{flex-shrink:0;color:var(--text3)}
+  .quick-card{padding:28px 32px}
+  .quick-name{font-size:30px}
+  .quick-actions{grid-template-columns:1fr 1fr 1fr 2fr}
+  .quick-big.primary{grid-column:auto}
+}
+/* ══ CONSOMMATION ET RATIO MATIÈRE — 18/10/2026 ══ */
+.conso-card:empty{display:none}
+.conso-card{border:.5px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin:0 0 14px;background:var(--bg)}
+.conso-title{font-size:14px;font-weight:700;margin-bottom:10px}
+.conso-sel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:10px}
+.conso-sel label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--text2);font-weight:600}
+.conso-sel select{width:100%}
+.conso-table{width:100%;border-collapse:collapse;font-size:13px}
+.conso-table th,.conso-table td{padding:6px 4px;border-bottom:.5px solid var(--border);text-align:left}
+.conso-table .num{text-align:right;white-space:nowrap}
+.conso-table input{width:100%;max-width:140px;font-size:14px;padding:6px;border:.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);text-align:right}
+.conso-total td{font-weight:800;background:var(--info-bg);color:var(--info-text)}
+.conso-foot{font-size:11px;color:var(--text2);margin-top:8px;line-height:1.5}
+.conso-warn{font-size:12px;margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--amber-bg);color:var(--amber-text)}
