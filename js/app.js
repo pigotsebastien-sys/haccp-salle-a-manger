@@ -46,9 +46,14 @@ const CROSS_GROUP_COLORS=[
 ];
 const RESTAURANT_NAME='La Salle à Manger - Grenoble';
 const ACCOUNT_CODES=[
-  {code:'601100',label:'Nourriture'},
-  {code:'607100',label:'Boissons'},
-  {code:'602200',label:"Produits d'entretien - Fournitures consommables"},
+  // Plan du cabinet comptable (factures annotées d'octobre 2026)
+  {code:'601000',label:'Denrées alimentaires (nourriture)'},
+  {code:'607000',label:'Boissons / marchandises'},
+  {code:'602230',label:'Fournitures et emballages jetables'},
+  {code:'602220',label:'Sacs poubelle, bobines dévidage'},
+  {code:'602290',label:"Produits d'entretien et hygiène"},
+  {code:'602200',label:"Fournitures d'entretien (lavettes…)"},
+  {code:'635200',label:'TVA non récupérable'},
   {code:'606300',label:'Achats vaisselle - petit matériel (< 500 €)'},
   {code:'606100',label:'Energie et Fluides'},
   {code:'651100',label:'Abonnement logiciel professionnel (caisse)'},
@@ -2324,17 +2329,19 @@ function pieceFilename(meta){
 // ── SUGGESTION AUTOMATIQUE D'IMPUTATION ─────────────────────
 // Mots-clés (fournisseurs, libellés) associés à chaque code comptable.
 // Ordre = priorité : les libellés de service les plus spécifiques sont
-// testés avant le repli générique "alimentaire" (601100).
+// testés avant le repli générique "alimentaire" (601000).
 const ACCOUNT_KEYWORDS=[
   {code:'622600',words:['AUDIT','HACCP','APAVE','BUREAU VERITAS','SOCOTEC','CONTROLE SANITAIRE','LABORATOIRE','ANALYSE MICROBIO','PRELEVEMENT']},
   {code:'626300',words:['ORANGE','SFR','BOUYGUES TELECOM','FREE MOBILE','TELEPHONIE','FORFAIT MOBILE','FIBRE OPTIQUE','TELECOM','ABONNEMENT MOBILE','OPERATEUR']},
   {code:'606100',words:['EDF','ENGIE','TOTALENERGIES','ENERGIE','ELECTRICITE','GAZ NATUREL','FACTURE GAZ','FLUIDES','EAU CONSOMMATION','VEOLIA']},
   {code:'651100',words:['LOGICIEL','CAISSE ENREGISTREUSE','ABONNEMENT LOGICIEL','LICENCE LOGICIEL','SAAS','ZELTY','LIGHTSPEED','TILLO','SUMUP','LOGICIEL CAISSE']},
   {code:'615600',words:['MAINTENANCE','REPARATION','DEPANNAGE','SAV','TECHNICIEN','INTERVENTION TECHNIQUE','CLIMATISATION','CHAUDIERE','FRIGORISTE','CONTRAT ENTRETIEN MATERIEL']},
-  {code:'602200',words:['PRODUITS ENTRETIEN','DESINFECTANT','DETERGENT','SOPALIN','ESSUIE TOUT','PAPIER TOILETTE','SAC POUBELLE','ECOLABEL','GANTS','LESSIVE','NETTOYANT']},
-  {code:'606300',words:['VAISSELLE','COUVERT','ASSIETTE','VERRERIE','PLATEAU SERVICE','USTENSILE','PETIT MATERIEL','CASSEROLE','MARMITE','BATTERIE CUISINE']},
-  {code:'607100',words:['FRANCE BOISSONS','MICAND','BRASSERIE','CAVE A VIN','OENOLOGIE','BIERE','VIN ','SODA','EAU MINERALE','SPIRITUEUX']},
-  {code:'601100',words:['SYSCO','POMONA','GINEYS','TRANSGOURMET','EPISAVEUR','EPISSAVEUR','FRAICA','UNION PRIMEURS','DUCEUX','METRO','BRAKE','PROMOCASH','BOUCHERIE','POISSONNERIE','PRIMEUR','CREMERIE','BOULANGERIE','ALIMENTAIRE']},
+  {code:'602220',words:['SAC POUBELLE','SACS POUBELLE','BOBINE DEVIDAGE']},
+  {code:'602290',words:['PRODUITS ENTRETIEN','DESINFECTANT','DETERGENT','DEGRAISSANT','TORK','SOPALIN','ESSUIE TOUT','PAPIER TOILETTE','ECOLABEL','LESSIVE','NETTOYANT']},
+  {code:'602230',words:['EMBALLAGE','JETABLE','GOBELET','PAILLE','LUNCH BOX','BARQUETTE','FILM ETIRABLE','VERRINE','GODET']},
+  {code:'606300',words:['VAISSELLE','COUVERT','VERRERIE','PLATEAU SERVICE','USTENSILE','PETIT MATERIEL','CASSEROLE','MARMITE','BATTERIE CUISINE']},
+  {code:'607000',words:['FRANCE BOISSONS','MICAND','BRASSERIE','CAVE A VIN','OENOLOGIE','BIERE','VIN ','SODA','EAU MINERALE','SPIRITUEUX']},
+  {code:'601000',words:['SYSCO','POMONA','GINEYS','TRANSGOURMET','EPISAVEUR','EPISSAVEUR','FRAICA','UNION PRIMEURS','DUCEUX','METRO','BRAKE','PROMOCASH','BOUCHERIE','POISSONNERIE','PRIMEUR','CREMERIE','BOULANGERIE','ALIMENTAIRE']},
 ];
 
 // Fournisseurs connus, utilisés pour repérer un nom dans le texte OCR.
@@ -3603,36 +3610,30 @@ function exportReceptions() {
 // ---------------------------------------------------------------------------
 // Données de référence
 // ---------------------------------------------------------------------------
+// Plan comptable du cabinet (relevé sur les factures annotées d'octobre 2026).
+// La TVA n'est pas récupérée : elle est passée en charge sur le compte 635200,
+// d'où un taux 0 % sur chaque ligne et une ligne 635200 par facture.
 const DEFAULT_CODES = [
-  { code:"601100", libelle:"Nourriture (denrées alimentaires)", taux:5.5, compteTva:"445660" },
-  { code:"601200", libelle:"Boissons", taux:20, compteTva:"445660" },
-  { code:"601400", libelle:"Cafétéria (café, thé, consommables)", taux:5.5, compteTva:"445660" },
-  { code:"602100", libelle:"Emballages et fournitures liées aux produits", taux:20, compteTva:"445660" },
-  { code:"606300", libelle:"Produits d’entretien", taux:20, compteTva:"445660" },
-  { code:"606400", libelle:"Fournitures administratives", taux:20, compteTva:"445660" },
-  { code:"606800", libelle:"Autres achats (exploitation courante)", taux:20, compteTva:"445660" },
-  { code:"607000", libelle:"Achats de marchandises (revente en l’état)", taux:10, compteTva:"445660" },
-  { code:"611000", libelle:"Sous-traitance générale", taux:20, compteTva:"445660" },
-  { code:"615000", libelle:"Entretien et réparations", taux:20, compteTva:"445660" },
-  { code:"622600", libelle:"Honoraires (comptable, conseil)", taux:20, compteTva:"445660" },
-  { code:"626000", libelle:"Frais postaux et télécommunications", taux:20, compteTva:"445660" },
+  { code:"601000", libelle:"Denrées alimentaires (nourriture, frais de livraison)", taux:0, compteTva:"635200" },
+  { code:"607000", libelle:"Boissons / marchandises", taux:0, compteTva:"635200" },
+  { code:"602230", libelle:"Fournitures et emballages jetables", taux:0, compteTva:"635200" },
+  { code:"602220", libelle:"Sacs poubelle, bobines dévidage", taux:0, compteTva:"635200" },
+  { code:"602290", libelle:"Produits d’entretien et hygiène", taux:0, compteTva:"635200" },
+  { code:"602200", libelle:"Fournitures d’entretien (lavettes…)", taux:0, compteTva:"635200" },
+  { code:"635200", libelle:"TVA non récupérable", taux:0, compteTva:"" },
+  { code:"606400", libelle:"Fournitures administratives", taux:0, compteTva:"635200" },
+  { code:"615000", libelle:"Entretien et réparations", taux:0, compteTva:"635200" },
+  { code:"622600", libelle:"Honoraires (comptable, conseil)", taux:0, compteTva:"635200" },
+  { code:"626000", libelle:"Frais postaux et télécommunications", taux:0, compteTva:"635200" },
 ];
 const DEFAULT_SUPPLIERS = [
-  { id:"sup-primeur", nom:"Union Primeurs (FUNI01)", code:"601100" },
-  { id:"sup-sysco", nom:"Sysco", code:"601100" },
-  { id:"sup-pomona", nom:"Pomona", code:"601100" },
-  { id:"sup-boulanger", nom:"Boulangerie Le Pain et le Vin", code:"601100" },
+  { id:"sup-sysco", nom:"Sysco", code:"601000" },
+  { id:"sup-gineys", nom:"Gineys", code:"601000" },
+  { id:"sup-transgourmet", nom:"Transgourmet", code:"601000" },
+  { id:"sup-primeur", nom:"Union Primeurs (FUNI01)", code:"601000" },
+  { id:"sup-pomona", nom:"Pomona", code:"601000" },
 ];
-const SEED_INVOICES = [
-  { id:"seed-1", date:"2026-08-17", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:65.28, taux:0, code:"601100" },
-  { id:"seed-2", date:"2026-08-24", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:73.87, taux:0, code:"601100" },
-  { id:"seed-3", date:"2026-08-26", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:57.93, taux:0, code:"601100" },
-  { id:"seed-4", date:"2026-08-31", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:42.26, taux:0, code:"601100" },
-  { id:"seed-5", date:"2026-08-19", fournisseur:"Sysco", bl:"", ht:205.30, taux:0, code:"601100" },
-  { id:"seed-6", date:"2026-08-24", fournisseur:"Sysco", bl:"", ht:195.85, taux:0, code:"601100" },
-  { id:"seed-7", date:"2026-08-26", fournisseur:"Sysco", bl:"", ht:238.70, taux:0, code:"601100" },
-  { id:"seed-8", date:"2026-08-19", fournisseur:"Pomona", bl:"", ht:228.46, taux:0, code:"601100" },
-];
+const SEED_INVOICES = [];
 const TAUX_OPTIONS = [0, 5.5, 10, 20];
 const PIE_COLORS = ["#7f1d2e","#b5763f","#5b7a5e","#8a8478","#a3623f","#4a6670","#9c8a5a","#6f4a5b"];
 
@@ -3719,7 +3720,8 @@ const CaApp = {
   totals(list){
     let ht=0,tva=0,ttc=0;
     list.forEach(i=>{ const c=computeLine(i); ht+=c.ht; tva+=c.tva; ttc+=c.ttc; });
-    return {ht,tva,ttc,count:list.length};
+    // Une facture ventilée sur plusieurs comptes = plusieurs lignes, même factureId
+    return {ht,tva,ttc,count:new Set(list.map(i=>i.factureId||i.id)).size};
   },
   byCode(list){
     const map={};
@@ -4335,7 +4337,7 @@ const CaApp = {
       <div class="card" style="flex:1 1 280px;">
         <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Ajouter un code de ventilation</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <input type="text" id="new-code-code" placeholder="Code (ex : 601100)">
+          <input type="text" id="new-code-code" placeholder="Code (ex : 601000)">
           <input type="text" id="new-code-libelle" placeholder="Libellé du compte">
           <select id="new-code-taux">${TAUX_OPTIONS.map(t=>`<option value="${t}">${t}%</option>`).join("")}</select>
           <input type="text" id="new-code-compteTva" placeholder="Compte TVA déductible (ex : 445660)" value="445660">
@@ -5845,10 +5847,11 @@ function deleteSnapshot(id){
 // CONSOMMATION ET RATIO MATIÈRE (18/10/2026)
 // Consommation = stock de début + achats de la période − stock de fin,
 // séparée entre nourriture et boissons/café. Les achats viennent du Cahier
-// d'achats (codes 601100 = nourriture, 601200/601400 = boissons et café).
+// d'achats (601000 = nourriture, 607000 = boissons ; anciens codes 601100/601200/601400 acceptés).
 // ══════════════════════════════════════════════════════════
 const CONSO_BEV_ZONES=['BOISSONS','CAFETERIE'];
-const CONSO_CODES={nourriture:['601100'],boissons:['601200','601400']};
+// Comptes d'achats consommés (601000 / 607000 = plan du cabinet ; 6011xx/6012xx/6014xx = ancien plan de l'appli)
+const CONSO_CODES={nourriture:['601000','601100'],boissons:['607000','601200','601400']};
 function _stockSplit(items){
   const r={nourriture:0,boissons:0};
   (items||[]).forEach(i=>{if(i.qte==null||!i.prix)return;const v=i.qte*i.prix;r[CONSO_BEV_ZONES.includes(i.zone)?'boissons':'nourriture']+=v;});
@@ -5857,14 +5860,15 @@ function _stockSplit(items){
 function _achatsEntre(debutISO,finISO){
   let inv=[];try{inv=JSON.parse(localStorage.getItem('ca_invoices'))||[];}catch(e){}
   const d0=localISODate(new Date(debutISO)),d1=localISODate(new Date(finISO));
-  const r={nourriture:0,boissons:0,exclus:0,nb:0};
+  const r={nourriture:0,boissons:0,exclus:0,nb:0};const fac=new Set();
   inv.forEach(i=>{
     if(!i.date||i.date<=d0||i.date>d1)return; // achats APRÈS l'inventaire de début, jusqu'à celui de fin inclus
     const ht=Number(i.ht)||0;
-    if(CONSO_CODES.nourriture.includes(i.code)){r.nourriture+=ht;r.nb++;}
-    else if(CONSO_CODES.boissons.includes(i.code)){r.boissons+=ht;r.nb++;}
+    if(CONSO_CODES.nourriture.includes(i.code)){r.nourriture+=ht;fac.add(i.factureId||i.id);}
+    else if(CONSO_CODES.boissons.includes(i.code)){r.boissons+=ht;fac.add(i.factureId||i.id);}
     else r.exclus+=ht;
   });
+  r.nb=fac.size;
   return r;
 }
 function renderConsommation(){
