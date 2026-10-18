@@ -3653,7 +3653,7 @@ function monthLabel(key){
 }
 function computeLine(inv){
   const ht=Number(inv.ht)||0, taux=Number(inv.taux)||0;
-  const tva=Math.round(ht*(taux/100)*100)/100;
+  const tva=Math.round(ht*(taux/100)*100)/100||0; // ||0 : évite « -0,00 € » sur les avoirs
   const ttc=Math.round((ht+tva)*100)/100;
   return {ht,tva,ttc};
 }
@@ -3737,7 +3737,22 @@ const CaApp = {
   setTab(t){ this.tab=t; this.render(); },
   setMonth(v){ this.selectedMonth=v; this.render(); },
   setLedgerFilter(v){ this.ledgerCodeFilter=v; this.render(); },
-  setEntryMode(m){ this.entryMode=m; this.resetScan(); this.render(); },
+  setEntryMode(m){ this.entryMode=m; this.resetScan(); if(m==='manual') this.startManual(); this.render(); },
+  // Rafraîchit le contrôle TTC pendant la saisie (sans tout redessiner)
+  scanLiveCheck(){
+    this.syncScanLinesFromDom();
+    const el = document.getElementById("scan-ttc-check"); if(!el) return;
+    el.outerHTML = this.scanCheckHtml();
+  },
+  scanCheckHtml(){
+    const tot = this.scan.lines.reduce((s,l)=>s+computeLine(l).ttc,0);
+    const ecart = this.scanEcartTTC();
+    let msg, cls;
+    if(ecart===null){ msg = `Total ventilé : <strong>${eur(tot)}</strong> — saisissez le TTC de la facture pour le contrôle`; cls="banner"; }
+    else if(Math.abs(ecart)<=0.02){ msg = `✅ Total ventilé ${eur(tot)} = TTC de la facture`; cls="banner ap-ok"; }
+    else { msg = `⚠️ Total ventilé ${eur(tot)} ≠ TTC ${eur(tot-ecart)} : écart de <strong>${eur(ecart)}</strong>`; cls="banner ap-ko"; }
+    return `<div id="scan-ttc-check" class="${cls}" style="margin:14px 0;">${msg}</div>`;
+  },
 
   // ---- Factures ----
   addInvoiceFromForm(prefix){
@@ -3751,7 +3766,7 @@ const CaApp = {
     if(!date){ errEl.textContent="La date est obligatoire."; return; }
     if(!fournisseur){ errEl.textContent="Le fournisseur est obligatoire."; return; }
     if(!code){ errEl.textContent="Le code de ventilation est obligatoire."; return; }
-    if(!Number.isFinite(ht) || ht<=0){ errEl.textContent="Le montant HT doit être un nombre supérieur à 0."; return; }
+    if(!Number.isFinite(ht) || ht===0){ errEl.textContent="Le montant HT doit être un nombre non nul (négatif pour un avoir)."; return; }
     if(this.editingInvoiceId){
       this.invoices = this.invoices.map(i=> i.id===this.editingInvoiceId ? {...i,date,fournisseur,bl,ht,taux,code} : i);
       this.editingInvoiceId = null;
@@ -3907,13 +3922,18 @@ const CaApp = {
         base64 = await this.fileToBase64(resized);
         contentBlock = { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:base64 } };
       }
-      const codesListText = this.codes.map(c=>`${c.code} = ${c.libelle}`).join("\n");
+      // Comptes de charges seulement : la TVA (635200) est ajoutée par l'appli à partir du total TVA
+      const codesListText = this.codes.filter(c=>c.code!=="635200").map(c=>`${c.code} = ${c.libelle}`).join("\n");
       const systemPrompt = "Tu es un assistant comptable qui ventile les factures fournisseurs d'un restaurant selon le plan de ventilation suivant (code = libellé) :\n"+codesListText+
-        "\n\nAnalyse la facture fournie (photo ou PDF) et découpe son montant en une ou plusieurs lignes de ventilation, une ligne par catégorie de produits réellement présente sur la facture. Pour chaque ligne, choisis le code EXACTEMENT parmi la liste ci-dessus, sans en inventer un nouveau. Si un seul type de produit est présent, renvoie une seule ligne. Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balises markdown, au format exact :\n"+
-        '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_bl":"...","lignes":[{"code":"...","montant_ht":0.00,"taux_tva":0}],"articles":[{"designation":"...","reference":"...","prix_unitaire_ht":0.00,"unite":"..."}]}\n'+
-        // 18/10/2026 : « articles » = chaque produit facturé avec son prix unitaire HT net (après remise), pour mettre à jour les prix de l'inventaire
-        'Dans articles, liste chaque produit facturé avec son prix unitaire HT net après remise et son unité de facturation (KG, L, PCE, BTL, CTN…).\n'+
-        "Les taux de TVA possibles sont 0, 5.5, 10 ou 20. Si une information est illisible ou absente, mets null.";
+        "\n\nAnalyse la facture fournie (photo ou PDF). Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balises markdown, au format exact :\n"+
+        '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_facture":"...","avoir":false,"facture_origine":null,"total_ht":0.00,"total_tva":0.00,"total_ttc":0.00,"lignes":[{"code":"...","montant_ht":0.00}],"articles":[{"designation":"...","reference":"...","quantite":0,"unite":"...","prix_unitaire_ht":0.00,"montant_ht":0.00,"code":"..."}]}\n'+
+        "Règles :\n"+
+        "- articles = CHAQUE ligne facturée (y compris frais de livraison, de port ou les lignes « fa » / « se »), avec son prix unitaire HT net après remise, son unité de facturation (KG, L, PCE, BT, ST, CT…) et son montant HT de ligne. La somme des montant_ht des articles doit être égale au total HT imprimé.\n"+
+        "- code de chaque article : choisi EXACTEMENT dans la liste ci-dessus. Denrées alimentaires et frais de livraison = 601000 ; boissons = 607000 ; emballages, vaisselle jetable, gobelets, pailles, lunch box, film = 602230 ; sacs poubelle, bobines = 602220 ; produits d'entretien et d'hygiène = 602290.\n"+
+        "- lignes = la somme des articles par code (HT, hors TVA).\n"+
+        "- total_ht, total_tva, total_ttc = les totaux imprimés en bas de la facture.\n"+
+        "- Pour un AVOIR : avoir=true, facture_origine = numéro de la facture d'origine s'il est indiqué, et tous les montants en NÉGATIF.\n"+
+        "- Relis chaque chiffre (0/O, 1/I, 5/S, 8/B ; virgule décimale française). Si une information est illisible, mets null.";
 
       // 18/10/2026 : le plan de ventilation (systemPrompt) était construit mais
       // jamais envoyé → l'IA utilisait son prompt par défaut, sans codes, et
@@ -3944,28 +3964,40 @@ const CaApp = {
       const {supplier, isNew} = this.matchOrCreateSupplier(parsed.fournisseur);
       const fallbackCode = this.codes.find(c=>/autre/i.test(c.libelle)) || this.codes[0];
       const rawLines = Array.isArray(parsed.lignes) ? parsed.lignes : [];
+      const codeOk = c => (this.codes.find(x=>x.code===c) ? c : (fallbackCode?fallbackCode.code:this.codes[0].code));
       let lines = rawLines.map(l=>{
-        const codeMatch = this.codes.find(c=>c.code===l.code);
         const ht = Number(l.montant_ht);
-        const rawTaux = Number(l.taux_tva);
-        const base = Number.isFinite(rawTaux)?rawTaux:0;
-        const taux = TAUX_OPTIONS.reduce((best,t)=> Math.abs(t-base)<Math.abs(best-base)?t:best, TAUX_OPTIONS[0]);
-        return { id:uid(), code: codeMatch? codeMatch.code : (fallbackCode?fallbackCode.code:this.codes[0].code), ht: (Number.isFinite(ht)&&ht>0)?ht:"", taux };
+        return { id:uid(), code: codeOk(l.code), ht: (Number.isFinite(ht)&&ht!==0)?Math.round(ht*100)/100:"", taux:0 };
       });
+      // Articles lus sur la facture : servent à la ventilation (règles apprises) et aux prix de l'inventaire
+      const articles = (Array.isArray(parsed.articles)?parsed.articles:[]).map(a=>({designation:String(a.designation||'').trim(),reference:String(a.reference||'').trim(),quantite:Number(a.quantite),prix_ht:Number(a.prix_unitaire_ht),montant_ht:Number(a.montant_ht),unite:String(a.unite||'').trim(),code:codeOk(a.code)})).filter(a=>a.designation);
+      const totHT = Number(parsed.total_ht), totTVA = Number(parsed.total_tva), totTTC = Number(parsed.total_ttc);
+      // Ventilation recalculée article par article (règles du cabinet) quand les articles retombent sur le total HT
+      let ventilParArticles = false;
+      if(typeof apVentiler==='function'){
+        const v = apVentiler(articles, Number.isFinite(totHT)?totHT:null);
+        if(v){ lines = v.map(x=>({id:uid(), code:x.code, ht:x.ht, taux:0})); ventilParArticles = true; }
+      }
       if(lines.length===0) lines=[{id:uid(), code: supplier?supplier.code:(fallbackCode?fallbackCode.code:this.codes[0].code), ht:"", taux:0}];
+      // TVA non récupérable : une ligne 635200
+      if(Number.isFinite(totTVA) && totTVA!==0 && this.codes.some(c=>c.code==="635200")) lines.push({id:uid(), code:"635200", ht:Math.round(totTVA*100)/100, taux:0});
 
-      this.scan.common = { date: dateOk?parsed.date:localISODate(), fournisseur: supplier?supplier.nom:"", bl: parsed.numero_bl||parsed.bl||"" };
+      this.scan.common = { date: dateOk?parsed.date:localISODate(), fournisseur: supplier?supplier.nom:"", bl: parsed.numero_facture||parsed.numero_bl||parsed.bl||"",
+        ttc: Number.isFinite(totTTC)&&totTTC!==0 ? Math.round(totTTC*100)/100 : "", avoirDe: parsed.avoir ? String(parsed.facture_origine||"") : "" };
       this.scan.lines = lines;
-      // Articles lus sur la facture → proposés pour la mise à jour des prix de l'inventaire
-      this.scan.articles = (Array.isArray(parsed.articles)?parsed.articles:[]).map(a=>({designation:String(a.designation||'').trim(),reference:String(a.reference||'').trim(),prix_ht:Number(a.prix_unitaire_ht),unite:String(a.unite||'').trim()})).filter(a=>a.designation&&isFinite(a.prix_ht)&&a.prix_ht>0);
+      this.scan.articles = articles.filter(a=>isFinite(a.prix_ht)&&a.prix_ht>0);
+      this.scan.allArticles = articles;
 
       const notes=[];
       if(!dateOk) notes.push("date non reconnue (à corriger)");
       if(lines.some(l=>l.ht==="")) notes.push("un ou plusieurs montants non reconnus (à saisir)");
-      if(lines.length>1) notes.push(`facture ventilée automatiquement sur ${lines.length} codes, à vérifier`);
+      if(!this.scan.common.ttc) notes.push("total TTC non lu : saisissez-le pour contrôler la ventilation");
+      if(parsed.avoir) notes.push("AVOIR détecté (montants négatifs)");
+      if(lines.length>1) notes.push(`ventilée sur ${lines.length} comptes${ventilParArticles?' article par article (règles du cabinet)':''}, à vérifier`);
       if(isNew && supplier) notes.push(`nouveau fournisseur « ${supplier.nom} » ajouté automatiquement`);
+      const partielle = !dateOk || lines.some(l=>l.ht==="") || !this.scan.common.ttc;
       this.scan.note = notes.length? notes.join(" · ") : "Facture analysée. Vérifiez les champs avant d’enregistrer.";
-      this.toast(notes.length? "Extraction partielle : vérifiez les champs." : "Facture analysée et ventilée.", notes.length?"error":"success");
+      this.toast(partielle? "Extraction partielle : vérifiez les champs." : "Facture analysée et ventilée.", partielle?"error":"success");
     } catch(e){
       this.scan.error = e.message || "Échec de l’analyse de la facture.";
       this.scan.loading = false;
@@ -3993,6 +4025,7 @@ const CaApp = {
     this.render();
   },
   syncScanLinesFromDom(){
+    this.syncScanCommonFromDom();
     this.scan.lines = this.scan.lines.map(l=>{
       const codeEl = document.getElementById("scan-line-code-"+l.id);
       const htEl = document.getElementById("scan-line-ht-"+l.id);
@@ -4005,28 +4038,67 @@ const CaApp = {
       };
     });
   },
+  // Lit les champs communs (date, fournisseur, n°, TTC, avoir) dans l'état
+  syncScanCommonFromDom(){
+    if(!this.scan.common) return;
+    const v = id => { const el=document.getElementById(id); return el ? el.value : undefined; };
+    const c = this.scan.common;
+    if(v("scan-common-date")!==undefined) c.date = v("scan-common-date");
+    if(v("scan-common-fournisseur")!==undefined) c.fournisseur = v("scan-common-fournisseur");
+    if(v("scan-common-bl")!==undefined) c.bl = v("scan-common-bl").trim();
+    if(v("scan-common-ttc")!==undefined) c.ttc = v("scan-common-ttc");
+    if(v("scan-common-avoir")!==undefined) c.avoirDe = v("scan-common-avoir").trim();
+  },
+  // Contrôle : total ventilé (charges + TVA 635200 + TVA calculée) = TTC de la facture
+  scanEcartTTC(){
+    const c = this.scan.common; if(!c) return null;
+    const ttc = Number(String(c.ttc).replace(",","."));
+    if(c.ttc==="" || c.ttc==null || !Number.isFinite(ttc)) return null;
+    const tot = this.scan.lines.reduce((s,l)=>s+computeLine(l).ttc,0);
+    return Math.round((tot-ttc)*100)/100;
+  },
   submitScan(){
     this.syncScanLinesFromDom();
-    const date = document.getElementById("scan-common-date").value;
-    const fournisseur = document.getElementById("scan-common-fournisseur").value;
-    const bl = document.getElementById("scan-common-bl").value.trim();
+    this.syncScanCommonFromDom();
+    const {date, fournisseur, bl, avoirDe} = this.scan.common;
     const errEl = document.getElementById("scan-error");
     if(!date){ errEl.textContent="La date est obligatoire."; return; }
     if(!fournisseur){ errEl.textContent="Le fournisseur est obligatoire."; return; }
+    this.scan.lines = this.scan.lines.filter(l=>!(l.ht===""&&this.scan.lines.length>1&&l.code==="635200"));
     if(this.scan.lines.length===0){ errEl.textContent="Ajoutez au moins une ligne de ventilation."; return; }
     for(const l of this.scan.lines){
       const htNum = Number(l.ht);
       if(!l.code){ errEl.textContent="Chaque ligne doit avoir un code."; return; }
-      if(!Number.isFinite(htNum) || htNum<=0){ errEl.textContent="Chaque ligne doit avoir un montant HT valide."; return; }
+      // Montants négatifs acceptés : avoirs
+      if(l.ht==="" || !Number.isFinite(htNum) || htNum===0){ errEl.textContent="Chaque ligne doit avoir un montant HT (négatif pour un avoir)."; return; }
     }
+    const ecart = this.scanEcartTTC();
+    if(ecart===null){ errEl.textContent="Saisissez le total TTC imprimé sur la facture : il sert à contrôler la ventilation."; return; }
+    if(Math.abs(ecart)>0.02){ errEl.textContent=`La ventilation ne tombe pas juste : écart de ${eur(ecart)} avec le TTC de la facture. Vérifiez les montants (TVA comptée deux fois ? ligne oubliée ?).`; return; }
+    if(bl && this.invoices.some(i=>i.bl===bl && i.fournisseur===fournisseur) && !confirm(`La facture n° ${bl} de ${fournisseur} est déjà enregistrée. L'enregistrer quand même ?`)) return;
     errEl.textContent = "";
     const factureId = uid();
-    const records = this.scan.lines.map(l=>({ id:uid(), factureId, date, fournisseur, bl, ht:Number(l.ht), taux:Number(l.taux)||0, code:l.code }));
+    const ttcFacture = Math.round(Number(String(this.scan.common.ttc).replace(",","."))*100)/100;
+    const records = this.scan.lines.map(l=>{ const r={ id:uid(), factureId, date, fournisseur, bl, ht:Math.round(Number(l.ht)*100)/100, taux:Number(l.taux)||0, code:l.code, ttcFacture }; if(avoirDe) r.avoirDe=avoirDe; return r; });
     this.invoices.push(...records);
     this.saveInvoices();
-    this.toast(records.length>1 ? `Facture ventilée sur ${records.length} codes et enregistrée.` : "Facture enregistrée.");
+    this.toast(records.length>1 ? `Facture ventilée sur ${records.length} comptes et enregistrée.` : "Facture enregistrée.");
+    // Articles : historique d'achats par fournisseur + comparaison des prix avec l'inventaire
+    const articles = this.scan.articles || [];
+    if(typeof apApresEnregistrement==='function') apApresEnregistrement({factureId, date, fournisseur, bl, avoirDe, articles: this.scan.allArticles||articles});
+    const manuel = this.entryMode==='manual';
+    if(articles.length && typeof invoiceArticlesToPrix==='function') invoiceArticlesToPrix();
     this.resetScan();
+    if(manuel) this.startManual();
     this.render();
+  },
+  // Saisie manuelle = même grille de ventilation que le scan (plusieurs comptes + TVA 635200 + contrôle TTC)
+  startManual(){
+    const sup = this.suppliers[0];
+    this.scan = { previewUrl:"", loading:false, error:"", note:"", manual:true,
+      common:{ date:localISODate(), fournisseur: sup?sup.nom:"", bl:"", ttc:"", avoirDe:"" },
+      lines:[{id:uid(), code: sup?sup.code:(this.codes[0]?this.codes[0].code:""), ht:"", taux:0}].concat(this.codes.some(c=>c.code==="635200")?[{id:uid(), code:"635200", ht:"", taux:0}]:[]),
+      articles:[] };
   },
 
   // ---- Export Excel ----
@@ -4145,11 +4217,8 @@ const CaApp = {
         <button class="btn ${this.entryMode==='manual'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('manual')">✎ Saisie manuelle</button>
         <button class="btn ${this.entryMode==='scan'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('scan')">📷 Scanner une facture</button>
       </div>`;
-    if(this.entryMode==='manual'){
-      html += `<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:16px;">Nouvelle facture</div>${this.invoiceFormHtml('manual', null)}</div>`;
-    } else {
-      html += this.renderScanPanel();
-    }
+    if(this.entryMode==='manual' && !this.scan.common) this.startManual();
+    html += this.renderScanPanel();
     html += `</div>`;
     return html;
   },
@@ -4180,12 +4249,12 @@ const CaApp = {
         <div style="font-size:13px;">Analyse de la facture en cours…</div>
       </div>`;
     } else if(s.common){
-      const totals = s.lines.reduce((acc,l)=>{ const c=computeLine(l); return {ht:acc.ht+c.ht, tva:acc.tva+c.tva, ttc:acc.ttc+c.ttc}; }, {ht:0,tva:0,ttc:0});
       const supplierOptionsHave = this.suppliers.some(sp=>sp.nom===s.common.fournisseur);
+      const live = `oninput="CaApp.scanLiveCheck()"`;
       body = `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div style="font-size:14px;font-weight:600;">Vérifiez la facture scannée</div>
-          <button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>
+          <div style="font-size:14px;font-weight:600;">${s.manual?'Nouvelle facture (ou avoir)':'Vérifiez la facture scannée'}</div>
+          ${s.manual?`<button class="btn btn-ghost" onclick="CaApp.setEntryMode('manual')">↻ Effacer</button>`:`<button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>`}
         </div>
         ${s.note?`<div class="banner" style="margin-bottom:16px;">${esc(s.note)}</div>`:''}
         ${(s.articles&&s.articles.length)?`<div class="banner" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>💰 ${s.articles.length} prix d'articles lus sur la facture</span><button class="btn btn-primary" onclick="invoiceArticlesToPrix()">Comparer avec l'inventaire</button></div>`:''}
@@ -4200,10 +4269,17 @@ const CaApp = {
                   ${!supplierOptionsHave?`<option value="${esc(s.common.fournisseur)}" selected>${esc(s.common.fournisseur||'Sélectionner…')}</option>`:''}
                   ${this.suppliers.map(sp=>`<option value="${esc(sp.nom)}" ${sp.nom===s.common.fournisseur?'selected':''}>${esc(sp.nom)}</option>`).join("")}
                 </select></label>
-              <label class="field"><span class="label">N° BL / facture</span><span class="hint">facultatif</span>
+              <label class="field"><span class="label">N° facture</span>
                 <input type="text" id="scan-common-bl" value="${esc(s.common.bl)}"></label>
             </div>
-            <div style="font-size:12.5px;font-weight:600;color:#5b5346;margin-bottom:8px;">Ventilation détectée par code comptable</div>
+            <div class="row">
+              <label class="field"><span class="label">Total TTC de la facture (€)</span><span class="hint">contrôle</span>
+                <input type="number" step="0.01" id="scan-common-ttc" value="${esc(s.common.ttc)}" placeholder="0.00" ${live}></label>
+              <label class="field"><span class="label">Avoir sur la facture n°</span><span class="hint">si avoir</span>
+                <input type="text" id="scan-common-avoir" value="${esc(s.common.avoirDe||'')}" placeholder="ex : 03781077"></label>
+            </div>
+            ${typeof apArticlesHtml==='function'?apArticlesHtml(s):''}
+            <div style="font-size:12.5px;font-weight:600;color:#5b5346;margin-bottom:8px;">Ventilation par compte (HT ; TVA non récupérable sur 635200 ; avoir = montants négatifs)</div>
             <div id="scan-lines">
               ${s.lines.map(l=>{
                 const c = computeLine(l);
@@ -4211,8 +4287,8 @@ const CaApp = {
                   <select id="scan-line-code-${l.id}" onchange="CaApp.scanCodeChange('${l.id}', this.value)">
                     ${this.codes.map(c2=>`<option value="${esc(c2.code)}" ${c2.code===l.code?'selected':''}>${esc(c2.code)} — ${esc(c2.libelle)}</option>`).join("")}
                   </select>
-                  <input type="number" step="0.01" min="0" id="scan-line-ht-${l.id}" value="${esc(l.ht)}" placeholder="HT">
-                  <select class="taux" id="scan-line-taux-${l.id}">
+                  <input type="number" step="0.01" id="scan-line-ht-${l.id}" value="${esc(l.ht)}" placeholder="HT" ${live}>
+                  <select class="taux" id="scan-line-taux-${l.id}" onchange="CaApp.scanLiveCheck()">
                     ${TAUX_OPTIONS.map(t=>`<option value="${t}" ${t===l.taux?'selected':''}>${t}%</option>`).join("")}
                   </select>
                   <span class="muted" style="font-size:12.5px;min-width:90px;text-align:right;">TTC ${eur(c.ttc)}</span>
@@ -4221,11 +4297,7 @@ const CaApp = {
               }).join("")}
             </div>
             <button class="btn btn-ghost" style="margin-top:4px;" onclick="CaApp.scanAddLine()">+ Ajouter une ligne</button>
-            <div class="banner" style="display:flex;gap:24px;margin:14px 0;">
-              <div>Total HT : <strong>${eur(totals.ht)}</strong></div>
-              <div>Total TVA : <strong>${eur(totals.tva)}</strong></div>
-              <div>Total TTC : <strong>${eur(totals.ttc)}</strong></div>
-            </div>
+            ${this.scanCheckHtml()}
             <div id="scan-error" class="error-text" style="margin-bottom:10px;"></div>
             <div style="display:flex;gap:10px;">
               <button class="btn btn-primary" onclick="CaApp.submitScan()">✓ Enregistrer la ventilation</button>
@@ -4267,7 +4339,7 @@ const CaApp = {
               const c = computeLine(inv);
               return `<tr>
                 <td>${esc(inv.date)}</td>
-                <td class="muted">${esc(inv.bl)||'—'}</td>
+                <td class="muted">${esc(inv.bl)||'—'}${inv.avoirDe||Number(inv.ht)<0?` <span class="ap-badge">AVOIR${inv.avoirDe?' / '+esc(inv.avoirDe):''}</span>`:''}</td>
                 <td>${esc(inv.code)}</td>
                 <td class="num">${eur(c.ht)}</td>
                 <td class="num muted">${eur(c.tva)}</td>
@@ -4363,20 +4435,30 @@ const CaApp = {
     else if(this.tab==='registre') tabContent = this.renderRegistre();
     else if(this.tab==='fournisseurs') tabContent = this.renderFournisseurs();
     else if(this.tab==='plan') tabContent = this.renderPlan();
+    else if(this.tab==='regles' && typeof apRenderRegles==='function') tabContent = apRenderRegles();
+    else if(this.tab==='prix' && typeof apRenderComparateur==='function') tabContent = apRenderComparateur();
+    else if(this.tab==='reclam' && typeof apRenderReclamations==='function') tabContent = apRenderReclamations();
+    if(this.tab==='dashboard' && typeof apDashboardExtra==='function') tabContent = apDashboardExtra() + tabContent;
 
     const tabs = [
       {id:'dashboard', label:'Tableau de bord'},
       {id:'saisie', label:'Saisie facture'},
       {id:'registre', label:'Registre'},
+      {id:'reclam', label:'Réclamations'},
+      {id:'prix', label:'Prix fournisseurs'},
       {id:'fournisseurs', label:'Fournisseurs'},
-      {id:'plan', label:'Plan de ventilation'},
+      {id:'regles', label:'Règles de ventilation'},
+      {id:'plan', label:'Plan comptable'},
     ];
 
     document.getElementById("app").innerHTML = `
       <div class="shell">
         <div class="header">
           <div><h1>Cahier d’achats</h1><p>Ventilation et suivi des factures fournisseurs</p></div>
-          <button class="btn btn-ghost" onclick="CaApp.exportExcel()">⬇ Exporter en Excel</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="apExportComptable()" title="Fichier pour le cabinet comptable : factures par compte, écritures du journal d'achats, totaux">📒 Export comptable</button>
+            <button class="btn btn-ghost" onclick="CaApp.exportExcel()">⬇ Exporter en Excel</button>
+          </div>
         </div>
         <div class="tabs">
           ${tabs.map(t=>`<button class="tab-btn ${this.tab===t.id?'active':''}" onclick="CaApp.setTab('${t.id}')">${t.label}</button>`).join("")}

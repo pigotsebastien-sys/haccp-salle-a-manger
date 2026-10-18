@@ -74,6 +74,14 @@
     'ca_mensuel':     'haccp_ca_mensuel_v1',
     // Adresses email / téléphones des fournisseurs (bons de commande)
     'fournisseurs_contacts': 'haccp_fournisseurs_contacts_v1',
+    // 18/10/2026 (4) : achats — règles de ventilation, liens article→produit,
+    // articles achetés, réclamations, objectifs de ratio, doublons écartés
+    'ca_regles':       'ca_regles',
+    'ca_liens':        'ca_liens',
+    'ca_articles':     'ca_articles',
+    'ca_reclamations': 'ca_reclamations',
+    'ca_objectifs':    'ca_objectifs',
+    'doublons_ignores':'haccp_doublons_ignores_v1',
   };
   // Modules dont les données existaient sur chaque appareil AVANT d'être
   // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
@@ -399,6 +407,14 @@
         case 'ca_codes':
           if (window.CaApp && typeof window.CaApp.reloadFromStorage === 'function') window.CaApp.reloadFromStorage();
           break;
+        case 'ca_regles':
+        case 'ca_liens':
+        case 'ca_articles':
+        case 'ca_reclamations':
+        case 'ca_objectifs':
+        case 'doublons_ignores':
+          if (typeof apReload==='function') apReload(id);
+          break;
         case 'ordre_comptage':
         case 'ca_mensuel':
         case 'fournisseurs_contacts':
@@ -676,7 +692,7 @@
 
 
   // ── Diagnostic visible : état de la synchro de cet appareil ──
-  const APP_SYNC_LABEL = 'Synchro v8 (18/10)';
+  const APP_SYNC_LABEL = 'Synchro v9 (18/10)';
   function syncStatusText() {
     const raw = localStorage.getItem('haccp_session');
     let email = null;

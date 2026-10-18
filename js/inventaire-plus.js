@@ -75,12 +75,12 @@ function ecartCheckInput(inp) {
 
 // ── 2. Inventaire rapide ────────────────────────────────────────────
 let _qList = [], _qIdx = 0, _qReorder = false;
-function openQuickInv() {
+function openQuickInv(zone) {
   invPlusLoad();
   const sel = document.getElementById('quick-zone');
-  sel.innerHTML = '<option value="TOUT">Toutes les zones</option>' + Object.keys(ZONES).filter(z => DATA.some(d => d.zone === z))
+  sel.innerHTML = '<option value="TOUT">Toutes les zones</option><option value="TOP30">⭐ 30 produits les plus chers (point mi-mois)</option>' + Object.keys(ZONES).filter(z => DATA.some(d => d.zone === z))
     .map(z => `<option value="${esc(z)}">${esc(ZONES[z].label)}</option>`).join('');
-  sel.value = (activeZone && activeZone !== 'TOUT' && DATA.some(d => d.zone === activeZone)) ? activeZone : 'TOUT';
+  sel.value = zone === 'TOP30' ? 'TOP30' : (activeZone && activeZone !== 'TOUT' && DATA.some(d => d.zone === activeZone)) ? activeZone : 'TOUT';
   _qReorder = false;
   document.getElementById('quick-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -97,6 +97,15 @@ function quickRebuild() {
   const z = document.getElementById('quick-zone').value;
   const onlyMissing = document.getElementById('quick-missing').checked && !_qReorder;
   // Liste figée : un produit saisi ne disparaît pas sous les doigts
+  if (z === 'TOP30') {
+    // Les 30 produits qui pèsent le plus dans le stock (quantité du dernier inventaire archivé × prix),
+    // parcourus dans l'ordre des étagères : base de l'estimation du ratio en cours de mois
+    const last = _snapsTries().slice(-1)[0];
+    const q0 = c => { const it = last && (last.items || []).find(i => i.code === c); return it && it.qte != null ? Number(it.qte) : 0; };
+    _qList = DATA.map(d => ({ d, v: q0(d.code) * (d.prix || 0) })).filter(x => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 30)
+      .map(x => x.d).sort(ordreComptage).map(d => d.code);
+    _qIdx = 0; quickRender(); return;
+  }
   _qList = DATA.filter(d => (z === 'TOUT' || d.zone === z) && (!onlyMissing || d.qte === null || d.qte === undefined))
     .sort(ordreComptage).map(d => d.code);
   _qIdx = 0;
@@ -554,6 +563,7 @@ function qcRender() {
   const tabs = [
     ['completer', '✏️ À compléter', _qcIncomplets().length],
     ['jamais', '📦 Jamais comptés', _qcJamaisComptes().length],
+    ['doublons', '👯 Doublons', typeof apDoublons === 'function' ? apDoublons().length : null],
     ['archives', '🗄 Archivés', (window.ARCHIVES || []).length],
     ['seuils', '📉 Seuils suggérés', null],
     ['journal', '🕓 Journal', null]
@@ -583,6 +593,8 @@ function qcRender() {
     const l = (window.ARCHIVES || []).slice().sort((a, b) => a.produit.localeCompare(b.produit, 'fr'));
     body.innerHTML = l.length ? `<table class="conso-table">` + l.map(d => `<tr><td>${esc(d.produit)}<br><small style="color:var(--text3)">${esc(d.code)} · ${esc((ZONES[d.zone] || { label: d.zone }).label)}</small></td><td class="num"><button class="dlc-btn-sm" onclick="qcRestaurer(${jsArg(d.code)})">↩ Restaurer</button></td></tr>`).join('') + '</table>'
       : '<div class="quick-empty">Aucun produit archivé.</div>';
+  } else if (_qcTab === 'doublons') {
+    if (typeof apRenderDoublons === 'function') apRenderDoublons(body);
   } else if (_qcTab === 'seuils') {
     renderSeuilsSuggeres(body);
   } else if (_qcTab === 'journal') {

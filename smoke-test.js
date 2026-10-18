@@ -56,7 +56,7 @@ check('Auth login présent', html.includes('id="login-screen"'));
 
 // ── Fichiers JS/CSS bien référencés depuis index.html ──
 check('style.css chargé', /href=["']style\.css(\?[^"']*)?["']/.test(html));
-for (const f of ['app.js', 'core-sync.js', 'sw-register.js', 'favicon.js']) {
+for (const f of ['app.js', 'core-sync.js', 'sw-register.js', 'favicon.js', 'inventaire-plus.js', 'achats-plus.js']) {
   check(`js/${f} chargé`, html.includes(`js/${f}`));
 }
 // Chaque fichier JS servi doit être syntaxiquement valide
