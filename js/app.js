@@ -584,14 +584,11 @@ const DATA=[
 {code:'N120',zone:'FRIGO 1',cat:'BOF',produit:'CAMEMBERT NU 22% LFR 240GX30 B&E',unite:'PU',prix:1.839,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N121',zone:'FRIGO 1',cat:'BOF',produit:'JAMBON CRU PAYS S/OS (19CX26TR)X6',unite:'BOT',prix:5.61,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N122',zone:'FRIGO 1',cat:'BOF',produit:'JAMBON SUP DD TORCHON (40GX20TR)X6',unite:'BOT',prix:6.273,qte:null,fournisseur:'POMONA',status:'new'},
-{code:'N123',zone:'CONGELATEUR',cat:'Surgeles',produit:'MIX4 PAIN LOSANGE PRECUIT 55GX25X4',unite:'PU',prix:0.45,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N124',zone:'CONGELATEUR',cat:'Surgeles',produit:'NAVETTE NATURE CT 15GX100',unite:'PU',prix:0.243,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N125',zone:'BOISSONS',cat:'Boissons',produit:'EAU GAZEUSE PERRIER BTE 33CL VC',unite:'BTE',prix:0.97,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N126',zone:'FRAIS BCP',cat:'Frais',produit:'ABRICOT FRANCE CI',unite:'Kg',prix:3.8,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
 {code:'N127',zone:'FRAIS BCP',cat:'Frais',produit:'MELON CAL9 FRANCE',unite:'Pce',prix:2.6,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-{code:'N128',zone:'FRAIS BCP',cat:'Frais',produit:'RAISIN ITALIA CIA CI',unite:'Kg',prix:2.96,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
 {code:'N129',zone:'FRAIS BCP',cat:'Frais',produit:'CAROTTE FRANCE X10',unite:'Kg',prix:0.89,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-{code:'N130',zone:'FRAIS BCP',cat:'Frais',produit:'PRUNE JAUNE ESP CI',unite:'Kg',prix:2.6,qte:null,fournisseur:'UNION PRIMEURS',status:'new'}
 ,
 {code:'N131',zone:'FRIGO 1',cat:'BOF',produit:'TR. JAMBON PARIS CHX DD VPF X25 BQ1KG X9',unite:'BQ',prix:7.824,qte:null,fournisseur:'SYSCO',status:'new'},
 {code:'N132',zone:'FRIGO 1',cat:'BOF',produit:'VEGETOP UHT DEBIC 1L X6',unite:'L',prix:3.4,qte:null,fournisseur:'SYSCO',status:'new'},
@@ -604,7 +601,6 @@ const DATA=[
 {code:'N139',zone:'BOISSONS',cat:'Boissons',produit:'COCA COLA BTE 33CL VC',unite:'BTE',prix:1.033,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N140',zone:'BOISSONS',cat:'Boissons',produit:'LIMONADE SUD BTE 25CL VC',unite:'BTE',prix:0.49,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N141',zone:'FRAIS BCP',cat:'Frais',produit:'NECTARINE JAUNE ESPAGNE CI',unite:'Kg',prix:2.96,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-{code:'N142',zone:'FRAIS BCP',cat:'Frais',produit:'COURGETTE CAT1 ESP',unite:'Kg',prix:2.400,qte:null,fournisseur:'UNION PRIMEURS',status:'updated'}
 ,
 {code:'N143',zone:'ECONOMAT',cat:'Economat',produit:'HUILE OLIVE SPECIAL CUISINE BI5L',unite:'L',prix:4.600,qte:null,fournisseur:'SYSCO',status:'new'}
 ,
@@ -2562,7 +2558,8 @@ function loadPieces(){
   }catch(e){PIECES=[];}
 }
 function savePieces(){
-  try{localStorage.setItem(PIECES_KEY,JSON.stringify(PIECES));}catch(e){}
+  // Registre partagé entre appareils (avant : propre à chaque navigateur)
+  saveModule(PIECES_KEY,'pieces',PIECES);
 }
 
 function addToRegistre(){
@@ -3228,6 +3225,21 @@ async function saveReception() {
   if(!fournEl?.value.trim()) { alert('Veuillez saisir le fournisseur'); return; }
   if(!prodEl?.value.trim())  { alert('Veuillez saisir le produit'); return; }
 
+  // Non-conformité (température, DLC, emballage, réserve ou refus) :
+  // l'action corrective / la réserve doit être décrite (exigence HACCP)
+  var _tt = document.getElementById('rec-type-temp')?.value;
+  var _t = parseFloat(tempEl?.value);
+  var _nc = [];
+  if (_tt && _tt !== 'na' && !isNaN(_t) && _t > parseFloat(_tt)) _nc.push('température');
+  if (dlcEl?.value === 'ko') _nc.push('DLC');
+  if (embEl?.value && embEl.value !== 'ok') _nc.push('emballages');
+  if (decEl?.value && decEl.value !== 'ok') _nc.push(decEl.value === 'refuse' ? 'refus' : 'réserve');
+  if (_nc.length && !obsEl?.value.trim()) {
+    alert('⚠️ Non-conformité (' + _nc.join(', ') + ').\nDécrivez l\'action corrective / la réserve dans « Observations » avant d\'enregistrer.');
+    obsEl?.focus();
+    return;
+  }
+
   var typeTempEl = document.getElementById('rec-type-temp');
   var rec = {
     id:       Date.now(),
@@ -3300,6 +3312,8 @@ async function saveReception() {
 
   // Déclencher un événement custom pour intégration externe
   document.dispatchEvent(new CustomEvent('receptionSaved', { detail: rec }));
+  // Envoi des photos vers l'espace de stockage privé (dès que possible)
+  recUploadPendingPhotos();
 }
 
 
@@ -3318,7 +3332,10 @@ function renderReceptions() {
     var tempLimit = parseFloat(r.typeTemp || r['type-temp'] || '4');
     var tempOk = isNaN(tempNum) || isNaN(tempLimit) || tempNum <= tempLimit;
     var tempCls = tempOk ? '' : 'color:#991B1B;font-weight:700';
-    var photos = r.photos?.length ? '<span style="cursor:pointer;color:#2D6A4F;font-weight:600" onclick="openLightbox(recState.receptions.find(function(x){return x.id==='+Number(r.id)+'}).photos[0])">📷 '+r.photos.length+'</span>' : '—';
+    var photos = r.photos?.length ? r.photos.map(function(p, i) {
+      var enAttente = typeof p === 'string';
+      return '<span style="cursor:pointer;color:#2D6A4F;font-weight:600;margin-right:4px" title="' + (enAttente ? 'Photo pas encore envoyée sur le serveur' : 'Photo enregistrée') + '" onclick="recOpenPhoto(' + jsArg(r.id) + ',' + i + ')">📷' + (r.photos.length > 1 ? (i + 1) : '') + (enAttente ? '⏳' : '') + '</span>';
+    }).join('') : '—';
     return '<tr>'+
       '<td>'+esc(r.date)+'</td>'+
       '<td>'+esc(r.heure)+'</td>'+
@@ -3383,6 +3400,75 @@ function openLightbox(url) {
 function closeLightbox() {
   var lb = document.getElementById('lightbox');
   if(lb) lb.style.display = 'none';
+}
+
+// ── Photos de réception dans Supabase Storage (18/10/2026) ──
+// Une photo est d'abord gardée sur l'appareil (texte « data:… »), puis envoyée
+// dans l'espace privé « receptions-photos » dès que la connexion le permet ;
+// la réception ne garde alors que le chemin du fichier ({path}). Les données
+// partagées restent ainsi légères, et les photos survivent au vidage du navigateur.
+var REC_BUCKET = 'receptions-photos';
+var _recPhotoUrlCache = {};
+var _recUploading = false;
+
+function _dataUrlToBlob(dataURL) {
+  var parts = dataURL.split(','), mime = (parts[0].match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+  var bin = atob(parts[1]), arr = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+async function recUploadPendingPhotos() {
+  if (_recUploading || !navigator.onLine) return;
+  if (typeof ensureFreshToken !== 'function' || !(await ensureFreshToken(false))) return;
+  _recUploading = true;
+  var changed = false;
+  try {
+    for (var r of (recState.receptions || [])) {
+      if (!Array.isArray(r.photos)) continue;
+      for (var i = 0; i < r.photos.length; i++) {
+        var p = r.photos[i];
+        if (typeof p !== 'string' || p.indexOf('data:') !== 0) continue;
+        var path = r.id + '/' + i + '-' + Date.now() + '.jpg';
+        var resp = await fetch(SUPA_URL + '/storage/v1/object/' + REC_BUCKET + '/' + path, {
+          method: 'POST',
+          headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + window._supabaseAuthToken, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+          body: _dataUrlToBlob(p)
+        });
+        if (!resp.ok) { console.warn('[PHOTOS] envoi refusé', resp.status); _recUploading = false; return; }
+        _recPhotoUrlCache[path] = p;
+        r.photos[i] = { path: path };
+        changed = true;
+      }
+    }
+  } catch (e) {
+    console.warn('[PHOTOS] envoi impossible :', e.message);
+  } finally {
+    _recUploading = false;
+    if (changed) { recSave(); renderReceptions(); }
+  }
+}
+
+// Renvoie une adresse affichable pour une photo (locale ou stockée sur le serveur)
+async function recPhotoUrl(p) {
+  if (typeof p === 'string') return p;
+  if (!p || !p.path) return '';
+  if (_recPhotoUrlCache[p.path]) return _recPhotoUrlCache[p.path];
+  if (typeof ensureFreshToken === 'function') await ensureFreshToken(false);
+  var resp = await fetch(SUPA_URL + '/storage/v1/object/authenticated/' + REC_BUCKET + '/' + p.path, {
+    headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + (window._supabaseAuthToken || SUPA_KEY) }
+  });
+  if (!resp.ok) throw new Error('photo indisponible (' + resp.status + ')');
+  var url = URL.createObjectURL(await resp.blob());
+  _recPhotoUrlCache[p.path] = url;
+  return url;
+}
+
+async function recOpenPhoto(recId, idx) {
+  var r = (recState.receptions || []).find(function(x) { return String(x.id) === String(recId); });
+  if (!r || !r.photos || !r.photos[idx]) return;
+  try { openLightbox(await recPhotoUrl(r.photos[idx])); }
+  catch (e) { alert('⚠️ ' + e.message + ' — connectez-vous pour voir les photos.'); }
 }
 
 
@@ -3530,24 +3616,34 @@ const CaApp = {
   scan: { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] },
   toastMsg: null, toastTimer: null,
 
-  init(){
+  loadFromStorage(){
     try { this.invoices = JSON.parse(localStorage.getItem("ca_invoices")) || SEED_INVOICES.slice(); }
     catch(e){ this.invoices = SEED_INVOICES.slice(); }
     try { this.suppliers = JSON.parse(localStorage.getItem("ca_suppliers")) || DEFAULT_SUPPLIERS.slice(); }
     catch(e){ this.suppliers = DEFAULT_SUPPLIERS.slice(); }
     try { this.codes = JSON.parse(localStorage.getItem("ca_codes")) || DEFAULT_CODES.slice(); }
     catch(e){ this.codes = DEFAULT_CODES.slice(); }
+  },
+  init(){
+    this.loadFromStorage();
     // Ancienne clé API saisie dans le navigateur : inutile, on l'efface
     try { localStorage.removeItem("ca_api_key"); } catch(e) {}
     this.apiKey = "";
     const months = Array.from(new Set(this.invoices.map(i=>monthKey(i.date)))).sort();
     this.selectedMonth = months.length ? months[months.length-1] : "";
-    this.saveAll();
+    // (plus d'enregistrement à l'ouverture : les valeurs par défaut d'un appareil
+    // neuf ne doivent pas être envoyées au serveur avant une vraie saisie)
     this.render();
   },
-  saveInvoices(){ localStorage.setItem("ca_invoices", JSON.stringify(this.invoices)); },
-  saveSuppliers(){ localStorage.setItem("ca_suppliers", JSON.stringify(this.suppliers)); },
-  saveCodes(){ localStorage.setItem("ca_codes", JSON.stringify(this.codes)); },
+  // Données reçues d'un autre appareil (synchro)
+  reloadFromStorage(){
+    this.loadFromStorage();
+    if (this._initialized && !this.editingInvoiceId && !(this.scan && this.scan.common)) this.render();
+  },
+  // Enregistrement local + envoi au serveur (Cahier d'achats partagé entre appareils)
+  saveInvoices(){ saveModule("ca_invoices", "ca_invoices", this.invoices); },
+  saveSuppliers(){ saveModule("ca_suppliers", "ca_suppliers", this.suppliers); },
+  saveCodes(){ saveModule("ca_codes", "ca_codes", this.codes); },
   saveAll(){ this.saveInvoices(); this.saveSuppliers(); this.saveCodes(); },
 
   toast(msg, type){
@@ -5551,6 +5647,16 @@ function checkTempLive(id,min,max){
   if(isNaN(v)){el.innerHTML='';return;}
   if(v>=min&&v<=max)el.innerHTML=`<span class="temp-ok">✓ OK</span>`;
   else el.innerHTML=`<span class="temp-alert">⚠ HORS SEUIL (${min}/${max}°C)</span>`;
+  updateTempActionField();
+}
+// Zones dont la valeur saisie est hors seuil
+function tempZonesHorsSeuil(){
+  return TEMP_ZONES.filter(z=>{const el=document.getElementById('temp-'+z.id);const v=el?parseFloat(el.value):NaN;return !isNaN(v)&&(v<z.min||v>z.max);});
+}
+// Affiche le champ « action corrective » dès qu'une valeur est hors seuil
+function updateTempActionField(){
+  const w=document.getElementById('temp-action-wrap');
+  if(w)w.style.display=tempZonesHorsSeuil().length?'block':'none';
 }
 function saveTempReleve(){
   const releves={};
@@ -5561,7 +5667,20 @@ function saveTempReleve(){
   if(!Object.values(releves).some(v=>v!==null)){alert('Saisissez au moins une température avant d\'enregistrer.');return;}
   // Qui a fait le relevé (exigence de traçabilité HACCP)
   const by=(typeof getCurrentUserIdentifier==='function')?getCurrentUserIdentifier():'';
-  TEMP_DATA.push({date:new Date().toISOString(),releves,by});
+  // Action corrective obligatoire pour toute température hors seuil (exigence HACCP)
+  const hors=tempZonesHorsSeuil();
+  const actionEl=document.getElementById('temp-action');
+  const action=(actionEl&&actionEl.value.trim())||'';
+  if(hors.length&&!action){
+    updateTempActionField();
+    alert('⚠️ Hors seuil : '+hors.map(z=>z.label).join(', ')+'.\nDécrivez l\'action corrective avant d\'enregistrer le relevé.');
+    if(actionEl)actionEl.focus();
+    return;
+  }
+  const entry={date:new Date().toISOString(),releves,by};
+  if(hors.length){entry.action=action;entry.horsSeuil=hors.map(z=>z.id);}
+  TEMP_DATA.push(entry);
+  if(actionEl)actionEl.value='';
   // 365 relevés = ~6 mois à 2 relevés/jour : trop court pour un registre HACCP
   if(TEMP_DATA.length>1500)TEMP_DATA=TEMP_DATA.slice(-1500);
   saveAllData();
@@ -5576,7 +5695,7 @@ function showTempHistory(){
   el.innerHTML='<div style="border:.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">'+
     last20.map((r,i)=>`<div class="temp-histo-row" style="padding:8px 12px;background:${i%2===0?'var(--bg)':'var(--bg2)'}">
       <span class="temp-histo-date">${new Date(r.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
-      <span style="font-size:11px;color:var(--text)">${TEMP_ZONES.filter(z=>r.releves[z.id]!=null).map(z=>`${z.label} : <b>${r.releves[z.id]}${z.unit}</b>`).join(' · ')}</span>
+      <span style="font-size:11px;color:var(--text)">${TEMP_ZONES.filter(z=>r.releves[z.id]!=null).map(z=>`${z.label} : <b>${r.releves[z.id]}${z.unit}</b>`).join(' · ')}${r.action?`<br><span style="color:var(--pink-text)">⚠️ Action corrective : ${esc(r.action)}</span>`:''}</span>
     </div>`).join('')+'</div>';
   el.style.display='block';
 }
@@ -7451,7 +7570,7 @@ function switchTabMore(name,btn){
   if(name==='prix'){initPrixPanel();setTimeout(renderPrixChart,100);}
   if(name==='carte-allergenes')renderCartAlg();
   if(name==='pieces'){try{const r=localStorage.getItem(PIECES_KEY);PIECES=r?JSON.parse(r):[];}catch(e){PIECES=[];} renderPieces(); detectCameraContext();}
-  if(name==='reception-mp'){recLoad();renderReceptions();recRenderCal();recResetDateHeure();}
+  if(name==='reception-mp'){recLoad();renderReceptions();recRenderCal();recResetDateHeure();recUploadPendingPhotos();}
   if(name==='factures'){
     if(window.CaApp && !window.CaApp._initialized){
       window.CaApp.init();
@@ -8033,6 +8152,100 @@ function buildPDFDLC(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='dlc')]);}
 function buildPDFPrix(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='prix')]);}
 function buildPDFFactures(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='factures')]);}
 
+
+// ══════════════════════════════════════════════════════════
+// REGISTRES HACCP DU MOIS (PDF à imprimer / archiver) — 18/10/2026
+// Températures (avec actions correctives), réceptions, traçabilité, DLC.
+// ══════════════════════════════════════════════════════════
+function openRegistresHACCP(){
+  let ov=document.getElementById('registres-overlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='registres-overlay';
+    ov.className='voice-overlay';
+    ov.innerHTML=`<div class="voice-backdrop" onclick="closeRegistresHACCP()"></div>
+      <div class="voice-panel">
+        <div class="voice-handle"></div>
+        <div class="voice-header"><div class="voice-title">📑 Registres HACCP du mois</div>
+          <button class="voice-close-btn" onclick="closeRegistresHACCP()">✕</button></div>
+        <div class="voice-hint" style="margin-bottom:12px">Document à imprimer ou enregistrer en PDF (« Enregistrer au format PDF » dans la fenêtre d'impression) et à archiver chaque mois : relevés de températures et actions correctives, contrôles à réception, traçabilité, DLC.</div>
+        <label class="dlc-label" for="registres-mois">Mois</label>
+        <input class="dlc-input" type="month" id="registres-mois" style="width:100%;margin-bottom:12px">
+        <div class="voice-actions"><button class="va-btn" onclick="closeRegistresHACCP()">Annuler</button>
+          <button class="va-btn" style="background:var(--info-bg);color:var(--info-text);font-weight:700" onclick="exportRegistresHACCP(document.getElementById('registres-mois').value)">📄 Générer le PDF</button></div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  document.getElementById('registres-mois').value=localISODate().slice(0,7);
+  ov.classList.add('open');
+}
+function closeRegistresHACCP(){document.getElementById('registres-overlay')?.classList.remove('open');}
+
+function exportRegistresHACCP(mois){
+  if(!/^\d{4}-\d{2}$/.test(mois||'')){alert('Choisissez un mois.');return;}
+  if(typeof recLoad==='function')recLoad();
+  const dansMois=d=>{if(!d)return false;const s=String(d);return /^\d{4}-\d{2}/.test(s)&&localISODate(new Date(s.length<=10?s+'T12:00:00':s)).slice(0,7)===mois;};
+  const fmtDT=d=>new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const fmtD=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||''));return m?m[3]+'/'+m[2]+'/'+m[1]:esc(d||'');};
+  const [y,m]=mois.split('-');
+  const titreMois=new Date(+y,+m-1,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+
+  const temps=(TEMP_DATA||[]).filter(t=>dansMois(t.date)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const recs=((recState&&recState.receptions)||[]).filter(r=>dansMois(r.date)).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
+  const tracs=(TRAC_DATA||[]).filter(t=>dansMois(t.date)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const dlcs=(DLC_DATA||[]).filter(d=>dansMois(d.createdAt)||dansMois(d.date)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+
+  const tempHors=temps.filter(t=>TEMP_ZONES.some(z=>t.releves&&t.releves[z.id]!=null&&(t.releves[z.id]<z.min||t.releves[z.id]>z.max)));
+  const recNC=r=>{const lim=parseFloat(r.typeTemp||'4');const t=parseFloat(r.temp);return (r.typeTemp!=='na'&&!isNaN(t)&&!isNaN(lim)&&t>lim)||r.dlc==='ko'||(r.emb&&r.emb!=='ok')||(r.decision&&r.decision!=='ok');};
+  const nbRecNC=recs.filter(recNC).length;
+
+  let h=`<html><head><meta charset="UTF-8"><title>Registres HACCP ${esc(titreMois)}</title><style>
+    body{font-family:Arial,sans-serif;font-size:10px;color:#1a1a18;margin:0;padding:12mm}
+    h1{font-size:17px;color:#1a3a5c;margin:0 0 2px}h2{font-size:12px;color:#fff;background:#1a3a5c;padding:5px 8px;margin:18px 0 6px}
+    .sub{color:#666;font-size:10px;margin-bottom:8px}table{width:100%;border-collapse:collapse;margin-bottom:6px}
+    th{background:#eef2f7;text-align:left;padding:4px 5px;font-size:9px;border:1px solid #ccc}td{padding:3px 5px;border:1px solid #ddd;vertical-align:top}
+    .ko{color:#b00020;font-weight:700}.ok{color:#27500a}.vide{color:#888;font-style:italic;padding:6px 0}
+    .synth{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.synth div{border:1px solid #ccc;border-radius:4px;padding:6px 10px}
+    .sig{display:flex;gap:30px;margin-top:28px}.sig div{flex:1;border-top:1px solid #333;padding-top:4px}
+    @media print{@page{size:A4 landscape;margin:10mm}body{padding:0}h2{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <h1>Registres HACCP — ${esc(titreMois)}</h1>
+  <div class="sub">${esc(RESTAURANT_NAME)} · Document édité le ${new Date().toLocaleString('fr-FR')}</div>
+  <div class="synth"><div>🌡 Relevés de températures : <b>${temps.length}</b> (dont <b class="${tempHors.length?'ko':''}">${tempHors.length}</b> hors seuil)</div>
+    <div>🚚 Réceptions contrôlées : <b>${recs.length}</b> (dont <b class="${nbRecNC?'ko':''}">${nbRecNC}</b> non conformes)</div>
+    <div>📋 Opérations de traçabilité : <b>${tracs.length}</b></div><div>⏰ DLC / lots enregistrés : <b>${dlcs.length}</b></div></div>`;
+
+  // 1. Températures
+  h+=`<h2>1. Relevés de températures des enceintes</h2>`;
+  h+=temps.length?`<table><tr><th>Date / heure</th>${TEMP_ZONES.map(z=>`<th>${esc(z.label)}<br>(${z.min} / ${z.max} ${z.unit})</th>`).join('')}<th>Action corrective</th><th>Relevé par</th></tr>`+
+    temps.map(t=>`<tr><td>${fmtDT(t.date)}</td>${TEMP_ZONES.map(z=>{const v=t.releves?t.releves[z.id]:null;if(v==null)return '<td>—</td>';const ok=v>=z.min&&v<=z.max;return `<td class="${ok?'ok':'ko'}">${v}${z.unit}${ok?'':' ⚠'}</td>`;}).join('')}<td>${esc(t.action||'')}</td><td>${esc(t.by||'')}</td></tr>`).join('')+'</table>'
+    :'<div class="vide">Aucun relevé ce mois-ci.</div>';
+
+  // 2. Réceptions
+  const lib={ok:'✅',ko:'❌',partiel:'⚠️',reserve:'⚠️ Réserve',refuse:'❌ Refusé'};
+  h+=`<h2>2. Contrôles à réception des marchandises</h2>`;
+  h+=recs.length?`<table><tr><th>Date</th><th>Heure</th><th>Fournisseur</th><th>Produit</th><th>Qté</th><th>T° mesurée / attendue</th><th>DLC</th><th>Emballages</th><th>Décision</th><th>Lot / DLC date</th><th>Observations / action corrective</th><th>Opérateur</th></tr>`+
+    recs.map(r=>{const nc=recNC(r);const tt=r.typeTemp==='na'?'ambiant':('≤ '+(r.typeTemp||'4')+' °C');
+      return `<tr class="${nc?'ko':''}"><td>${fmtD(r.date)}</td><td>${esc(r.heure)}</td><td>${esc(r.fourn)}</td><td>${esc(r.produit)}</td><td>${esc(r.qte)} ${esc(r.unite||'')}</td><td>${r.temp?esc(r.temp)+' °C':'—'} / ${tt}</td><td>${r.dlc==='ko'?'❌':'✅'}</td><td>${lib[r.emb]||esc(r.emb)}</td><td>${r.decision==='ok'?'✅ Accepté':(lib[r.decision]||esc(r.decision))}</td><td>${r.dlcDate?fmtD(r.dlcDate):''}</td><td>${esc(r.obs||'')}</td><td>${esc(r.op||r.by||'')}</td></tr>`;}).join('')+'</table>'
+    :'<div class="vide">Aucune réception enregistrée ce mois-ci.</div>';
+
+  // 3. Traçabilité
+  h+=`<h2>3. Traçabilité (entrées, sorties, pertes, transferts)</h2>`;
+  h+=tracs.length?`<table><tr><th>Date / heure</th><th>Type</th><th>Produit</th><th>Quantité</th><th>Responsable</th><th>Note</th></tr>`+
+    tracs.map(t=>`<tr><td>${fmtDT(t.date)}</td><td>${esc(TRAC_LABELS[t.type]||t.type)}</td><td>${esc(t.produit)}</td><td>${esc(t.qte)} ${esc(t.unite||'')}</td><td>${esc(t.resp||'')}</td><td>${esc(t.note||'')}</td></tr>`).join('')+'</table>'
+    :'<div class="vide">Aucune opération ce mois-ci.</div>';
+
+  // 4. DLC
+  h+=`<h2>4. Dates limites (DLC / DDM) et lots</h2>`;
+  h+=dlcs.length?`<table><tr><th>Produit</th><th>Type</th><th>Lot</th><th>Date limite</th><th>Qté du lot</th><th>Note</th><th>Saisie le</th></tr>`+
+    dlcs.map(d=>`<tr class="${dlcDaysLeft(d.date)<0?'ko':''}"><td>${esc(d.produit)}</td><td>${esc(d.type)}</td><td>${esc(d.lot||'')}</td><td>${fmtD(d.date)}</td><td>${d.qte!=null?esc(d.qte):''}</td><td>${esc(d.note||'')}</td><td>${d.createdAt?fmtDT(d.createdAt):''}</td></tr>`).join('')+'</table>'
+    :'<div class="vide">Aucune DLC enregistrée ce mois-ci.</div>';
+
+  h+=`<div class="sig"><div>Établi par (nom, signature)</div><div>Vérifié par le responsable HACCP</div><div>Date / visa</div></div>
+  </body></html>`;
+  closeRegistresHACCP();
+  openHtmlInNewTab(h);
+}
 
 function openHtmlInNewTab(html, autoPrint=true, delay=600){
   // Compatible Chrome/Android : Blob URL instead of document.write

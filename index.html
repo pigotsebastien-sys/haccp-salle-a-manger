@@ -12,13 +12,13 @@
 <meta name="apple-mobile-web-app-title" content="HACCP LSM">
 <link rel="manifest" href="manifest.json">
 <title>Inventaire HACCP — La Salle à Manger Grenoble</title>
-<script src="js/favicon.js?v=20261018"></script>
-<link rel="stylesheet" href="style.css?v=20261018">
+<script src="js/favicon.js?v=20261018b"></script>
+<link rel="stylesheet" href="style.css?v=20261018b">
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
-  <script src="js/core-sync.js?v=20261018"></script>
+  <script src="js/core-sync.js?v=20261018b"></script>
 
-<script src="js/sw-register.js?v=20261018"></script>
+<script src="js/sw-register.js?v=20261018b"></script>
 
 </head>
 <body role="application" aria-label="Inventaire HACCP La Salle à Manger">
@@ -127,6 +127,7 @@
       <button class="more-item more-green" onclick="exportExcel();closeMoreMenu()">📊 Export Excel</button>
       <button class="more-item" onclick="exportCSV();closeMoreMenu()">⬇ Export CSV</button>
       <button class="more-item" onclick="printInventory();closeMoreMenu()">🖨 Imprimer</button>
+      <button class="more-item" onclick="closeMoreMenu();openRegistresHACCP()">📑 Registres HACCP du mois (PDF)</button>
       <div class="more-separator"></div>
       <button class="more-item more-red" onclick="closeMoreMenu();resetInventory()">🔄 Remise à zéro</button>
     </div>
@@ -715,6 +716,11 @@
     <!-- Relevés températures -->
     <div class="dlc-section-title">🌡 Relevés de températures</div>
     <div class="temp-grid" id="temp-grid"></div>
+    <!-- Action corrective : obligatoire si une température est hors seuil -->
+    <div id="temp-action-wrap" style="display:none;padding:0 16px 10px">
+      <label class="dlc-label" for="temp-action" style="color:var(--pink-text)">⚠️ Action corrective (obligatoire si hors seuil)</label>
+      <textarea class="dlc-input" id="temp-action" rows="2" style="width:100%" placeholder="Ex : porte mal fermée, produits transférés en Frigo 2, nouveau contrôle à 14h, technicien appelé…"></textarea>
+    </div>
     <div style="padding:0 16px 8px;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-primary" onclick="saveTempReleve()">✓ Enregistrer le relevé</button>
       <button class="btn" onclick="showTempHistory()">📋 Historique relevés</button>
@@ -1147,7 +1153,7 @@
 
     <div class="rec-row-4">
       <div class="rec-form-group" style="flex:1">
-        <label class="rec-form-label">💬 Observations / réserves</label>
+        <label class="rec-form-label">💬 Observations / réserves / action corrective <small style="font-weight:400">(obligatoire si non conforme)</small></label>
         <textarea class="rec-form-control" id="rec-obs"
           placeholder="Anomalies constatées, actions prises..."
           style="min-height:80px"></textarea>
@@ -1251,7 +1257,7 @@
 
 
 <div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div></div>
-<script src="js/app.js?v=20261018"></script>
+<script src="js/app.js?v=20261018b"></script>
 
 <!-- CENTRE D'ENVOI EMAIL ══════════════════════════════ -->
 <div class="send-overlay" id="send-overlay">

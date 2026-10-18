@@ -63,7 +63,17 @@
     // Ajouté le 18/10/2026 : le module Réception appelait syncToCloud('receptions')
     // mais ce module n'existait pas ici → aucune réception n'a jamais été partagée.
     'receptions':     'haccp-reception-v1',
+    // 18/10/2026 (2) : Cahier d'achats et registre des pièces comptables,
+    // jusqu'ici propres à chaque appareil.
+    'ca_invoices':    'ca_invoices',
+    'ca_suppliers':   'ca_suppliers',
+    'ca_codes':       'ca_codes',
+    'pieces':         'haccp_salleamanger_pieces_v1',
   };
+  // Modules dont les données existaient sur chaque appareil AVANT d'être
+  // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
+  // du serveur (sinon elle serait remplacée par celle d'un autre appareil).
+  const MODULES_A_FUSIONNER_1RE_SYNCHRO = ['receptions', 'ca_invoices', 'ca_suppliers', 'ca_codes', 'pieces'];
 
   // ════════════════════════════════════════════════════════════════════
   // SYNCHRONISATION MULTI-APPAREILS (refonte du 01/10/2026)
@@ -151,6 +161,17 @@
       const v = lsGet(SYNC_MODULES[id], undefined);
       if (v !== undefined) syncQueue[id] = v;
     });
+    // 1re synchro de ces modules sur cet appareil : on met sa version locale
+    // en file d'attente → elle sera FUSIONNÉE avec celle du serveur.
+    MODULES_A_FUSIONNER_1RE_SYNCHRO.forEach(function(id) {
+      const flag = 'haccp_merge_init_' + id;
+      if (localStorage.getItem(flag)) return;
+      const v = lsGet(SYNC_MODULES[id], undefined);
+      const nonVide = v && (Array.isArray(v) ? v.length : (Array.isArray(v.receptions) ? v.receptions.length : Object.keys(v).length));
+      if (nonVide && syncQueue[id] === undefined) syncQueue[id] = v;
+      try { localStorage.setItem(flag, '1'); } catch(e) {}
+    });
+    persistQueue();
   })();
 
   // Fusion d'une version distante avec une modification locale pas encore
@@ -161,6 +182,7 @@
   function recordKey(r) {
     if (r && typeof r === 'object') {
       if (r.id !== undefined && r.id !== null) return 'id:' + r.id;
+      if (r.code !== undefined && r.libelle !== undefined) return 'code:' + r.code; // plan comptable
       if (r.date) return 'date:' + r.date;
     }
     return 'json:' + JSON.stringify(r);
@@ -363,6 +385,15 @@
         case 'temperatures':
           try{const r=localStorage.getItem(TEMP_KEY);if(r)TEMP_DATA=JSON.parse(r);}catch(e){}
           if (typeof renderTempGrid==='function' && document.getElementById('temp-grid')) renderTempGrid();
+          break;
+        case 'ca_invoices':
+        case 'ca_suppliers':
+        case 'ca_codes':
+          if (window.CaApp && typeof window.CaApp.reloadFromStorage === 'function') window.CaApp.reloadFromStorage();
+          break;
+        case 'pieces':
+          if (typeof loadPieces==='function') loadPieces();
+          if (typeof renderPieces==='function') renderPieces();
           break;
         case 'receptions':
           if (typeof recLoad==='function') recLoad();
@@ -571,6 +602,7 @@
       await pullCloud();
       connectWS();
       flushQueue();
+      if (typeof recUploadPendingPhotos === 'function') recUploadPendingPhotos();
     } catch(e) {
       console.warn('[SYNC] Init échoué:', e.message);
       updateSyncDot('red');
@@ -587,6 +619,7 @@
     await pullCloud();
     connectWS();
     flushQueue();
+    if (typeof recUploadPendingPhotos === 'function') recUploadPendingPhotos();
   }
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible') resyncNow();
@@ -630,7 +663,7 @@
 
 
   // ── Diagnostic visible : état de la synchro de cet appareil ──
-  const APP_SYNC_LABEL = 'Synchro v3 (18/10)';
+  const APP_SYNC_LABEL = 'Synchro v4 (18/10)';
   function syncStatusText() {
     const raw = localStorage.getItem('haccp_session');
     let email = null;
