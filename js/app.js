@@ -589,7 +589,6 @@ const DATA=[
 {code:'N126',zone:'FRAIS BCP',cat:'Frais',produit:'ABRICOT FRANCE CI',unite:'Kg',prix:3.8,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
 {code:'N127',zone:'FRAIS BCP',cat:'Frais',produit:'MELON CAL9 FRANCE',unite:'Pce',prix:2.6,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
 {code:'N129',zone:'FRAIS BCP',cat:'Frais',produit:'CAROTTE FRANCE X10',unite:'Kg',prix:0.89,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-,
 {code:'N131',zone:'FRIGO 1',cat:'BOF',produit:'TR. JAMBON PARIS CHX DD VPF X25 BQ1KG X9',unite:'BQ',prix:7.824,qte:null,fournisseur:'SYSCO',status:'new'},
 {code:'N132',zone:'FRIGO 1',cat:'BOF',produit:'VEGETOP UHT DEBIC 1L X6',unite:'L',prix:3.4,qte:null,fournisseur:'SYSCO',status:'new'},
 {code:'N133',zone:'CONGELATEUR',cat:'Surgeles',produit:'QUINOA BLC ST2.5KG X4',unite:'Kg',prix:6.750,qte:null,fournisseur:'SYSCO',status:'updated'},
@@ -601,7 +600,6 @@ const DATA=[
 {code:'N139',zone:'BOISSONS',cat:'Boissons',produit:'COCA COLA BTE 33CL VC',unite:'BTE',prix:1.033,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N140',zone:'BOISSONS',cat:'Boissons',produit:'LIMONADE SUD BTE 25CL VC',unite:'BTE',prix:0.49,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N141',zone:'FRAIS BCP',cat:'Frais',produit:'NECTARINE JAUNE ESPAGNE CI',unite:'Kg',prix:2.96,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-,
 {code:'N143',zone:'ECONOMAT',cat:'Economat',produit:'HUILE OLIVE SPECIAL CUISINE BI5L',unite:'L',prix:4.600,qte:null,fournisseur:'SYSCO',status:'new'}
 ,
 {code:'N144',zone:'ECONOMAT',cat:'Economat',produit:'SUCRE POUDRE 1KG',unite:'Kg',prix:0.900,qte:null,fournisseur:'SYSCO',status:'new'}

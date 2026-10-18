@@ -72,6 +72,16 @@ for (const m of html.matchAll(/src="(js\/[^"?]+)/g)) {
   check(`${m[1]} dans le cache hors-ligne (sw.js)`, sw.includes('./' + m[1]));
 }
 
+// La liste produits intégrée ne doit contenir aucun « trou » (virgule seule) :
+// DATA.find() planterait sur les produits situés après.
+{
+  const app = jsContents['app.js'] || '';
+  const a = app.indexOf('const DATA=['), b = app.indexOf('];', a);
+  let ok = false, n = 0;
+  try { const D = vm.runInNewContext(app.slice(a + 11, b + 1)); n = D.length; ok = D.length > 0 && Array.from({ length: D.length }, (_, i) => i in D && D[i] && D[i].code).every(Boolean); } catch (e) {}
+  check(`Liste produits intégrée sans trou (${n} produits)`, ok);
+}
+
 // ── Garde-fous anti-régression (audit du 18/10/2026) ──
 check('Module réceptions synchronisé', allJs.includes("'receptions':"));
 check('Pas d\'interception hors-ligne de syncToCloud', !allJs.includes('_originalSyncToCloud'));
