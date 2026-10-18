@@ -1,15 +1,13 @@
 // Service Worker — HACCP LSM — Mode hors-ligne + mise à jour automatique
 // Version incrémentée à chaque déploiement pour forcer le rafraîchissement
 
-const CACHE_VERSION = 'haccp-lsm-v11';
+const CACHE_VERSION = 'haccp-lsm-v12';
 const APP_SHELL = [
   './',
   './index.html',
   './style.css',
   './js/core-sync.js',
   './js/app.js',
-  './js/ca-app.js',
-  './js/reception.js',
   './js/favicon.js',
   './js/sw-register.js',
   './manifest.json',
@@ -54,17 +52,11 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
 
-  // Supabase → réseau direct, fallback JSON vide hors-ligne
-  if (url.includes('supabase.co')) {
-    e.respondWith(
-      fetch(e.request).catch(function() {
-        return new Response(JSON.stringify([]), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      })
-    );
-    return;
-  }
+  // Supabase → pas d'interception : l'appli gère elle-même l'absence de réseau.
+  // (Avant le 18/10/2026 : hors-ligne, le SW répondait « 200 OK [] » à TOUTES
+  // les requêtes Supabase, y compris les envois et le renouvellement de session,
+  // ce qui faisait croire à l'appli que le serveur était joignable.)
+  if (url.includes('supabase.co')) return;
 
   // App (HTML/JS/CSS du site) → Network-First : chaque appareil reçoit
   // immédiatement la dernière version du code ; le cache sert seulement hors-ligne.
@@ -84,7 +76,7 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  e.respondWith(fetch(e.request));
+  // Autres origines (CDN SheetJS / Tesseract…) : comportement normal du navigateur
 });
 
 // ── Message depuis l'app ──

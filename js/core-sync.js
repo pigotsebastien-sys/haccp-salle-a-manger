@@ -8,6 +8,17 @@
     return id;
   })();
 
+  // Décode la partie "payload" d'un JWT (base64url → JSON). atob() seul échoue
+  // dès que le jeton contient '-' ou '_' (fréquent), d'où le repli silencieux
+  // sur DEVICE_ID constaté avant le 18/10/2026.
+  function decodeJwtPayload(token) {
+    try {
+      var b = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (b.length % 4) b += '=';
+      return JSON.parse(decodeURIComponent(escape(atob(b))));
+    } catch(e) { return null; }
+  }
+
   // Identifiant utilisateur pour la traçabilité HACCP
   // Priorité: email authentifié > DEVICE_ID (fallback si non connecté)
   function getCurrentUserIdentifier() {
@@ -19,8 +30,8 @@
         if (session.user && session.user.email) return session.user.email;
         // Ou dans le JWT (access_token)
         if (session.access_token) {
-          var payload = JSON.parse(atob(session.access_token.split('.')[1]));
-          if (payload.email) return payload.email;
+          var payload = decodeJwtPayload(session.access_token);
+          if (payload && payload.email) return payload.email;
         }
       }
       // Fallback: lire depuis localStorage de session
@@ -28,8 +39,8 @@
       if (stored) {
         var s = JSON.parse(stored);
         if (s.access_token) {
-          var p = JSON.parse(atob(s.access_token.split('.')[1]));
-          if (p.email) return p.email;
+          var p = decodeJwtPayload(s.access_token);
+          if (p && p.email) return p.email;
         }
       }
     } catch(e) {}
@@ -49,6 +60,9 @@
     'tracabilite':    'haccp_tracabilite_v1',
     'prix_historique':'haccp_prix_historique_v1',
     'plats':          'haccp_plats_v1',
+    // Ajouté le 18/10/2026 : le module Réception appelait syncToCloud('receptions')
+    // mais ce module n'existait pas ici → aucune réception n'a jamais été partagée.
+    'receptions':     'haccp-reception-v1',
   };
 
   // ════════════════════════════════════════════════════════════════════
@@ -119,6 +133,60 @@
     for (const k in a) if (normQ(a[k]) !== normQ(b[k])) return true;
     for (const k in b) if (normQ(a[k]) !== normQ(b[k])) return true;
     return false;
+  }
+
+  // ── File d'envoi persistante (18/10/2026) ──
+  // Avant : la file des modules (DLC, températures, réceptions…) ne vivait qu'en
+  // mémoire, et syncToCloud() ignorait toute saisie faite avant la connexion au
+  // serveur ou hors-ligne. Une saisie faite hors-ligne puis l'appli fermée
+  // n'était donc jamais envoyée. On mémorise maintenant la liste des modules à
+  // envoyer ; leur contenu est relu depuis localStorage au redémarrage.
+  const QUEUE_KEY = 'haccp_sync_pending_modules';
+  function persistQueue() { lsSet(QUEUE_KEY, Object.keys(syncQueue)); }
+  (function restoreQueue() {
+    const ids = lsGet(QUEUE_KEY, []);
+    if (!Array.isArray(ids)) return;
+    ids.forEach(function(id) {
+      if (!SYNC_MODULES[id] || id === 'inventaire') return;
+      const v = lsGet(SYNC_MODULES[id], undefined);
+      if (v !== undefined) syncQueue[id] = v;
+    });
+  })();
+
+  // Fusion d'une version distante avec une modification locale pas encore
+  // envoyée : on garde les deux au lieu d'écraser l'une par l'autre (cas de deux
+  // appareils qui saisissent en même temps, ou d'un appareil resté hors-ligne).
+  // Listes d'enregistrements : union par identifiant (la version locale gagne).
+  // Objets (seuils, allergènes…) : clés distantes + clés locales.
+  function recordKey(r) {
+    if (r && typeof r === 'object') {
+      if (r.id !== undefined && r.id !== null) return 'id:' + r.id;
+      if (r.date) return 'date:' + r.date;
+    }
+    return 'json:' + JSON.stringify(r);
+  }
+  function mergeRecords(local, remote) {
+    if (Array.isArray(local) && Array.isArray(remote)) {
+      const seen = new Set(local.map(recordKey));
+      const merged = local.slice();
+      remote.forEach(function(r) { if (!seen.has(recordKey(r))) merged.push(r); });
+      // Relevés de températures : l'ordre chronologique compte (dernier = plus récent)
+      if (merged.length && merged.every(function(x) { return x && x.date && x.id === undefined; })) {
+        merged.sort(function(a, b) { return String(a.date).localeCompare(String(b.date)); });
+      }
+      return merged;
+    }
+    if (local && remote && typeof local === 'object' && typeof remote === 'object') {
+      if (Array.isArray(local.receptions) && Array.isArray(remote.receptions)) {
+        const out = Object.assign({}, remote, local);
+        out.receptions = mergeRecords(local.receptions, remote.receptions)
+          .sort(function(a, b) { return (b.ts || b.id || 0) - (a.ts || a.id || 0); });
+        out.nextId = Math.max(local.nextId || 1, remote.nextId || 1);
+        return out;
+      }
+      return Object.assign({}, remote, local);
+    }
+    return local;
   }
 
   // ── Jeton de connexion : renouvelé avant expiration ──
@@ -216,10 +284,21 @@
     if (row.id === 'inventaire') return applyInventaireRemote(row.data, row.updated_at);
     const lk = SYNC_MODULES[row.id];
     if (!lk || !row.data || !Object.keys(row.data).length) return false;
-    if (syncQueue[row.id] !== undefined) return false; // modif locale en attente d'envoi
     const remoteTs = new Date(row.updated_at).getTime();
     const localTs  = parseInt(localStorage.getItem(lk + '_sync_ts') || '0');
     if (remoteTs <= localTs) return false;
+    if (syncQueue[row.id] !== undefined) {
+      // Modif locale en attente d'envoi ET version distante plus récente :
+      // on fusionne (avant : la version locale écrasait silencieusement l'autre).
+      const merged = mergeRecords(syncQueue[row.id], row.data);
+      syncQueue[row.id] = merged;
+      persistQueue();
+      localStorage.setItem(lk, JSON.stringify(merged));
+      localStorage.setItem(lk + '_sync_ts', remoteTs);
+      lastTs[row.id] = row.updated_at;
+      applyModule(row.id);
+      return true;
+    }
     localStorage.setItem(lk, JSON.stringify(row.data));
     localStorage.setItem(lk + '_sync_ts', remoteTs);
     lastTs[row.id] = row.updated_at;
@@ -251,7 +330,8 @@
           break;
         case 'dlc':
           try{const r=localStorage.getItem(DLC_KEY);if(r)DLC_DATA=JSON.parse(r);}catch(e){}
-          if (typeof renderDLC==='function') renderDLC();
+          if (typeof renderDLC==='function' && document.getElementById('dlc-list')) renderDLC();
+          if (typeof updateDlcTabDot==='function') updateDlcTabDot();
           break;
         case 'historique':
           try{const r=localStorage.getItem(HISTO_KEY);if(r)HISTO_DATA=JSON.parse(r);}catch(e){}
@@ -282,7 +362,12 @@
           break;
         case 'temperatures':
           try{const r=localStorage.getItem(TEMP_KEY);if(r)TEMP_DATA=JSON.parse(r);}catch(e){}
-          if (typeof renderTemperatures==='function') renderTemperatures();
+          if (typeof renderTempGrid==='function' && document.getElementById('temp-grid')) renderTempGrid();
+          break;
+        case 'receptions':
+          if (typeof recLoad==='function') recLoad();
+          if (typeof renderReceptions==='function') renderReceptions();
+          if (typeof recRenderCal==='function') recRenderCal();
           break;
         default: break;
       }
@@ -295,9 +380,12 @@
       // Toujours mémorisé (même hors-ligne / avant connexion) : envoyé dès que possible
       recordInventaireChanges(data);
     } else {
-      if (!syncEnabled) return;
+      if (!SYNC_MODULES[moduleId]) { console.warn('[SYNC] module inconnu :', moduleId); return; }
+      // Mis en file même hors-ligne / avant connexion : envoyé dès que possible
       syncQueue[moduleId] = data;
+      persistQueue();
     }
+    if (!syncEnabled) return;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(flushQueue, 600);
   }
@@ -360,14 +448,26 @@
       for (const [id, data] of Object.entries(q)) {
         try {
           const body = JSON.stringify({ data: data, updated_by: getCurrentUserIdentifier() });
-          let r = await supa('/rest/v1/haccp_store?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: body });
-          if (r.status === 401 && await ensureFreshToken(true)) {
-            r = await supa('/rest/v1/haccp_store?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: body });
+          const patch = function() {
+            return supa('/rest/v1/haccp_store?id=eq.' + encodeURIComponent(id), { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: body });
+          };
+          let r = await patch();
+          if (r.status === 401 && await ensureFreshToken(true)) r = await patch();
+          let rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+          if (r.ok && rows && !rows.length) {
+            // La ligne n'existe pas encore sur le serveur (ex. 'receptions') :
+            // on la crée (avant : PATCH sur 0 ligne → nouvel essai à l'infini).
+            r = await supa('/rest/v1/haccp_store?on_conflict=id', {
+              method: 'POST',
+              headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+              body: JSON.stringify({ id: id, data: data, updated_by: getCurrentUserIdentifier() })
+            });
+            rows = r.ok ? await r.json().catch(function() { return null; }) : null;
           }
-          const rows = r.ok ? await r.json().catch(function() { return null; }) : null;
           if (!rows || !rows.length) {
             console.warn('[SYNC] push refusé pour', id, '— HTTP', r.status, '— nouvel essai bientôt.');
             if (syncQueue[id] === undefined) syncQueue[id] = data; // garder pour réessayer
+            if (r.status === 401 || r.status === 403) warnNotLogged();
             failed = true;
             continue;
           }
@@ -385,6 +485,7 @@
       failed = true;
     } finally {
       flushing = false;
+      persistQueue();
       if (failed) { updateSyncDot('red'); scheduleRetry(10000); }
       else if (syncEnabled && ws && ws.readyState === 1) updateSyncDot('green');
       if (flushAgain) { flushAgain = false; clearTimeout(syncTimer); syncTimer = setTimeout(flushQueue, 300); }
@@ -403,7 +504,11 @@
         ws.send(JSON.stringify({
           topic: 'realtime:public:haccp_store',
           event: 'phx_join',
-          payload: {config: {broadcast:{self:false}, presence:{key:''}, postgres_changes:[{event:'*',schema:'public',table:'haccp_store'}]}},
+          payload: Object.assign(
+            {config: {broadcast:{self:false}, presence:{key:''}, postgres_changes:[{event:'*',schema:'public',table:'haccp_store'}]}},
+            // Jeton utilisateur : nécessaire si la lecture est un jour réservée aux comptes connectés
+            window._supabaseAuthToken ? {access_token: window._supabaseAuthToken} : {}
+          ),
           ref: String(wsRef)
         }));
         updateSyncDot('green');
@@ -459,6 +564,10 @@
       syncEnabled = true;
       updateSyncDot('green');
       console.log('[SYNC] REST OK ✓ — Device:', DEVICE_ID);
+      // 18/10/2026 : cette fonction n'était jamais appelée → le catalogue restait
+      // la liste figée dans le code ; produits ajoutés/modifiés/supprimés et
+      // prix mis à jour n'étaient jamais rechargés depuis Supabase.
+      await syncProductsFromCloud();
       await pullCloud();
       connectWS();
       flushQueue();
@@ -521,12 +630,12 @@
 
 
   // ── Diagnostic visible : état de la synchro de cet appareil ──
-  const APP_SYNC_LABEL = 'Synchro v2 (01/10)';
+  const APP_SYNC_LABEL = 'Synchro v3 (18/10)';
   function syncStatusText() {
     const raw = localStorage.getItem('haccp_session');
     let email = null;
-    try { email = raw ? JSON.parse(atob(JSON.parse(raw).access_token.split('.')[1])).email : null; } catch(e) {}
-    const pending = Object.keys(lsGet(INV_PENDING_KEY, {})).length;
+    try { const p = raw ? decodeJwtPayload(JSON.parse(raw).access_token) : null; email = p && p.email; } catch(e) {}
+    const pending = Object.keys(lsGet(INV_PENDING_KEY, {})).length + Object.keys(syncQueue).length;
     const last = lastTs.inventaire ? new Date(lastTs.inventaire).toLocaleTimeString('fr-FR') : '—';
     return [
       'Version : ' + APP_SYNC_LABEL,
@@ -589,11 +698,23 @@
           added++;
         }
       });
-      if (updated > 0 || added > 0) {
-        console.log('[SYNC] ' + updated + ' MAJ + ' + added + ' nouveaux produits depuis Supabase');
-        if (added > 0) {
+      // Produits supprimés sur un autre appareil : absents du serveur → retirés ici.
+      // (Garde-fou : uniquement si le serveur a bien renvoyé un catalogue complet.)
+      let removed = 0;
+      if (rows.length >= 100) {
+        const onServer = new Set(rows.map(r => r.code));
+        for (let i = DATA.length - 1; i >= 0; i--) {
+          if (!onServer.has(DATA[i].code)) { DATA.splice(i, 1); removed++; }
+        }
+      }
+      if (updated > 0 || added > 0 || removed > 0) {
+        console.log('[SYNC] ' + updated + ' MAJ + ' + added + ' nouveaux, ' + removed + ' retirés depuis Supabase');
+        // Ré-appliquer les quantités enregistrées (y compris celles des produits ajoutés)
+        if (added > 0 && typeof loadAutoSave === 'function') loadAutoSave();
+        if (added > 0 || removed > 0) {
           if (typeof buildZoneTabs==='function') buildZoneTabs();
-          if (typeof buildFilters==='function') buildFilters();
+          // buildFilters() ajoute les options sans vider la liste (doublons) → version « update »
+          if (typeof buildFilters_update==='function') buildFilters_update();
         }
         if (typeof render === 'function') render();
         if (typeof updateStats === 'function') updateStats();
@@ -604,29 +725,54 @@
   }
 
   // Envoyer un produit modifié vers Supabase
+  // Renvoie true si le produit est bien enregistré sur le serveur.
+  // Met à jour la ligne existante, ou la crée si elle n'existe pas encore.
+  // (Le catalogue n'est conservé QUE sur le serveur : une modification non
+  // envoyée est perdue au prochain chargement.)
   async function pushProductToCloud(item) {
-    if (!syncEnabled) return;
     try {
-      await ensureFreshToken(false);
-      const r = await supa('/rest/v1/haccp_products?code=eq.' + encodeURIComponent(item.code), {
+      if (!(await ensureFreshToken(false))) { warnNotLogged(); return false; }
+      const fields = {
+        produit: item.produit,
+        zone: item.zone,
+        cat: item.cat,
+        unite: item.unite,
+        prix: item.prix,
+        fournisseur: item.fournisseur || '',
+        status: item.status || ''
+      };
+      let r = await supa('/rest/v1/haccp_products?code=eq.' + encodeURIComponent(item.code), {
         method: 'PATCH',
         headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({
-          produit: item.produit,
-          zone: item.zone,
-          cat: item.cat,
-          unite: item.unite,
-          prix: item.prix,
-          fournisseur: item.fournisseur || '',
-          status: item.status || ''
-        })
+        body: JSON.stringify(fields)
       });
-      const rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+      let rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+      if (r.ok && rows && !rows.length) {
+        r = await supa('/rest/v1/haccp_products', {
+          method: 'POST',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(Object.assign({ code: item.code }, fields))
+        });
+        rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+      }
       if (!rows || !rows.length) {
         console.warn('[SYNC] pushProduct refusé pour', item.code, '— HTTP', r.status, '— la modification n\'est PAS enregistrée sur le serveur.');
         updateSyncDot('red');
+        return false;
       }
-    } catch(e) { console.warn('[SYNC] pushProduct:', e.message); updateSyncDot('red'); }
+      return true;
+    } catch(e) { console.warn('[SYNC] pushProduct:', e.message); updateSyncDot('red'); return false; }
+  }
+
+  async function deleteProductFromCloud(code) {
+    try {
+      if (!(await ensureFreshToken(false))) { warnNotLogged(); return false; }
+      const r = await supa('/rest/v1/haccp_products?code=eq.' + encodeURIComponent(code), {
+        method: 'DELETE', headers: { Prefer: 'return=representation' }
+      });
+      const rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+      return !!(r.ok && rows);
+    } catch(e) { console.warn('[SYNC] deleteProduct:', e.message); return false; }
   }
 
   function updateSyncDot(color) {
@@ -646,8 +792,7 @@
     t._timer = setTimeout(()=>t.style.opacity='0', 2500);
   }
 
-  window.addEventListener('load', function() { 
-  initRecettesPDF();
+  window.addEventListener('load', function() {
   // Afficher l'écran d'accueil immédiatement
   var hs = document.getElementById('home-screen');
   if (hs) hs.style.display = 'block';

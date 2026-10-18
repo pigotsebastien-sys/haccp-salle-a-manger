@@ -56,9 +56,30 @@ check('Auth login présent', html.includes('id="login-screen"'));
 
 // ── Fichiers JS/CSS bien référencés depuis index.html ──
 check('style.css chargé', /href=["']style\.css(\?[^"']*)?["']/.test(html));
-for (const f of ['app.js', 'core-sync.js', 'ca-app.js', 'reception.js']) {
+for (const f of ['app.js', 'core-sync.js', 'sw-register.js', 'favicon.js']) {
   check(`js/${f} chargé`, html.includes(`js/${f}`));
 }
+// Chaque fichier JS servi doit être syntaxiquement valide
+const vm = require('vm');
+for (const f of jsFiles) {
+  let ok = true;
+  try { new vm.Script(jsContents[f], { filename: f }); } catch (e) { ok = false; console.error('     ', e.message); }
+  check(`js/${f} : syntaxe valide`, ok);
+}
+// Chaque fichier JS référencé par index.html doit exister et être mis en cache par le SW
+for (const m of html.matchAll(/src="(js\/[^"?]+)/g)) {
+  check(`${m[1]} existe`, fs.existsSync(path.join(ROOT, m[1])));
+  check(`${m[1]} dans le cache hors-ligne (sw.js)`, sw.includes('./' + m[1]));
+}
+
+// ── Garde-fous anti-régression (audit du 18/10/2026) ──
+check('Module réceptions synchronisé', allJs.includes("'receptions':"));
+check('Pas d\'interception hors-ligne de syncToCloud', !allJs.includes('_originalSyncToCloud'));
+check('Le SW n\'invente plus de réponses Supabase', !sw.includes('JSON.stringify([])'));
+check('Scan facture : plan comptable envoyé', /systemPrompt:\s*systemPrompt/.test(allJs));
+check('CSS Cahier d\'achats limité à son panneau', !/^\s*body\s*\{[^}]*#e9e4d8/m.test(css) && !/,\s*select,\s*input\[type=text\]/.test(css));
+check('Manifest PWA = manifest.json', /rel="manifest" href="manifest\.json"/.test(html));
+check('SheetJS à jour (≥ 0.20)', /xlsx-0\.2\d/.test(html));
 
 // ── Fonctions/config — cherchées dans tout ce qui est servi, pas juste index.html ──
 check('Supabase URL configurée', everything.includes('pbydidazdjqqihkolzgc.supabase.co'));
