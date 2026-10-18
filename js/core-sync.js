@@ -82,6 +82,8 @@
     'ca_reclamations': 'ca_reclamations',
     'ca_objectifs':    'ca_objectifs',
     'doublons_ignores':'haccp_doublons_ignores_v1',
+    // Clôtures mensuelles + paramètres (adresse du cabinet comptable)
+    'ca_clotures':     'ca_clotures',
   };
   // Modules dont les données existaient sur chaque appareil AVANT d'être
   // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
@@ -413,6 +415,7 @@
         case 'ca_reclamations':
         case 'ca_objectifs':
         case 'doublons_ignores':
+        case 'ca_clotures':
           if (typeof apReload==='function') apReload(id);
           break;
         case 'ordre_comptage':
@@ -692,7 +695,7 @@
 
 
   // ── Diagnostic visible : état de la synchro de cet appareil ──
-  const APP_SYNC_LABEL = 'Synchro v9 (18/10)';
+  const APP_SYNC_LABEL = 'Synchro v10 (18/10)';
   function syncStatusText() {
     const raw = localStorage.getItem('haccp_session');
     let email = null;

@@ -3863,12 +3863,65 @@ const CaApp = {
     this.scan = { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] };
   },
   onScanFile(input){
-    const file = input.files && input.files[0];
+    const files = Array.from(input.files || []);
     input.value = "";
-    if(!file) return;
+    if(!files.length) return;
+    if(files.length>1){ this.analyzeBatch(files); return; }
+    const file = files[0];
     this.resetScan();
+    this.scan.file = file;
     if(file.type.startsWith("image/")) this.scan.previewUrl = URL.createObjectURL(file);
     this.analyzeInvoiceFile(file);
+  },
+  // Import par lot : chaque fichier est analysé à la suite, puis vérifié et validé un par un
+  freshScan(){ return { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] }; },
+  async analyzeBatch(files){
+    this.resetScan();
+    this.batch = { running:true, current:null, items: files.map(f=>({ id:uid(), name:f.name, file:f, status:"en attente", scan:null })) };
+    for(const it of this.batch.items){
+      if(!this.batch) return; // lot abandonné
+      it.status = "analyse…";
+      this.scan = this.freshScan(); this.scan.file = it.file;
+      if(it.file.type.startsWith("image/")) this.scan.previewUrl = URL.createObjectURL(it.file);
+      await this.analyzeInvoiceFile(it.file);
+      it.scan = this.scan;
+      it.status = this.scan.error ? "erreur" : "à vérifier";
+    }
+    if(!this.batch) return;
+    this.batch.running = false;
+    this.scan = this.freshScan();
+    this.toast(`${this.batch.items.length} factures analysées : vérifiez-les une par une.`);
+    this.render();
+  },
+  batchOpen(id){
+    const it = this.batch && this.batch.items.find(x=>x.id===id);
+    if(!it || !it.scan || !it.scan.common) return;
+    this.batch.current = id; this.scan = it.scan; this.render();
+    window.scrollTo(0, (document.getElementById("panel-factures-ca")||document.body).offsetTop);
+  },
+  batchSkip(id){
+    const it = this.batch && this.batch.items.find(x=>x.id===id); if(!it) return;
+    it.status = "ignorée"; if(this.batch.current===id){ this.batch.current=null; this.scan=this.freshScan(); }
+    this.render();
+  },
+  batchClose(){
+    if(this.batch && this.batch.items.some(x=>x.status==="à vérifier") && !confirm("Des factures du lot n'ont pas été enregistrées. Fermer le lot quand même ?")) return;
+    this.batch = null; this.resetScan(); this.render();
+  },
+  batchHtml(){
+    const b = this.batch; if(!b) return "";
+    const ok = b.items.filter(x=>x.status==="enregistrée").length;
+    return `<div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:14px;font-weight:600;">📚 Lot de ${b.items.length} factures — ${ok} enregistrée${ok>1?'s':''}${b.running?' · analyse en cours…':''}</div>
+        <div style="display:flex;gap:8px;">${!b.running && ok && typeof apBatchPrix==='function'?`<button class="btn btn-ghost" onclick="apBatchPrix()">💰 Comparer les prix du lot</button>`:''}<button class="btn btn-ghost" onclick="CaApp.batchClose()">Fermer le lot</button></div>
+      </div>
+      <table class="ap-table"><tr><th>Fichier</th><th>Fournisseur / date</th><th class="num">TTC</th><th>État</th><th></th></tr>
+      ${b.items.map(it=>{ const c=it.scan&&it.scan.common; return `<tr${b.current===it.id?' style="background:#faf6ee"':''}>
+        <td>${esc(it.name)}</td><td>${c?esc(c.fournisseur||'?')+' · '+esc(c.date||''):'—'}</td><td class="num">${c&&c.ttc!==""?eur(Number(c.ttc)):'—'}</td>
+        <td>${it.status==="enregistrée"?'✅ enregistrée':it.status==="erreur"?'⚠️ '+esc(it.scan&&it.scan.error||'erreur'):esc(it.status)}</td>
+        <td style="text-align:right;white-space:nowrap;">${it.status==="à vérifier"?`<button class="btn btn-primary" style="padding:4px 10px" onclick="CaApp.batchOpen('${it.id}')">Vérifier</button> <button class="btn-icon" title="Ignorer" onclick="CaApp.batchSkip('${it.id}')">✕</button>`:''}</td></tr>`; }).join("")}
+      </table></div>`;
   },
   fileToBase64(file){
     return new Promise((resolve,reject)=>{
@@ -4085,8 +4138,20 @@ const CaApp = {
     this.toast(records.length>1 ? `Facture ventilée sur ${records.length} comptes et enregistrée.` : "Facture enregistrée.");
     // Articles : historique d'achats par fournisseur + comparaison des prix avec l'inventaire
     const articles = this.scan.articles || [];
-    if(typeof apApresEnregistrement==='function') apApresEnregistrement({factureId, date, fournisseur, bl, avoirDe, articles: this.scan.allArticles||articles});
+    if(typeof apApresEnregistrement==='function') apApresEnregistrement({factureId, date, fournisseur, bl, avoirDe, articles: this.scan.allArticles||articles, file: this.scan.file||null});
     const manuel = this.entryMode==='manual';
+    // Lot : on passe directement à la facture suivante (prix comparés à la fin du lot)
+    if(this.batch && this.batch.current){
+      const it = this.batch.items.find(x=>x.id===this.batch.current);
+      if(it){ it.status = "enregistrée"; it.factureId = factureId; }
+      this.batch.current = null;
+      if(this.scan.previewUrl) URL.revokeObjectURL(this.scan.previewUrl);
+      this.scan = this.freshScan();
+      const next = this.batch.items.find(x=>x.status==="à vérifier");
+      if(next){ this.batchOpen(next.id); return; }
+      this.toast("Lot terminé : toutes les factures sont traitées.");
+      this.render(); return;
+    }
     if(articles.length && typeof invoiceArticlesToPrix==='function') invoiceArticlesToPrix();
     this.resetScan();
     if(manuel) this.startManual();
@@ -4231,15 +4296,21 @@ const CaApp = {
     let apiKeyBox = "";
 
     let body = "";
+    const batchList = (!s.manual && this.batch) ? this.batchHtml() : "";
+    if(this.batch && this.batch.running && !s.manual){
+      return batchList + `<div class="card" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 0;color:#8a8478;">
+        <div class="spin" style="font-size:22px;">⏳</div><div style="font-size:13px;">Analyse des factures du lot, une par une…</div></div>`;
+    }
+    if(this.batch && !s.manual && !s.common && !s.loading) return batchList;
     if(!s.common && !s.loading){
       body = `<div class="card">
         <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Scanner une facture</div>
-        <div style="font-size:12.5px;color:#8a8478;margin-bottom:16px;">Prenez une photo ou importez un fichier (image ou PDF). Les montants seront extraits et ventilés automatiquement — vous pourrez les vérifier avant d’enregistrer.</div>
+        <div style="font-size:12.5px;color:#8a8478;margin-bottom:16px;">Prenez une photo ou importez un ou plusieurs fichiers (images ou PDF). Les montants sont extraits et ventilés automatiquement — vous les vérifiez avant d’enregistrer. Avec plusieurs fichiers, ils sont analysés à la suite puis vérifiés un par un.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <label class="btn btn-primary" style="cursor:pointer;">📷 Prendre une photo
             <input type="file" accept="image/*" capture="environment" onchange="CaApp.onScanFile(this)" style="display:none;"></label>
-          <label class="btn btn-ghost" style="cursor:pointer;">⬆ Importer un fichier
-            <input type="file" accept="image/*,application/pdf" onchange="CaApp.onScanFile(this)" style="display:none;"></label>
+          <label class="btn btn-ghost" style="cursor:pointer;">⬆ Importer un ou plusieurs fichiers
+            <input type="file" accept="image/*,application/pdf" multiple onchange="CaApp.onScanFile(this)" style="display:none;"></label>
         </div>
         ${s.error?`<div class="error-text" style="margin-top:16px;">⚠ ${esc(s.error)}</div>`:''}
       </div>`;
@@ -4254,7 +4325,9 @@ const CaApp = {
       body = `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <div style="font-size:14px;font-weight:600;">${s.manual?'Nouvelle facture (ou avoir)':'Vérifiez la facture scannée'}</div>
-          ${s.manual?`<button class="btn btn-ghost" onclick="CaApp.setEntryMode('manual')">↻ Effacer</button>`:`<button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>`}
+          ${s.manual?`<button class="btn btn-ghost" onclick="CaApp.setEntryMode('manual')">↻ Effacer</button>`
+            : this.batch?`<button class="btn btn-ghost" onclick="CaApp.batch.current=null; CaApp.scan=CaApp.freshScan(); CaApp.render();">← Retour au lot</button>`
+            :`<button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>`}
         </div>
         ${s.note?`<div class="banner" style="margin-bottom:16px;">${esc(s.note)}</div>`:''}
         ${(s.articles&&s.articles.length)?`<div class="banner" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>💰 ${s.articles.length} prix d'articles lus sur la facture</span><button class="btn btn-primary" onclick="invoiceArticlesToPrix()">Comparer avec l'inventaire</button></div>`:''}
@@ -4301,13 +4374,13 @@ const CaApp = {
             <div id="scan-error" class="error-text" style="margin-bottom:10px;"></div>
             <div style="display:flex;gap:10px;">
               <button class="btn btn-primary" onclick="CaApp.submitScan()">✓ Enregistrer la ventilation</button>
-              <button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">Annuler</button>
+              <button class="btn btn-ghost" onclick="${this.batch&&!s.manual?"CaApp.batch.current=null; CaApp.scan=CaApp.freshScan(); CaApp.render();":s.manual?"CaApp.setEntryMode('manual')":"CaApp.resetScan(); CaApp.render();"}">Annuler</button>
             </div>
           </div>
         </div>
       </div>`;
     }
-    return apiKeyBox + body;
+    return batchList + apiKeyBox + body;
   },
 
   renderRegistre(){
@@ -4339,7 +4412,7 @@ const CaApp = {
               const c = computeLine(inv);
               return `<tr>
                 <td>${esc(inv.date)}</td>
-                <td class="muted">${esc(inv.bl)||'—'}${inv.avoirDe||Number(inv.ht)<0?` <span class="ap-badge">AVOIR${inv.avoirDe?' / '+esc(inv.avoirDe):''}</span>`:''}</td>
+                <td class="muted">${esc(inv.bl)||'—'}${inv.avoirDe||Number(inv.ht)<0?` <span class="ap-badge">AVOIR${inv.avoirDe?' / '+esc(inv.avoirDe):''}</span>`:''}${typeof apFichierHtml==='function'?apFichierHtml(inv):''}</td>
                 <td>${esc(inv.code)}</td>
                 <td class="num">${eur(c.ht)}</td>
                 <td class="num muted">${eur(c.tva)}</td>
@@ -4438,12 +4511,16 @@ const CaApp = {
     else if(this.tab==='regles' && typeof apRenderRegles==='function') tabContent = apRenderRegles();
     else if(this.tab==='prix' && typeof apRenderComparateur==='function') tabContent = apRenderComparateur();
     else if(this.tab==='reclam' && typeof apRenderReclamations==='function') tabContent = apRenderReclamations();
+    else if(this.tab==='cloture' && typeof apRenderCloture==='function') tabContent = apRenderCloture();
+    else if(this.tab==='annee' && typeof apRenderAnnee==='function') tabContent = apRenderAnnee();
     if(this.tab==='dashboard' && typeof apDashboardExtra==='function') tabContent = apDashboardExtra() + tabContent;
 
     const tabs = [
       {id:'dashboard', label:'Tableau de bord'},
       {id:'saisie', label:'Saisie facture'},
       {id:'registre', label:'Registre'},
+      {id:'cloture', label:'Clôture du mois'},
+      {id:'annee', label:'Bilan annuel'},
       {id:'reclam', label:'Réclamations'},
       {id:'prix', label:'Prix fournisseurs'},
       {id:'fournisseurs', label:'Fournisseurs'},
@@ -7687,64 +7764,6 @@ function exportCarteAlgPDF(){
     .legend-dot{width:12px;height:12px;border-radius:2px}
     @media print{@page{size:A4;margin:12mm}body{padding:0}}
   
-/* ══ ONGLETS SECONDAIRES "PLUS ▾" ════════════════════════ */
-.tab-more-btn{font-style:normal;color:var(--info-text)!important;background:var(--info-bg)!important;border-radius:6px;margin:4px 0;flex-shrink:0}
-.tab-more-btn.active-more{background:var(--info-text)!important;color:#fff!important}
-.tab-more-menu{position:sticky;top:44px;z-index:99;background:var(--bg);border-bottom:.5px solid var(--border);padding:6px 16px;display:flex;flex-wrap:wrap;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.tab-more-item{font-family:var(--font);font-size:13px;font-weight:500;padding:8px 14px;background:var(--bg2);border:.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;white-space:nowrap;min-height:36px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.tab-more-item:active,.tab-more-item.active{background:var(--info-bg);color:var(--info-text);border-color:var(--info-text)}
-.tab-more-item.active{font-weight:700}
-
-
-/* Padding bottom global pour tous les panels (footer sticky ~60px) */
-.recette-wrap,.trac-wrap,.prix-wrap,.carte-alg-wrap,.dash-wrap,
-.dlc-wrap,.histo-wrap,.cmd-wrap,.allergen-wrap,.bilan-wrap,.inv-list,.pieces-wrap{
-  padding-bottom:100px!important
-}
-
-
-/* ══ CENTRE D'ENVOI EMAIL ════════════════════════════════ */
-.send-overlay{position:fixed;inset:0;z-index:500;display:none}
-.send-overlay.open{display:block}
-.send-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-.send-panel{position:absolute;bottom:0;left:0;right:0;background:var(--bg);border-top:.5px solid var(--border2);border-radius:20px 20px 0 0;padding:20px 16px env(safe-area-inset-bottom,16px);z-index:501;box-shadow:0 -8px 40px rgba(0,0,0,.25);max-height:92vh;overflow-y:auto}
-@media(min-width:600px){.send-panel{left:50%;right:auto;transform:translateX(-50%);width:560px;border-radius:16px 16px 0 0}}
-.send-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
-.send-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.send-title{font-size:17px;font-weight:700}
-.send-close{background:var(--bg2);border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center}
-/* Destinataires */
-.send-field{margin-bottom:12px}
-.send-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;display:block}
-.send-input{font-family:var(--font);font-size:16px;padding:10px 12px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg);color:var(--text);width:100%}
-.send-input:focus{outline:none;border-color:var(--info-text)}
-/* Modules à inclure */
-.send-modules-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-.send-module-card{border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;cursor:pointer;transition:all .15s;position:relative;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
-.send-module-card.selected{border-color:var(--info-text);background:var(--info-bg)}
-.send-module-card.selected .send-module-check{opacity:1}
-.send-module-check{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:var(--info-text);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;opacity:0;transition:opacity .15s}
-.send-module-icon{font-size:20px;margin-bottom:4px}
-.send-module-name{font-size:12px;font-weight:600;color:var(--text)}
-.send-module-desc{font-size:10px;color:var(--text2);margin-top:2px}
-/* Format */
-.send-format-row{display:flex;gap:8px;margin-bottom:14px}
-.send-format-btn{flex:1;font-family:var(--font);font-size:13px;font-weight:600;padding:9px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;text-align:center;transition:all .15s}
-.send-format-btn.active{background:var(--green-bg);color:var(--green-text);border-color:var(--green-text)}
-/* Boutons action */
-.send-actions{display:flex;gap:8px;margin-top:4px}
-.send-btn{flex:1;font-family:var(--font);font-size:14px;font-weight:600;padding:13px;border-radius:var(--radius);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;min-height:48px}
-.send-btn.cancel{background:var(--bg2);color:var(--text2)}
-.send-btn.excel{background:var(--green-bg);color:var(--green-text)}
-.send-btn.pdf{background:var(--pink-bg);color:var(--pink-text)}
-.send-btn.mail{background:var(--info-bg);color:var(--info-text)}
-.send-btn:active{opacity:.7}
-.send-progress{font-size:12px;color:var(--text2);text-align:center;padding:8px 0;display:none}
-.send-feedback{font-size:13px;padding:8px 12px;border-radius:var(--radius);margin-top:8px;display:none}
-.send-feedback.ok{display:block;background:var(--green-bg);color:var(--green-text)}
-.send-feedback.err{display:block;background:var(--pink-bg);color:var(--pink-text)}
-/* Bouton envoi dans le header */
-.btn-send{background:var(--purple-bg)!important;color:var(--purple-text)!important;border-color:transparent!important;font-weight:600}
 
 </style></head><body>
   <div class="header">

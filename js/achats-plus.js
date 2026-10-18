@@ -9,7 +9,7 @@
 //  7. Doublons du catalogue (fusion validée une par une)
 // ════════════════════════════════════════════════════════════════════
 
-const AP_KEYS = { ca_regles: 'ca_regles', ca_liens: 'ca_liens', ca_articles: 'ca_articles', ca_reclamations: 'ca_reclamations', ca_objectifs: 'ca_objectifs', doublons_ignores: 'haccp_doublons_ignores_v1' };
+const AP_KEYS = { ca_regles: 'ca_regles', ca_liens: 'ca_liens', ca_articles: 'ca_articles', ca_reclamations: 'ca_reclamations', ca_objectifs: 'ca_objectifs', doublons_ignores: 'haccp_doublons_ignores_v1', ca_clotures: 'ca_clotures' };
 // Règles relevées sur les factures annotées par le cabinet (octobre 2026)
 const AP_REGLES_DEFAUT = [
   ['sac poubelle', '602220'], ['bobine devidage', '602220'], ['bobine', '602220'],
@@ -23,7 +23,7 @@ const AP_REGLES_DEFAUT = [
   ['fa', '601000'], ['se', '601000'], ['frais de livraison', '601000'], ['port', '601000']
 ].map(([m, c], i) => ({ id: 'r' + i, motcle: m, code: c }));
 
-let CA_REGLES = [], CA_LIENS = {}, CA_ARTICLES = [], CA_RECLAM = [], CA_OBJECTIFS = {}, DOUBLONS_IGNORES = [];
+let CA_REGLES = [], CA_LIENS = {}, CA_ARTICLES = [], CA_RECLAM = [], CA_OBJECTIFS = {}, DOUBLONS_IGNORES = [], CA_CLOTURES = { parametres: {}, mois: {} };
 function apLoad() {
   const g = (k, d) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : d; } catch (e) { return d; } };
   CA_REGLES = g(AP_KEYS.ca_regles, null) || AP_REGLES_DEFAUT.slice();
@@ -32,19 +32,22 @@ function apLoad() {
   CA_RECLAM = g(AP_KEYS.ca_reclamations, []) || [];
   CA_OBJECTIFS = g(AP_KEYS.ca_objectifs, {}) || {};
   DOUBLONS_IGNORES = g(AP_KEYS.doublons_ignores, []) || [];
+  CA_CLOTURES = g(AP_KEYS.ca_clotures, null) || {};
+  if (!CA_CLOTURES.parametres) CA_CLOTURES.parametres = {};
+  if (!CA_CLOTURES.mois) CA_CLOTURES.mois = {};
   if (Array.isArray(CA_LIENS)) CA_LIENS = {};
   if (!Array.isArray(CA_OBJECTIFS) && typeof CA_OBJECTIFS !== 'object') CA_OBJECTIFS = {};
 }
 apLoad();
 function apSave(id) {
-  const data = { ca_regles: CA_REGLES, ca_liens: CA_LIENS, ca_articles: CA_ARTICLES, ca_reclamations: CA_RECLAM, ca_objectifs: CA_OBJECTIFS, doublons_ignores: DOUBLONS_IGNORES }[id];
+  const data = { ca_regles: CA_REGLES, ca_liens: CA_LIENS, ca_articles: CA_ARTICLES, ca_reclamations: CA_RECLAM, ca_objectifs: CA_OBJECTIFS, doublons_ignores: DOUBLONS_IGNORES, ca_clotures: CA_CLOTURES }[id];
   saveModule(AP_KEYS[id], id, data);
 }
 // Données reçues d'un autre appareil
 function apReload(id) {
   apLoad();
   const ca = document.getElementById('panel-factures-ca');
-  if (ca && ca.classList.contains('active') && window.CaApp && CaApp._initialized && ['dashboard', 'regles', 'prix', 'reclam'].includes(CaApp.tab) && !CaApp.editingInvoiceId) CaApp.render();
+  if (ca && ca.classList.contains('active') && window.CaApp && CaApp._initialized && ['dashboard', 'regles', 'prix', 'reclam', 'cloture', 'annee'].includes(CaApp.tab) && !CaApp.editingInvoiceId) CaApp.render();
   if (id === 'ca_objectifs' && document.getElementById('panel-historique')?.classList.contains('active')) renderConsommation();
   if (id === 'doublons_ignores' && document.getElementById('qualite-overlay')?.classList.contains('open') && _qcTab === 'doublons') qcRender();
 }
@@ -146,6 +149,7 @@ function apApresEnregistrement(f) {
     quantite: Number.isFinite(a.quantite) ? a.quantite : null, unite: a.unite || '', prix: Number.isFinite(a.prix_ht) ? a.prix_ht : null,
     montant: Number.isFinite(a.montant_ht) ? a.montant_ht : null, compte: a.code || '', produit: CA_LIENS[mercNorm(a.designation)] || '' }));
   if (arts.length) { if (CA_ARTICLES.length > 4000) CA_ARTICLES = CA_ARTICLES.slice(-4000); apSave('ca_articles'); }
+  if (f.file) apUploadFacture(f.factureId, f.date, f.file);
   if (f.avoirDe) {
     const r = CA_RECLAM.find(x => x.statut === 'ouverte' && apFourn(x.fournisseur) === apFourn(f.fournisseur) && String(x.facture).trim() === String(f.avoirDe).trim());
     if (r) { r.statut = 'résolue'; r.avoirFactureId = f.factureId; r.resoluLe = localISODate(); apSave('ca_reclamations'); setTimeout(() => CaApp.toast('Réclamation soldée par cet avoir.'), 2700); }
@@ -213,9 +217,11 @@ mercApplySelected = function () {
     const code = m.dataProduct.code, k = mercNorm(m.mercLine.designation);
     CA_LIENS[k] = code;
     CA_ARTICLES.forEach(a => { if (!a.produit && mercNorm(a.designation) === k) a.produit = code; });
-    if (ctx) {
+    // Fournisseur et date de la facture (lot : propres à chaque ligne)
+    const four = m.mercLine.four || (ctx && ctx.fournisseur), dt = m.mercLine.dateFacture || (ctx && ctx.date);
+    if (four) {
       const h = (PRIX_HISTO_DATA[code] || []); const e = h[h.length - 1];
-      if (e && e.date === today && e.note === 'Mercuriale') { e.fournisseur = ctx.fournisseur || e.fournisseur; e.date = ctx.date || e.date; e.note = 'Facture ' + (ctx.fournisseur || ''); h.sort((a, b) => String(a.date).localeCompare(String(b.date))); }
+      if (e && e.date === today && e.note === 'Mercuriale') { e.fournisseur = four; e.date = dt || e.date; e.note = 'Facture ' + four; h.sort((a, b) => String(a.date).localeCompare(String(b.date))); }
     }
     if (ancien > 0 && m.mercLine.prix_ht > ancien * 1.10) hausses.push(`${m.dataProduct.produit} +${Math.round((m.mercLine.prix_ht / ancien - 1) * 100)} %`);
   });
@@ -282,9 +288,14 @@ function apFactures(list) {
     .sort((a, b) => a.date.localeCompare(b.date) || a.fournisseur.localeCompare(b.fournisseur));
 }
 function apExportComptable() {
-  const mois = CaApp.selectedMonth || '';
+  const r = apExportWorkbook(CaApp.selectedMonth || '');
+  if (!r) return CaApp.toast('Aucune facture sur cette période.', 'error');
+  XLSX.writeFile(r.wb, r.name);
+  CaApp.toast('Export comptable généré.');
+}
+function apExportWorkbook(mois) {
   const list = CaApp.invoices.filter(i => !mois || monthKey(i.date) === mois);
-  if (!list.length) return CaApp.toast('Aucune facture sur cette période.', 'error');
+  if (!list.length) return null;
   const titre = 'La Salle à Manger · Grenoble — Achats ' + (mois ? monthLabel(mois) : '(toutes périodes)');
   const facts = apFactures(list);
   const ordre = CaApp.codes.map(c => c.code);
@@ -328,8 +339,7 @@ function apExportComptable() {
   XLSX.utils.book_append_sheet(wb, ws1, 'Factures par compte');
   XLSX.utils.book_append_sheet(wb, ws2, 'Journal achats');
   XLSX.utils.book_append_sheet(wb, ws3, 'Totaux et controles');
-  XLSX.writeFile(wb, `Achats_${mois || 'complet'}_cabinet.xlsx`);
-  CaApp.toast('Export comptable généré.');
+  return { wb, name: `Achats_${mois || 'complet'}_cabinet.xlsx`, controles: ctrl, facts, codes, list };
 }
 
 // ── 5. Comparateur de prix entre fournisseurs ───────────────────────
@@ -404,6 +414,8 @@ function apReclamMaj(id, f, v) {
 function apReclamSuppr(id) { if (!confirm('Supprimer cette réclamation ?')) return; CA_RECLAM = CA_RECLAM.filter(x => x.id !== id); apSave('ca_reclamations'); CaApp.render(); }
 function apDashboardExtra() {
   const msgs = [];
+  const rap = apRappelCloture();
+  if (rap) msgs.push(`🔒 ${esc(rap.texte)} — <a href="#" onclick="_apCloMois=${jsArg(rap.mois)};CaApp.setTab('cloture');return false">continuer</a>`);
   const ouv = CA_RECLAM.filter(r => r.statut === 'ouverte');
   if (ouv.length) msgs.push(`📮 ${ouv.length} réclamation${ouv.length > 1 ? 's' : ''} ouverte${ouv.length > 1 ? 's' : ''} (${apEur(ouv.reduce((s, r) => s + (Number(r.montant) || 0), 0))} attendus) — <a href="#" onclick="CaApp.setTab('reclam');return false">voir</a>`);
   const facts = apFactures(CaApp.filteredInvoices());
@@ -469,4 +481,344 @@ async function apFusionner(keepCode, dropCode) {
   if (liens) apSave('ca_liens');
   autoSave();
   qcRender();
+}
+
+// ── 8. Fichiers des factures (espace privé Supabase « factures ») ───
+const AP_BUCKET = 'factures';
+const _apUploadsEnAttente = []; // {factureId, date, file} — réessayés toutes les minutes
+async function apUploadFacture(factureId, date, file) {
+  try {
+    if (!(await ensureFreshToken(false))) throw new Error('non connecté');
+    let blob = file, ext = 'pdf', type = file.type || 'application/pdf';
+    if (type.startsWith('image/')) { blob = await CaApp.resizeImageFile(file, 2200); ext = 'jpg'; type = 'image/jpeg'; }
+    else if (type !== 'application/pdf') throw new Error('format non pris en charge (PDF ou photo)');
+    const path = String(date || localISODate()).slice(0, 7) + '/' + factureId + '.' + ext;
+    const r = await fetch(SUPA_URL + '/storage/v1/object/' + AP_BUCKET + '/' + path, {
+      method: 'POST', headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + window._supabaseAuthToken, 'Content-Type': type, 'x-upsert': 'true' }, body: blob });
+    if (!r.ok) throw new Error('envoi refusé (' + r.status + ')');
+    let n = 0; CaApp.invoices.forEach(i => { if ((i.factureId || i.id) === factureId) { i.fichier = path; n++; } });
+    if (n) { CaApp.saveInvoices(); if (CaApp._initialized && ['registre', 'cloture'].includes(CaApp.tab) && !CaApp.editingInvoiceId) CaApp.render(); }
+    return true;
+  } catch (e) {
+    console.warn('[FACTURES] fichier non envoyé :', e.message);
+    if (!_apUploadsEnAttente.some(u => u.factureId === factureId)) _apUploadsEnAttente.push({ factureId, date, file });
+    return false;
+  }
+}
+setInterval(async () => {
+  if (!_apUploadsEnAttente.length || !navigator.onLine) return;
+  const l = _apUploadsEnAttente.splice(0);
+  for (const u of l) await apUploadFacture(u.factureId, u.date, u.file);
+}, 60000);
+window.addEventListener('beforeunload', e => { if (_apUploadsEnAttente.length) { e.preventDefault(); e.returnValue = ''; } });
+function apFichierHtml(inv) {
+  const fid = inv.factureId || inv.id;
+  return inv.fichier ? ` <a href="#" class="ap-pj" title="Voir la facture" onclick="apOuvrirFichier(${jsArg(inv.fichier)});return false">📎</a>`
+    : ` <label class="ap-pj ap-pj-add" title="Joindre le PDF ou la photo de la facture">📎+<input type="file" accept="application/pdf,image/*" style="display:none" onchange="apJoindre(${jsArg(fid)},${jsArg(inv.date)},this)"></label>`;
+}
+async function apJoindre(fid, date, input) {
+  const f = input.files && input.files[0]; input.value = ''; if (!f) return;
+  CaApp.toast('Envoi du fichier…');
+  const ok = await apUploadFacture(fid, date, f);
+  CaApp.toast(ok ? 'Fichier joint à la facture.' : 'Fichier non envoyé (connexion ?) — nouvel essai automatique.', ok ? 'success' : 'error');
+}
+async function apFichierBlob(path) {
+  await ensureFreshToken(false);
+  const r = await fetch(SUPA_URL + '/storage/v1/object/authenticated/' + AP_BUCKET + '/' + path, { headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + (window._supabaseAuthToken || SUPA_KEY) } });
+  if (!r.ok) throw new Error('fichier indisponible (' + r.status + ')');
+  return r.blob();
+}
+async function apOuvrirFichier(path) {
+  const w = window.open('', '_blank');
+  try { const u = URL.createObjectURL(await apFichierBlob(path)); if (w) w.location = u; else location.href = u; }
+  catch (e) { if (w) w.close(); alert('⚠️ ' + e.message + ' — connectez-vous pour voir les factures.'); }
+}
+// Lot : comparaison des prix de toutes les factures enregistrées
+function apBatchPrix() {
+  const b = CaApp.batch; if (!b) return;
+  const lignes = [];
+  b.items.filter(x => x.status === 'enregistrée' && x.scan && x.scan.common).forEach(x => (x.scan.articles || []).forEach(a => lignes.push({
+    designation: a.designation, reference: a.reference || '', prix_ht: a.prix_ht, unite: a.unite || '',
+    conditionnement: 'Facture ' + x.scan.common.fournisseur + ' du ' + String(x.scan.common.date).split('-').reverse().join('/'),
+    four: x.scan.common.fournisseur, dateFacture: x.scan.common.date })));
+  if (!lignes.length) return CaApp.toast('Aucun prix d\'article lu dans ce lot.', 'error');
+  openMercuriale();
+  _mercMatches = mercMatch(lignes);
+  const st = document.getElementById('merc-status');
+  st.className = 'merc-status ok';
+  st.textContent = '🧾 ' + lignes.length + ' articles lus sur les factures du lot — ' + _mercMatches.filter(m => m.dataProduct).length + ' correspondances. Vérifiez puis appliquez.';
+  mercRenderResults();
+}
+
+// ── 9. Clôture mensuelle ────────────────────────────────────────────
+let _apCloMois = null;
+const apMoisDecal = (m, n) => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+function apSnapDuMois(m) { return _snapsTries().filter(s => caMoisDe(s.date) === m).slice(-1)[0] || null; }
+function apSnapAvant(m) { return _snapsTries().filter(s => caMoisDe(s.date) < m).slice(-1)[0] || null; }
+function apRatioMois(m) {
+  const fin = apSnapDuMois(m), deb = apSnapAvant(m);
+  if (!fin || !deb) return null;
+  const sA = _stockSplit(deb.items), sB = _stockSplit(fin.items), ach = _achatsEntre(deb.date, fin.date), ca = CA_MENSUEL[m] || {};
+  const conso = { nourriture: sA.nourriture + ach.nourriture - sB.nourriture, boissons: sA.boissons + ach.boissons - sB.boissons };
+  const r = k => ca[k] > 0 ? conso[k] / ca[k] * 100 : null;
+  return { conso, ca, nourriture: r('nourriture'), boissons: r('boissons'), deb, fin };
+}
+function apEtapesCloture(m) {
+  const c = CA_CLOTURES.mois[m] || {};
+  const facts = apFactures(CaApp.invoices.filter(i => monthKey(i.date) === m));
+  const exp = apExportWorkbook(m), ctrl = exp ? exp.controles : [];
+  const sansFichier = facts.filter(f => !f.lignes.some(l => l.fichier)).length;
+  const recl = CA_RECLAM.filter(x => x.statut === 'ouverte' && String(x.date).slice(0, 7) <= m);
+  const snap = apSnapDuMois(m), ca = CA_MENSUEL[m] || {};
+  return [
+    { id: 'factures', bloquant: true, ok: !!c.facturesOk && facts.length > 0, titre: `Toutes les factures du mois sont saisies (${facts.length} enregistrées)` },
+    { id: 'controles', bloquant: true, ok: facts.length > 0 && !ctrl.length, titre: 'Aucune anomalie (numéros manquants ou en double, écarts de TTC)', ctrl },
+    { id: 'fichiers', bloquant: false, ok: facts.length > 0 && !sansFichier, titre: 'PDF ou photo joint à chaque facture', sansFichier },
+    { id: 'reclam', bloquant: false, ok: !recl.length, titre: 'Réclamations traitées', recl },
+    { id: 'inventaire', bloquant: true, ok: !!snap, titre: 'Inventaire de fin de mois archivé', snap },
+    { id: 'ca', bloquant: true, ok: ca.nourriture > 0 && ca.boissons != null, titre: 'Chiffre d\'affaires HT du mois saisi', ca },
+    { id: 'envoi', bloquant: true, ok: !!c.envoyeLe, titre: 'Achats envoyés au cabinet comptable', c }
+  ];
+}
+function apRappelCloture() {
+  const auj = localISODate(), jour = Number(auj.slice(8, 10)), cur = auj.slice(0, 7);
+  const cands = [];
+  if (jour <= 12) cands.push(apMoisDecal(cur, -1));
+  if (jour >= 25) cands.push(cur);
+  for (const m of cands) {
+    if ((CA_CLOTURES.mois[m] || {}).clotureLe) continue;
+    if (!CaApp.invoices.some(i => monthKey(i.date) === m) && m !== cur) continue;
+    const e = apEtapesCloture(m), ok = e.filter(x => x.ok).length;
+    return { mois: m, texte: `Clôture de ${monthLabel(m).toLowerCase()} : ${ok}/${e.length} étapes faites` };
+  }
+  return null;
+}
+// Rappel une fois par jour à l'ouverture
+setTimeout(() => {
+  try {
+    if (!CaApp._initialized) CaApp.loadFromStorage();
+    const r = apRappelCloture(); if (!r) return;
+    const k = 'ap_rappel_cloture', auj = localISODate();
+    if (localStorage.getItem(k) === auj) return;
+    localStorage.setItem(k, auj);
+    showSyncToast('🔒 ' + r.texte + ' (Factures › Clôture du mois)');
+  } catch (e) { }
+}, 20000);
+function apRenderCloture() {
+  const mois = [...new Set(CaApp.invoices.map(i => monthKey(i.date)).concat([localISODate().slice(0, 7), apMoisDecal(localISODate().slice(0, 7), -1)]))].sort().reverse();
+  const r0 = apRappelCloture();
+  const m = _apCloMois || (r0 && r0.mois) || CaApp.selectedMonth || mois[0];
+  const c = CA_CLOTURES.mois[m] || {}, etapes = apEtapesCloture(m);
+  const okB = etapes.filter(e => e.bloquant).every(e => e.ok), nOk = etapes.filter(e => e.ok).length;
+  const det = e => {
+    if (e.id === 'factures') return `<label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" ${c.facturesOk ? 'checked' : ''} onchange="apCloSet(${jsArg(m)},'facturesOk',this.checked)"> Je confirme que toutes les factures et avoirs de ${esc(monthLabel(m).toLowerCase())} sont dans le cahier</label>`;
+    if (e.id === 'controles') return e.ctrl.length ? '<ul class="ap-ul">' + e.ctrl.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '';
+    if (e.id === 'fichiers') return e.sansFichier ? `${e.sansFichier} facture(s) sans fichier : joignez-les depuis le <a href="#" onclick="CaApp.setMonth(${jsArg(m)});CaApp.setTab('registre');return false">Registre</a> (📎+). Non bloquant.` : '';
+    if (e.id === 'reclam') return e.recl.length ? `${e.recl.length} réclamation(s) encore ouverte(s) — <a href="#" onclick="CaApp.setTab('reclam');return false">voir</a>. Non bloquant.` : '';
+    if (e.id === 'inventaire') return e.snap ? `« ${esc(e.snap.label)} » du ${new Date(e.snap.date).toLocaleDateString('fr-FR')}` : `<button class="btn btn-ghost" onclick="apArchiverFinDeMois(${jsArg(m)})">📸 Archiver l'inventaire actuel comme fin de ${esc(monthLabel(m).toLowerCase())}</button>`;
+    if (e.id === 'ca') return `<span style="display:inline-flex;gap:8px;flex-wrap:wrap;align-items:center">🍴 <input id="ap-ca-n" type="number" step="0.01" min="0" style="width:120px" value="${e.ca.nourriture ?? ''}" placeholder="CA nourriture"> 🥤 <input id="ap-ca-b" type="number" step="0.01" min="0" style="width:120px" value="${e.ca.boissons ?? ''}" placeholder="CA boissons"> <button class="btn btn-ghost" onclick="apCloCA(${jsArg(m)})">Enregistrer</button></span>`;
+    if (e.id === 'envoi') return `<span style="display:inline-flex;gap:8px;flex-wrap:wrap;align-items:center">✉️ <input id="ap-cab-mail" type="email" style="width:240px" value="${esc(CA_CLOTURES.parametres.cabinetEmail || '')}" placeholder="adresse e-mail du cabinet" onchange="apCabinetMail(this.value)">
+      <button class="btn ${e.ok ? 'btn-ghost' : 'btn-primary'}" onclick="apPreparerEnvoi(${jsArg(m)})">📦 Préparer l'envoi (ZIP + e-mail)</button></span>${e.c.envoyeLe ? `<div style="font-size:12px;color:#8a8478;margin-top:4px">Préparé le ${esc(e.c.envoyeLe.split('-').reverse().join('/'))} — ${e.c.nbFichiers || 0} fichier(s) de factures dans le ZIP</div>` : ''}`;
+    return '';
+  };
+  let resultat = '';
+  if (c.clotureLe) {
+    const r = c.resultat || {};
+    resultat = `<div class="banner ap-ok" style="margin-top:14px;line-height:1.6">🔒 <b>${esc(monthLabel(m))} clôturé le ${esc(c.clotureLe.split('-').reverse().join('/'))}</b><br>
+      Achats HT : nourriture ${apEur(r.achatsN)} · boissons ${apEur(r.achatsB)} · autres ${apEur(r.achatsAutres)} · total TTC ${apEur(r.ttc)}<br>
+      Ratio matière : nourriture <b>${r.ratioN != null ? Math.round(r.ratioN * 10) / 10 + ' %' : '—'}</b> · boissons <b>${r.ratioB != null ? Math.round(r.ratioB * 10) / 10 + ' %' : '—'}</b>
+      <div style="margin-top:6px"><button class="btn btn-ghost" onclick="apRouvrir(${jsArg(m)})">Rouvrir le mois</button></div></div>`;
+  } else {
+    resultat = `<div style="margin-top:14px"><button class="btn btn-primary" ${okB ? '' : 'disabled'} onclick="apCloturer(${jsArg(m)})">🔒 Clôturer ${esc(monthLabel(m).toLowerCase())}</button>
+      ${okB ? '' : '<span style="font-size:12.5px;color:#8a8478;margin-left:8px">Les étapes obligatoires (★) doivent être faites.</span>'}</div>`;
+  }
+  return `<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:13px;color:#8a8478;font-weight:500;">Mois :</span>
+      <select style="width:auto" onchange="_apCloMois=this.value;CaApp.render()">${mois.map(x => `<option value="${x}"${x === m ? ' selected' : ''}>${esc(monthLabel(x))}${(CA_CLOTURES.mois[x] || {}).clotureLe ? ' 🔒' : ''}</option>`).join('')}</select>
+      <span style="font-size:13px;font-weight:600">${nOk}/${etapes.length} étapes faites</span></div>
+    <div class="card" style="padding:0;overflow:hidden">` +
+    etapes.map(e => `<div class="ap-etape${e.ok ? ' ok' : ''}"><div class="ap-etape-ic">${e.ok ? '✅' : e.bloquant ? '⬜' : '⚠️'}</div>
+      <div style="flex:1"><div class="ap-etape-t">${esc(e.titre)}${e.bloquant ? ' <span title="obligatoire">★</span>' : ''}</div><div class="ap-etape-d">${det(e)}</div></div></div>`).join('') +
+    `</div>${resultat}`;
+}
+function apCloSet(m, k, v) { CA_CLOTURES.mois[m] = Object.assign({}, CA_CLOTURES.mois[m], { [k]: v }); apSave('ca_clotures'); CaApp.render(); }
+function apCabinetMail(v) { CA_CLOTURES.parametres.cabinetEmail = String(v || '').trim(); apSave('ca_clotures'); }
+function apCloCA(m) {
+  const n = parseFloat(String(document.getElementById('ap-ca-n').value).replace(',', '.')), b = parseFloat(String(document.getElementById('ap-ca-b').value).replace(',', '.'));
+  CA_MENSUEL[m] = { nourriture: isNaN(n) ? null : n, boissons: isNaN(b) ? null : b };
+  saveModule(CA_KEY, 'ca_mensuel', CA_MENSUEL); CaApp.toast('Chiffre d\'affaires enregistré.'); CaApp.render();
+}
+function apArchiverFinDeMois(m) {
+  const lib = 'Inventaire ' + monthLabel(m).toLowerCase();
+  if (!confirm(`Archiver l'inventaire actuel (quantités comptées aujourd'hui) sous le nom « ${lib} » ?\n\nVérifiez que le comptage de fin de mois est terminé.`)) return;
+  // Inventaire fait au début du mois suivant : daté du dernier jour du mois clôturé (23 h)
+  const [y, mm] = m.split('-').map(Number);
+  const finMois = new Date(y, mm, 0, 23, 0, 0);
+  const date = new Date() > finMois ? finMois : new Date();
+  const snap = { id: Date.now(), label: lib, date: date.toISOString(), total: DATA.reduce((s, d) => s + (mont(d) || 0), 0), refs: DATA.length,
+    items: DATA.map(d => ({ code: d.code, produit: d.produit, zone: d.zone, qte: d.qte ?? null, prix: d.prix })) };
+  HISTO_DATA.unshift(snap);
+  HISTO_DATA.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  if (HISTO_DATA.length > 36) HISTO_DATA = HISTO_DATA.slice(0, 36);
+  saveAllData(); CaApp.toast('Inventaire archivé.'); CaApp.render();
+}
+function apLoadScript(src) {
+  return new Promise((res, rej) => { if (document.querySelector(`script[src="${src}"]`)) return res(); const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('chargement impossible : ' + src)); document.head.appendChild(s); });
+}
+async function apPreparerEnvoi(m) {
+  const mail = (document.getElementById('ap-cab-mail')?.value || CA_CLOTURES.parametres.cabinetEmail || '').trim();
+  if (mail && mail !== CA_CLOTURES.parametres.cabinetEmail) apCabinetMail(mail);
+  const exp = apExportWorkbook(m);
+  if (!exp) return CaApp.toast('Aucune facture ce mois-ci.', 'error');
+  CaApp.toast('Préparation du ZIP…');
+  try {
+    if (!window.JSZip) await apLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    const zip = new JSZip();
+    zip.file(exp.name, XLSX.write(exp.wb, { bookType: 'xlsx', type: 'array' }));
+    let nb = 0; const manquants = [];
+    const propre = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9-]+/g, '_').replace(/^_|_$/g, '');
+    for (const f of exp.facts) {
+      const path = (f.lignes.find(l => l.fichier) || {}).fichier;
+      if (!path) { manquants.push(`${f.date} ${f.fournisseur} ${f.bl}`); continue; }
+      try { zip.file('Factures/' + [f.date, propre(f.fournisseur), propre(f.bl || f.id)].join('_') + '.' + path.split('.').pop(), await apFichierBlob(path)); nb++; }
+      catch (e) { manquants.push(`${f.date} ${f.fournisseur} ${f.bl} (${e.message})`); }
+    }
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const nomZip = `Achats_${m}_La_Salle_a_Manger_Grenoble.zip`;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nomZip; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    const tot = c => apR2(exp.list.filter(l => l.code === c).reduce((s, l) => s + computeLine(l).ht, 0));
+    const ttc = apR2(exp.facts.reduce((s, f) => s + f.ttc, 0));
+    const corps = `Bonjour,\n\nVeuillez trouver ci-joint les achats de ${monthLabel(m).toLowerCase()} de La Salle à Manger · Grenoble : ${exp.facts.length} pièces, total TTC ${apEur(ttc)}.\n\nTotaux par compte :\n` +
+      exp.codes.map(c => `${c} ${apCodeLib(c)} : ${apEur(tot(c))}`).join('\n') +
+      `\n\nPièce jointe : ${nomZip} (export comptable + ${nb} facture(s) en PDF/photo).` + (manquants.length ? `\nFactures sans fichier joint : ${manquants.length}.` : '') + `\n\nCordialement`;
+    CA_CLOTURES.mois[m] = Object.assign({}, CA_CLOTURES.mois[m], { envoyeLe: localISODate(), nbFichiers: nb });
+    apSave('ca_clotures');
+    location.href = 'mailto:' + encodeURIComponent(mail) + '?subject=' + encodeURIComponent(`Achats ${monthLabel(m)} — La Salle à Manger · Grenoble`) + '&body=' + encodeURIComponent(corps);
+    setTimeout(() => alert(`📦 ${nomZip} est téléchargé (${nb} facture(s)${manquants.length ? ', ' + manquants.length + ' sans fichier' : ''}).\n\nDans le brouillon d'e-mail qui s'ouvre, joignez ce fichier depuis vos Téléchargements, puis envoyez.`), 600);
+    CaApp.render();
+  } catch (e) { CaApp.toast('Envoi non préparé : ' + e.message, 'error'); }
+}
+function apCloturer(m) {
+  const list = CaApp.invoices.filter(i => monthKey(i.date) === m);
+  const s = codes => apR2(list.filter(i => codes(i.code)).reduce((t, i) => t + computeLine(i).ht, 0));
+  const r = apRatioMois(m);
+  const resultat = {
+    achatsN: s(c => CONSO_CODES.nourriture.includes(c)), achatsB: s(c => CONSO_CODES.boissons.includes(c)),
+    achatsAutres: s(c => !CONSO_CODES.nourriture.includes(c) && !CONSO_CODES.boissons.includes(c) && c !== '635200'),
+    ttc: apR2(list.reduce((t, i) => t + computeLine(i).ttc, 0)),
+    ratioN: r ? r.nourriture : null, ratioB: r ? r.boissons : null
+  };
+  CA_CLOTURES.mois[m] = Object.assign({}, CA_CLOTURES.mois[m], { clotureLe: localISODate(), resultat });
+  apSave('ca_clotures'); CaApp.toast(monthLabel(m) + ' clôturé.'); CaApp.render();
+}
+function apRouvrir(m) {
+  if (!confirm('Rouvrir ' + monthLabel(m).toLowerCase() + ' ? Le résultat de la clôture sera recalculé à la prochaine clôture.')) return;
+  const c = Object.assign({}, CA_CLOTURES.mois[m]); delete c.clotureLe; delete c.resultat;
+  CA_CLOTURES.mois[m] = c; apSave('ca_clotures'); CaApp.render();
+}
+
+// ── 10. Bilan annuel ────────────────────────────────────────────────
+let _apAnnee = null;
+function apDonneesAnnee(y) {
+  const grp = c => CONSO_CODES.nourriture.includes(c) ? 'n' : CONSO_CODES.boissons.includes(c) ? 'b' : c === '635200' ? 'tva' : 'autres';
+  const mois = Array.from({ length: 12 }, (_, i) => y + '-' + String(i + 1).padStart(2, '0'));
+  const rows = mois.map(m => {
+    const list = CaApp.invoices.filter(i => monthKey(i.date) === m);
+    const r = { m, n: 0, b: 0, autres: 0, tva: 0, ttc: 0, nb: new Set(list.map(i => i.factureId || i.id)).size };
+    list.forEach(i => { const c = computeLine(i); r[grp(i.code)] += c.ht; r.tva += c.tva; r.ttc += c.ttc; });
+    const ca = CA_MENSUEL[m] || {}; r.caN = ca.nourriture; r.caB = ca.boissons;
+    const rat = apRatioMois(m); r.ratioN = rat ? rat.nourriture : null; r.ratioB = rat ? rat.boissons : null;
+    r.consoN = rat && ca.nourriture > 0 ? rat.conso.nourriture : null; r.consoB = rat && ca.boissons > 0 ? rat.conso.boissons : null;
+    r.clos = !!(CA_CLOTURES.mois[m] || {}).clotureLe;
+    return r;
+  });
+  const sum = k => rows.reduce((s, r) => s + (Number(r[k]) || 0), 0);
+  const tot = { n: sum('n'), b: sum('b'), autres: sum('autres'), tva: sum('tva'), ttc: sum('ttc'), nb: sum('nb') };
+  const avecN = rows.filter(r => r.consoN != null), avecB = rows.filter(r => r.consoB != null);
+  tot.ratioN = avecN.length ? avecN.reduce((s, r) => s + r.consoN, 0) / avecN.reduce((s, r) => s + r.caN, 0) * 100 : null;
+  tot.ratioB = avecB.length ? avecB.reduce((s, r) => s + r.consoB, 0) / avecB.reduce((s, r) => s + r.caB, 0) * 100 : null;
+  const four = {};
+  CaApp.invoices.filter(i => i.date.startsWith(y) && i.code !== '635200').forEach(i => { four[i.fournisseur] = (four[i.fournisseur] || 0) + computeLine(i).ht; });
+  const fournisseurs = Object.entries(four).map(([nom, ht]) => ({ nom, ht })).sort((a, b) => b.ht - a.ht);
+  const hausses = [];
+  Object.entries(PRIX_HISTO_DATA || {}).forEach(([code, h]) => {
+    const l = (Array.isArray(h) ? h : []).filter(e => String(e.date).startsWith(y) && e.prix > 0).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    if (l.length < 2) return;
+    const d = DATA.find(x => x.code === code) || { produit: code, unite: '' };
+    const pct = l[l.length - 1].prix / l[0].prix - 1;
+    if (Math.abs(pct) >= 0.005) hausses.push({ code, produit: d.produit, unite: d.unite, de: l[0], a: l[l.length - 1], pct });
+  });
+  hausses.sort((a, b) => b.pct - a.pct);
+  return { y, rows, tot, fournisseurs, hausses };
+}
+function apRenderAnnee() {
+  const years = [...new Set(CaApp.invoices.map(i => i.date.slice(0, 4)).concat([localISODate().slice(0, 4)]))].sort();
+  const y = _apAnnee || years[years.length - 1];
+  const D = apDonneesAnnee(y), obj = { n: Number(CA_OBJECTIFS.nourriture) || null, b: Number(CA_OBJECTIFS.boissons) || null };
+  const pc = (v, o) => v == null ? '—' : `<span class="${o ? (v <= o ? 'ap-vert' : v <= o * 1.1 ? 'ap-orange' : 'ap-rouge') : ''}">${Math.round(v * 10) / 10} %</span>`;
+  const max = Math.max(1, ...D.rows.map(r => r.n + r.b + r.autres));
+  const court = m => new Date(m + '-15').toLocaleDateString('fr-FR', { month: 'short' });
+  return `<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:13px;color:#8a8478;font-weight:500;">Année :</span>
+      <select style="width:auto" onchange="_apAnnee=this.value;CaApp.render()">${years.map(x => `<option${x === y ? ' selected' : ''}>${x}</option>`).join('')}</select>
+      <button class="btn btn-ghost" onclick="apExportAnnee(${jsArg(y)})">⬇ Excel</button>
+      <button class="btn btn-ghost" onclick="apImprimerAnnee()">🖨 Imprimer / PDF</button></div>
+    <div id="ap-annee">
+    <h2 class="ap-print-only">La Salle à Manger · Grenoble — Bilan des achats ${esc(y)}</h2>
+    <div class="row" style="margin-bottom:8px;">
+      <div class="kpi"><div class="label">Achats HT (hors TVA)</div><div class="value">${apEur(D.tot.n + D.tot.b + D.tot.autres)}</div><div class="muted" style="font-size:12px;margin-top:4px">${D.tot.nb} factures</div></div>
+      <div class="kpi"><div class="label">Total TTC</div><div class="value">${apEur(D.tot.ttc)}</div></div>
+      <div class="kpi"><div class="label">Ratio nourriture</div><div class="value">${pc(D.tot.ratioN, obj.n)}</div></div>
+      <div class="kpi"><div class="label">Ratio boissons</div><div class="value">${pc(D.tot.ratioB, obj.b)}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:14px"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Achats HT par mois</div>
+      <div class="ap-chart">${D.rows.map(r => `<div class="ap-col" title="${esc(monthLabel(r.m))} : ${apEur(r.n + r.b + r.autres)}">
+        <div class="ap-bar"><div style="height:${(r.autres / max * 100).toFixed(1)}%;background:#8a8478"></div><div style="height:${(r.b / max * 100).toFixed(1)}%;background:#4a6670"></div><div style="height:${(r.n / max * 100).toFixed(1)}%;background:#7f1d2e"></div></div>
+        <div class="ap-col-l">${esc(court(r.m))}</div></div>`).join('')}</div>
+      <div style="font-size:12px;color:#8a8478;margin-top:6px"><span class="dot" style="background:#7f1d2e"></span>Nourriture <span class="dot" style="background:#4a6670;margin-left:10px"></span>Boissons <span class="dot" style="background:#8a8478;margin-left:10px"></span>Fournitures, entretien…</div></div>
+    <div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table>
+      <thead><tr><th>Mois</th><th class="num">Nourriture</th><th class="num">Boissons</th><th class="num">Autres</th><th class="num">TVA</th><th class="num">TTC</th><th class="num">CA HT</th><th class="num">Ratio 🍴</th><th class="num">Ratio 🥤</th><th></th></tr></thead><tbody>` +
+    D.rows.map(r => `<tr><td>${esc(monthLabel(r.m))}</td><td class="num">${r.n ? apEur(r.n) : '—'}</td><td class="num">${r.b ? apEur(r.b) : '—'}</td><td class="num">${r.autres ? apEur(r.autres) : '—'}</td>
+      <td class="num muted">${r.tva ? apEur(r.tva) : '—'}</td><td class="num" style="font-weight:600">${r.ttc ? apEur(r.ttc) : '—'}</td>
+      <td class="num">${(r.caN || 0) + (r.caB || 0) ? apEur((r.caN || 0) + (r.caB || 0)) : '—'}</td><td class="num">${pc(r.ratioN, obj.n)}</td><td class="num">${pc(r.ratioB, obj.b)}</td><td>${r.clos ? '🔒' : ''}</td></tr>`).join('') +
+    `<tr style="font-weight:700"><td>Total ${esc(y)}</td><td class="num">${apEur(D.tot.n)}</td><td class="num">${apEur(D.tot.b)}</td><td class="num">${apEur(D.tot.autres)}</td><td class="num">${apEur(D.tot.tva)}</td><td class="num">${apEur(D.tot.ttc)}</td><td></td><td class="num">${pc(D.tot.ratioN, obj.n)}</td><td class="num">${pc(D.tot.ratioB, obj.b)}</td><td></td></tr>
+      </tbody></table></div>
+    <div class="row" style="align-items:flex-start">
+      <div class="card" style="flex:1 1 300px"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Fournisseurs (HT hors TVA)</div>` +
+    (D.fournisseurs.length ? D.fournisseurs.slice(0, 10).map(f => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f0ece0"><span>${esc(f.nom)}</span><span class="muted">${apEur(f.ht)}</span></div>`).join('') : '<div class="muted">—</div>') +
+    `</div><div class="card" style="flex:1 1 380px"><div style="font-size:13px;font-weight:600;margin-bottom:10px">Plus fortes variations de prix ${esc(y)}</div>` +
+    (D.hausses.length ? '<table class="ap-table">' + D.hausses.slice(0, 12).map(h => `<tr><td>${esc(h.produit)}</td><td class="num">${h.de.prix.toFixed(2)} → ${h.a.prix.toFixed(2)} €</td><td class="num ${h.pct > 0.1 ? 'ap-rouge' : h.pct < 0 ? 'ap-vert' : ''}">${h.pct > 0 ? '+' : ''}${Math.round(h.pct * 100)} %</td></tr>`).join('') + '</table>'
+      : '<div class="muted">Pas encore assez d\'historique de prix.</div>') +
+    `</div></div>
+    <div class="muted" style="font-size:12px;margin-top:10px">Ratio = (stock de début + achats − stock de fin) ÷ CA HT, calculé pour chaque mois disposant d'un inventaire archivé de fin de mois et du mois précédent, et du CA saisi. Couleurs selon les objectifs fixés dans l'onglet Historique.</div>
+    </div>`;
+}
+function apExportAnnee(y) {
+  const D = apDonneesAnnee(y), r2 = v => v == null ? '' : Math.round(v * 100) / 100, r1 = v => v == null ? '' : Math.round(v * 10) / 10;
+  const a1 = [[`La Salle à Manger · Grenoble — Bilan des achats ${y}`], [], ['Mois', 'Nourriture HT', 'Boissons HT', 'Autres HT', 'TVA (635200)', 'Total TTC', 'Factures', 'CA nourriture', 'CA boissons', 'Ratio nourriture %', 'Ratio boissons %', 'Clôturé']];
+  D.rows.forEach(r => a1.push([monthLabel(r.m), r2(r.n), r2(r.b), r2(r.autres), r2(r.tva), r2(r.ttc), r.nb, r2(r.caN), r2(r.caB), r1(r.ratioN), r1(r.ratioB), r.clos ? 'oui' : '']));
+  a1.push(['TOTAL', r2(D.tot.n), r2(D.tot.b), r2(D.tot.autres), r2(D.tot.tva), r2(D.tot.ttc), D.tot.nb, '', '', r1(D.tot.ratioN), r1(D.tot.ratioB), '']);
+  const a2 = [['Fournisseur', 'Achats HT (hors TVA)'], ...D.fournisseurs.map(f => [f.nom, r2(f.ht)])];
+  const a3 = [['Code', 'Produit', 'Unité', 'Prix début', 'Date', 'Prix fin', 'Date', 'Variation %'], ...D.hausses.map(h => [h.code, h.produit, h.unite || '', h.de.prix, h.de.date, h.a.prix, h.a.date, r1(h.pct * 100)])];
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.aoa_to_sheet(a1); ws1['!cols'] = [{ wch: 16 }, ...Array(11).fill({ wch: 13 })];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Mois');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(a2), 'Fournisseurs');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(a3), 'Variations de prix');
+  XLSX.writeFile(wb, `Bilan_achats_${y}_La_Salle_a_Manger.xlsx`);
+}
+function apImprimerAnnee() {
+  const el = document.getElementById('ap-annee'); if (!el) return;
+  const w = window.open('', '_blank'); if (!w) return alert('Autorisez les fenêtres pour imprimer.');
+  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Bilan des achats</title><style>
+    body{font-family:Arial,sans-serif;color:#222;margin:24px;font-size:12px} h2{font-size:18px;margin:0 0 14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap}.kpi,.card{border:1px solid #ddd;border-radius:8px;padding:10px;flex:1 1 160px;margin-bottom:10px}
+    .kpi .label{font-size:10px;text-transform:uppercase;color:#777}.kpi .value{font-size:18px;font-weight:700}
+    table{width:100%;border-collapse:collapse}th,td{padding:4px 6px;border-bottom:1px solid #eee;text-align:left}.num{text-align:right}
+    .muted{color:#777}.ap-vert{color:#27500a;font-weight:700}.ap-orange{color:#a35d00;font-weight:700}.ap-rouge{color:#b3261e;font-weight:700}
+    .ap-chart{display:flex;gap:6px;height:140px;align-items:flex-end}.ap-col{flex:1;display:flex;flex-direction:column;height:100%}.ap-bar{flex:1;display:flex;flex-direction:column-reverse}.ap-col-l{text-align:center;font-size:10px}
+    .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+    @media print{body{margin:10mm}}</style></head><body>${el.innerHTML}</body></html>`);
+  w.document.close(); setTimeout(() => w.print(), 400);
 }
