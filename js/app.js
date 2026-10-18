@@ -1652,7 +1652,7 @@ function buildPrintPage(){
   DATA.forEach(d=>{(byZone[d.zone]=byZone[d.zone]||[]).push(d);});
 
   let html=`<div class="print-header">
-    <h1>🍽 Inventaire HACCP — La Salle à Manger</h1>
+    <h1>🍽 Inventaire SP Conseil — La Salle à Manger</h1>
     <p>Grenoble · ${now.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</p>
     <div class="print-meta">
       <span>Édité le ${dateStr} à ${timeStr}</span>
@@ -1729,7 +1729,7 @@ function buildPrintPage(){
     <div class="print-sig"><div class="line"></div>Date / Visa</div>
   </div>`;
 
-  html+=`<div class="print-footer-note">Document généré automatiquement — Inventaire HACCP La Salle à Manger, Grenoble.</div>`;
+  html+=`<div class="print-footer-note">Document généré automatiquement — Inventaire SP Conseil · La Salle à Manger, Grenoble.</div>`;
 
   document.getElementById('print-page').innerHTML=html;
 }
@@ -1951,7 +1951,7 @@ function closeSave(){
 function exportInventoryJSON(){
   const now=new Date();
   const payload={
-    app:'Inventaire HACCP - La Salle à Manger - Grenoble',
+    app:'Inventaire SP Conseil - La Salle à Manger - Grenoble',
     exportedAt:now.toISOString(),
     totalHT:DATA.reduce((s,d)=>s+(mont(d)||0),0),
     items:DATA.map(d=>({code:d.code,produit:d.produit,zone:d.zone,qte:(d.qte===undefined?null:d.qte)}))
@@ -2055,7 +2055,7 @@ function buildSavePayload(){
   const qtes={};
   DATA.forEach(d=>{ qtes[d.code]=(d.qte!==null&&d.qte!==undefined)?d.qte:null; });
   return JSON.stringify({
-    app:'Inventaire HACCP - La Salle à Manger - Grenoble',
+    app:'Inventaire SP Conseil - La Salle à Manger - Grenoble',
     exportedAt:new Date().toISOString(),
     version:2,
     qtes,
@@ -7655,7 +7655,7 @@ function openSendCenter(){
   // Objet par défaut
   const now=new Date();
   const dateLabel=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  document.getElementById('send-subject').value=`Inventaire HACCP — La Salle à Manger — ${dateLabel}`;
+  document.getElementById('send-subject').value=`Inventaire SP Conseil — La Salle à Manger — ${dateLabel}`;
   document.getElementById('send-msg').value='Bonjour,\n\nVeuillez trouver ci-joint les documents d\'inventaire HACCP de La Salle à Manger.\n\nCordialement,';
   // Reset format
   _sendFormat='excel';
@@ -7736,7 +7736,7 @@ async function doSend(action){
       await new Promise(r=>setTimeout(r,50));
       const to=document.getElementById('send-to').value.trim();
       const cc=document.getElementById('send-cc').value.trim();
-      const subject=document.getElementById('send-subject').value.trim()||'Inventaire HACCP — La Salle à Manger';
+      const subject=document.getElementById('send-subject').value.trim()||'Inventaire SP Conseil — La Salle à Manger';
       const msg=document.getElementById('send-msg').value.trim();
       const now=new Date();
       const dateLabel=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
