@@ -72,6 +72,8 @@
     // 18/10/2026 (3) : ordre de comptage des étagères et CA mensuel (ratio matière)
     'ordre_comptage': 'haccp_ordre_comptage_v1',
     'ca_mensuel':     'haccp_ca_mensuel_v1',
+    // Adresses email / téléphones des fournisseurs (bons de commande)
+    'fournisseurs_contacts': 'haccp_fournisseurs_contacts_v1',
   };
   // Modules dont les données existaient sur chaque appareil AVANT d'être
   // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
@@ -399,6 +401,7 @@
           break;
         case 'ordre_comptage':
         case 'ca_mensuel':
+        case 'fournisseurs_contacts':
           if (typeof invPlusReload==='function') invPlusReload(id);
           break;
         case 'pieces':
@@ -673,7 +676,7 @@
 
 
   // ── Diagnostic visible : état de la synchro de cet appareil ──
-  const APP_SYNC_LABEL = 'Synchro v6 (18/10)';
+  const APP_SYNC_LABEL = 'Synchro v7 (18/10)';
   function syncStatusText() {
     const raw = localStorage.getItem('haccp_session');
     let email = null;
@@ -711,12 +714,16 @@
   // Charger, mettre à jour ET ajouter les produits depuis Supabase
   async function syncProductsFromCloud() {
     try {
-      const r = await supa('/rest/v1/haccp_products?select=code,zone,cat,produit,unite,prix,fournisseur,status,colisage,ean&order=code');
+      const r = await supa('/rest/v1/haccp_products?select=code,zone,cat,produit,unite,prix,fournisseur,status,colisage,ean,archived&order=code');
       if (!r.ok) return;
       const rows = await r.json();
       if (!rows || !rows.length) return;
       let updated = 0, added = 0;
-      rows.forEach(row => {
+      // Produits archivés (18/10/2026) : retirés de l'inventaire, conservés à part (restaurables)
+      window.ARCHIVES = rows.filter(x => x.archived).map(x => ({ code: x.code, zone: x.zone, cat: x.cat, produit: x.produit, unite: x.unite || '', prix: parseFloat(x.prix) || 0, fournisseur: x.fournisseur || '', status: x.status || '', archived: true }));
+      const archivedCodes = new Set(window.ARCHIVES.map(x => x.code));
+      for (let i = DATA.length - 1; i >= 0; i--) if (archivedCodes.has(DATA[i].code)) { DATA.splice(i, 1); updated++; }
+      rows.filter(x => !x.archived).forEach(row => {
         const item = DATA.find(d => d.code === row.code);
         if (item) {
           // Colisage et code-barres (18/10/2026)
@@ -789,7 +796,8 @@
         fournisseur: item.fournisseur || '',
         status: item.status || '',
         colisage: item.colisage > 0 ? item.colisage : null,
-        ean: item.ean || null
+        ean: item.ean || null,
+        archived: !!item.archived
       };
       let r = await supa('/rest/v1/haccp_products?code=eq.' + encodeURIComponent(item.code), {
         method: 'PATCH',

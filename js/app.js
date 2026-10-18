@@ -3043,6 +3043,7 @@ function openAddProduct(){
   document.getElementById('ap-seuil').value='';
   document.getElementById('ap-seuil-unit').textContent='';
   document.getElementById('ap-code-wrap').style.display='none';
+  const _apj=document.getElementById('ap-journal');if(_apj)_apj.innerHTML='';
   _fillFournisseurList();
   document.getElementById('addprod-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('ap-nom').focus(),200);
@@ -3072,6 +3073,7 @@ function openEditProduct(code){
   document.getElementById('ap-seuil-unit').textContent=item.unite||'';
   document.getElementById('ap-code-wrap').style.display='block';
   document.getElementById('ap-code-preview').textContent='Code : '+code+(item.status==='custom'?' (produit ajouté)':'');
+  if(typeof renderProductJournal==='function')renderProductJournal(code);
   _fillFournisseurList();
   document.getElementById('addprod-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('ap-nom').focus(),200);
@@ -5397,6 +5399,7 @@ function mercApplySelected() {
 
   var updated = 0;
   var changedItems = [];
+  var nbHausses = 0; // hausses de plus de 5 %
   var today = localISODate();
   toApply.forEach(function(m) {
     var code = m.dataProduct.code;
@@ -5404,6 +5407,7 @@ function mercApplySelected() {
     // Mettre à jour dans DATA[]
     var idx = DATA.findIndex(function(d) { return d.code === code; });
     if (idx >= 0 && isFinite(newPrix)) {
+      if (DATA[idx].prix > 0 && newPrix > DATA[idx].prix * 1.05) nbHausses++;
       DATA[idx].prix = newPrix;
       DATA[idx].status = 'updated';
       changedItems.push(DATA[idx]);
@@ -5432,7 +5436,7 @@ function mercApplySelected() {
     status.textContent = ko
       ? '⚠️ ' + (updated - ko) + ' prix enregistrés, ' + ko + ' NON enregistrés sur le serveur (connexion ? compte ?) — ils seront perdus au rechargement.'
       : '✅ ' + updated + ' prix mis à jour et enregistrés.';
-    showSyncToast('💰 ' + (updated - ko) + ' prix mis à jour depuis la mercuriale');
+    showSyncToast('💰 ' + (updated - ko) + ' prix mis à jour' + (nbHausses ? ' — dont ' + nbHausses + ' hausse(s) de plus de 5 % (voir Historique)' : ''));
   });
 }
 
@@ -5556,6 +5560,13 @@ function submitEditProduct(){
   if(!vals)return;
   const item=DATA.find(d=>d.code===_editCode);
   if(!item)return;
+  // Historique des prix + alerte de hausse (> 5 %)
+  if(vals.prix!==item.prix&&item.prix>0){
+    if(!PRIX_HISTO_DATA[item.code])PRIX_HISTO_DATA[item.code]=[];
+    PRIX_HISTO_DATA[item.code].push({date:localISODate(),prix:vals.prix,fournisseur:vals.fournisseur||item.fournisseur||'',note:'Fiche produit'});
+    saveNewModules();
+    if(vals.prix>item.prix*1.05)showSyncToast('📈 Hausse de '+Math.round((vals.prix/item.prix-1)*100)+' % sur '+vals.nom);
+  }
   item.produit=vals.nom;
   item.zone=vals.zone;
   item.cat=vals.cat;

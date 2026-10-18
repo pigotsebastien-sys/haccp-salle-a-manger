@@ -12,13 +12,13 @@
 <meta name="apple-mobile-web-app-title" content="SP Conseil">
 <link rel="manifest" href="manifest.json">
 <title>Inventaire SP Conseil — La Salle à Manger Grenoble</title>
-<script src="js/favicon.js?v=20261018e"></script>
-<link rel="stylesheet" href="style.css?v=20261018e">
+<script src="js/favicon.js?v=20261018f"></script>
+<link rel="stylesheet" href="style.css?v=20261018f">
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
-  <script src="js/core-sync.js?v=20261018e"></script>
+  <script src="js/core-sync.js?v=20261018f"></script>
 
-<script src="js/sw-register.js?v=20261018e"></script>
+<script src="js/sw-register.js?v=20261018f"></script>
 
 </head>
 <body role="application" aria-label="Inventaire SP Conseil — La Salle à Manger">
@@ -129,6 +129,7 @@
       <button class="more-item" onclick="exportCSV();closeMoreMenu()">⬇ Export CSV</button>
       <button class="more-item" onclick="printInventory();closeMoreMenu()">🖨 Imprimer</button>
       <button class="more-item" onclick="closeMoreMenu();openRegistresHACCP()">📑 Registres HACCP du mois (PDF)</button>
+      <button class="more-item" onclick="closeMoreMenu();openQualite()">🧹 Qualité du catalogue</button>
       <div class="more-separator"></div>
       <button class="more-item more-red" onclick="closeMoreMenu();resetInventory()">🔄 Remise à zéro</button>
     </div>
@@ -759,6 +760,8 @@
     <div id="conso-card" class="conso-card"></div>
     <div id="evolution-card" class="conso-card"></div>
     <div id="ecarts-card" class="conso-card"></div>
+    <div id="pertes-card" class="conso-card"></div>
+    <div id="hausses-card" class="conso-card"></div>
     <div id="dormants-card" class="conso-card"></div>
     <div id="histo-list"></div>
   </div>
@@ -773,6 +776,8 @@
         <button class="btn" onclick="addCmdLine()">+ Ajouter ligne</button>
         <button class="btn" style="background:var(--green-bg);color:var(--green-text);border-color:transparent" onclick="exportCmdExcel()">📊 Excel</button>
         <button class="btn" onclick="exportCmdPDF()">📄 PDF</button>
+        <button class="btn btn-primary" onclick="openCommandesFournisseurs()">✉️ Envoyer par fournisseur</button>
+        <button class="btn" onclick="openQualite('seuils')">📉 Seuils suggérés</button>
       </div>
       <div class="cmd-fourn-filter">
         <label style="font-size:11px;color:var(--text2);margin-right:6px">Fournisseur</label>
@@ -1300,8 +1305,8 @@
 
 
 <div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div></div>
-<script src="js/app.js?v=20261018e"></script>
-<script src="js/inventaire-plus.js?v=20261018e"></script>
+<script src="js/app.js?v=20261018f"></script>
+<script src="js/inventaire-plus.js?v=20261018f"></script>
 
 <!-- CENTRE D'ENVOI EMAIL ══════════════════════════════ -->
 <div class="send-overlay" id="send-overlay">
@@ -1440,6 +1445,8 @@ Veuillez trouver ci-joint les documents d'inventaire HACCP..."></textarea>
           <span style="font-size:12px;color:var(--text2)" id="ap-seuil-unit"></span>
         </div>
       </div>
+      <!-- Historique des modifications du produit (journal serveur) -->
+      <div class="addprod-field full" id="ap-journal"></div>
       <!-- Code -->
       <div class="addprod-field full" id="ap-code-wrap" style="display:none">
         <div class="addprod-label">Code produit</div>

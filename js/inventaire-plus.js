@@ -503,3 +503,263 @@ function invoiceArticlesToPrix() {
   st.textContent = '🧾 ' + arts.length + ' articles lus sur la facture — ' + n + ' correspondances dans l\'inventaire. Vérifiez puis appliquez.';
   mercRenderResults();
 }
+// ════════════════════════════════════════════════════════════════════
+// QUALITÉ DU CATALOGUE, JOURNAL, SEUILS, COMMANDES, PERTES, HAUSSES
+// (18/10/2026 — 2e série)
+// ════════════════════════════════════════════════════════════════════
+const CONTACTS_KEY = 'haccp_fournisseurs_contacts_v1';  // {fournisseur: {email, tel}}
+let CONTACTS = _lsJSON(CONTACTS_KEY, {}) || {};
+const _invPlusReload0 = invPlusReload;
+invPlusReload = function(id) {
+  if (id === 'fournisseurs_contacts') { CONTACTS = _lsJSON(CONTACTS_KEY, {}) || {}; return; }
+  _invPlusReload0(id);
+};
+async function _rpcPlus(name, args) {
+  await ensureFreshToken(false);
+  const r = await supa('/rest/v1/rpc/' + name, { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(args || {}) });
+  if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'connectez-vous avec un compte autorisé' : 'erreur ' + r.status);
+  return r.json();
+}
+const _fmtDT = d => new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+// ── Fenêtre « Qualité du catalogue » ────────────────────────────────
+let _qcTab = 'completer';
+function openQualite(tab) {
+  let ov = document.getElementById('qualite-overlay');
+  if (!ov) {
+    ov = document.createElement('div'); ov.id = 'qualite-overlay'; ov.className = 'quick-overlay';
+    ov.innerHTML = `<div class="quick-top"><div class="quick-title">🧹 Qualité du catalogue</div><button class="quick-close" onclick="closeQualite()" aria-label="Fermer">✕</button></div>
+      <div class="qc-tabs" id="qc-tabs"></div><div class="qc-body" id="qc-body"></div>`;
+    document.body.appendChild(ov);
+  }
+  if (tab) _qcTab = tab;
+  ov.classList.add('open'); document.body.style.overflow = 'hidden';
+  qcRender();
+}
+function closeQualite() {
+  document.getElementById('qualite-overlay')?.classList.remove('open'); document.body.style.overflow = '';
+  render(); updateStats(); buildZoneTabs(); scheduleBilanRebuild();
+}
+function _qcIncomplets() {
+  return DATA.filter(d => !d.prix || !d.unite || !d.fournisseur || !d.zone || d.zone === 'AUTRE').sort(ordreComptage);
+}
+function _qcJamaisComptes() {
+  const snaps = HISTO_DATA || [];
+  return DATA.filter(d => {
+    if (d.qte != null && Number(d.qte) > 0) return false;
+    return !snaps.some(s => (s.items || []).some(i => i.code === d.code && i.qte != null && Number(i.qte) > 0));
+  }).sort(ordreComptage);
+}
+function qcRender() {
+  const tabs = [
+    ['completer', '✏️ À compléter', _qcIncomplets().length],
+    ['jamais', '📦 Jamais comptés', _qcJamaisComptes().length],
+    ['archives', '🗄 Archivés', (window.ARCHIVES || []).length],
+    ['seuils', '📉 Seuils suggérés', null],
+    ['journal', '🕓 Journal', null]
+  ];
+  document.getElementById('qc-tabs').innerHTML = tabs.map(t => `<button class="quick-zchip${t[0] === _qcTab ? ' current' : ''}" onclick="_qcTab='${t[0]}';qcRender()">${t[1]}${t[2] != null ? ' <b>' + t[2] + '</b>' : ''}</button>`).join('');
+  const body = document.getElementById('qc-body');
+  if (_qcTab === 'completer') {
+    const l = _qcIncomplets();
+    body.innerHTML = `<div class="conso-foot">Produits sans prix, sans unité, sans fournisseur ou en zone « Autre » : ils faussent la valeur du stock et les commandes. Corrigez directement ici.</div>` +
+      (l.length ? `<table class="conso-table qc-table"><tr><th>Produit</th><th>Zone</th><th>Prix HT</th><th>Unité</th><th>Fournisseur</th><th></th></tr>` + l.slice(0, 150).map(d => `<tr data-code="${esc(d.code)}">
+        <td>${esc(d.produit)}<br><small style="color:var(--text3)">${esc(d.code)}</small></td>
+        <td><select class="qc-in" data-f="zone">${Object.keys(ZONES).map(z => `<option value="${esc(z)}"${z === d.zone ? ' selected' : ''}>${esc(ZONES[z].label)}</option>`).join('')}</select></td>
+        <td><input class="qc-in" data-f="prix" type="number" inputmode="decimal" min="0" step="0.001" value="${d.prix || ''}" placeholder="—"></td>
+        <td><input class="qc-in" data-f="unite" value="${esc(d.unite || '')}" placeholder="KG, L, PCE…"></td>
+        <td><input class="qc-in" data-f="fournisseur" value="${esc(d.fournisseur || '')}" placeholder="—" list="ap-fourn-list"></td>
+        <td><button class="dlc-btn-sm" onclick="qcSaveRow(this)">✓</button></td></tr>`).join('') + '</table>' : '<div class="quick-empty">✅ Toutes les fiches sont complètes.</div>');
+    if (typeof _fillFournisseurList === 'function') _fillFournisseurList();
+  } else if (_qcTab === 'jamais') {
+    const l = _qcJamaisComptes();
+    body.innerHTML = `<div class="conso-foot">Produits jamais comptés (aucune quantité dans les inventaires archivés ni aujourd'hui). Les archiver les retire de l'inventaire sans rien supprimer : ils restent restaurables à tout moment.</div>` +
+      (l.length ? `<div class="qc-actions"><button class="dlc-btn-sm" onclick="document.querySelectorAll('.qc-chk').forEach(c=>c.checked=true)">Tout cocher</button>
+        <button class="dlc-btn-sm" onclick="document.querySelectorAll('.qc-chk').forEach(c=>c.checked=false)">Tout décocher</button>
+        <button class="btn btn-primary" onclick="qcArchiver()">🗄 Archiver la sélection</button></div>
+        <table class="conso-table">` + l.map(d => `<tr><td><input type="checkbox" class="qc-chk" value="${esc(d.code)}"></td><td>${esc(d.produit)}<br><small style="color:var(--text3)">${esc(d.code)} · ${esc((ZONES[d.zone] || { label: d.zone }).label)}${d.fournisseur ? ' · ' + esc(d.fournisseur) : ''}</small></td><td class="num">${d.prix ? d.prix.toFixed(2) + ' €' : '—'}</td></tr>`).join('') + '</table>'
+        : '<div class="quick-empty">Aucun produit jamais compté.</div>');
+  } else if (_qcTab === 'archives') {
+    const l = (window.ARCHIVES || []).slice().sort((a, b) => a.produit.localeCompare(b.produit, 'fr'));
+    body.innerHTML = l.length ? `<table class="conso-table">` + l.map(d => `<tr><td>${esc(d.produit)}<br><small style="color:var(--text3)">${esc(d.code)} · ${esc((ZONES[d.zone] || { label: d.zone }).label)}</small></td><td class="num"><button class="dlc-btn-sm" onclick="qcRestaurer(${jsArg(d.code)})">↩ Restaurer</button></td></tr>`).join('') + '</table>'
+      : '<div class="quick-empty">Aucun produit archivé.</div>';
+  } else if (_qcTab === 'seuils') {
+    renderSeuilsSuggeres(body);
+  } else if (_qcTab === 'journal') {
+    body.innerHTML = '<div class="voice-hint">Chargement…</div>';
+    _rpcPlus('haccp_journal_lire', { p_code: null, p_limite: 200 }).then(rows => {
+      body.innerHTML = `<div class="conso-foot">200 dernières modifications (quantités, prix, fiches produits), tous appareils confondus. Conservées 12 mois.</div>` + _journalTable(rows, true);
+    }).catch(e => { body.innerHTML = '<div class="voice-feedback err">❌ ' + esc(e.message) + '</div>'; });
+  }
+}
+function _journalTable(rows, avecProduit) {
+  if (!rows || !rows.length) return '<div class="quick-empty">Aucune modification enregistrée pour l\'instant.</div>';
+  const nom = c => { const d = DATA.find(x => x.code === c) || (window.ARCHIVES || []).find(x => x.code === c); return d ? d.produit : c; };
+  return `<table class="conso-table"><tr><th>Quand</th>${avecProduit ? '<th>Produit</th>' : ''}<th>Quoi</th><th>Avant → après</th><th>Par</th></tr>` +
+    rows.map(r => `<tr><td>${_fmtDT(r.at)}</td>${avecProduit ? `<td>${esc(nom(r.code))}</td>` : ''}<td>${esc(r.champ)}</td><td>${esc(r.ancien ?? '—')} → <b>${esc(r.nouveau ?? '—')}</b></td><td><small>${esc(String(r.par || '').split('@')[0])}</small></td></tr>`).join('') + '</table>';
+}
+function qcSaveRow(btn) {
+  const tr = btn.closest('tr'); const d = DATA.find(x => x.code === tr.dataset.code); if (!d) return;
+  const v = f => tr.querySelector(`[data-f="${f}"]`).value.trim();
+  const prix = parseFloat(v('prix').replace(',', '.'));
+  d.zone = v('zone'); d.prix = isNaN(prix) ? d.prix : prix;
+  d.unite = normalizeUnite(v('unite')); d.fournisseur = normalizeFournisseur(v('fournisseur'));
+  btn.textContent = '…';
+  pushProductToCloud(d).then(ok => { btn.textContent = ok ? '✅' : '⚠️'; if (!ok) alert('Modification NON enregistrée sur le serveur (connexion ?).'); });
+}
+async function qcArchiver() {
+  const codes = [...document.querySelectorAll('.qc-chk:checked')].map(c => c.value);
+  if (!codes.length) return;
+  if (!confirm(`Archiver ${codes.length} produit(s) ?\nIls disparaissent de l'inventaire mais restent restaurables (onglet « Archivés »).`)) return;
+  let ko = 0;
+  for (const code of codes) {
+    const i = DATA.findIndex(d => d.code === code); if (i < 0) continue;
+    const d = DATA[i]; d.archived = true;
+    if (await pushProductToCloud(d)) { DATA.splice(i, 1); (window.ARCHIVES = window.ARCHIVES || []).push(d); } else { d.archived = false; ko++; }
+  }
+  if (ko) alert(ko + ' produit(s) non archivé(s) : connexion au serveur impossible.');
+  qcRender();
+}
+async function qcRestaurer(code) {
+  const i = (window.ARCHIVES || []).findIndex(d => d.code === code); if (i < 0) return;
+  const d = window.ARCHIVES[i]; d.archived = false; d.qte = null;
+  if (await pushProductToCloud(d)) { window.ARCHIVES.splice(i, 1); DATA.push(d); if (typeof loadAutoSave === 'function') loadAutoSave(); qcRender(); }
+  else { d.archived = true; alert('Restauration impossible (connexion ?).'); }
+}
+
+// Historique d'un produit dans sa fiche
+async function renderProductJournal(code) {
+  const box = document.getElementById('ap-journal'); if (!box) return;
+  box.innerHTML = '<small style="color:var(--text3)">Chargement de l\'historique…</small>';
+  try { box.innerHTML = '<div class="addprod-label" style="margin-top:6px">🕓 Dernières modifications</div>' + _journalTable(await _rpcPlus('haccp_journal_lire', { p_code: code, p_limite: 15 }), false); }
+  catch (e) { box.innerHTML = '<small style="color:var(--text3)">Historique indisponible (' + esc(e.message) + ')</small>'; }
+}
+
+// ── Seuils de commande suggérés ─────────────────────────────────────
+// Stock habituel = moyenne des quantités comptées (inventaires archivés + aujourd'hui).
+// Seuil suggéré = 50 % du stock habituel : l'alerte « stock bas » se déclenche
+// quand il ne reste plus que la moitié de ce qu'on a d'habitude.
+function _seuilsSuggeres() {
+  const snaps = HISTO_DATA || [];
+  return DATA.map(d => {
+    const vals = snaps.map(s => (s.items || []).find(i => i.code === d.code)).filter(i => i && i.qte != null && Number(i.qte) > 0).map(i => Number(i.qte));
+    if (d.qte != null && Number(d.qte) > 0) vals.push(Number(d.qte));
+    if (!vals.length) return null;
+    const moy = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const arr = moy >= 10 ? 1 : 0.5;
+    const sug = Math.max(arr, Math.round(moy * 0.5 / arr) * arr);
+    const cur = SEUILS_DATA[d.code] && SEUILS_DATA[d.code].min;
+    return { d, moy, nb: vals.length, sug, cur: cur != null ? cur : null };
+  }).filter(x => x && x.cur !== x.sug).sort((a, b) => ordreComptage(a.d, b.d));
+}
+function renderSeuilsSuggeres(body) {
+  const l = _seuilsSuggeres();
+  body.innerHTML = `<div class="conso-foot">Seuil suggéré = la moitié du stock habituel (moyenne des quantités comptées). Sous ce seuil, le produit passe en « Stock bas » et entre dans la commande générée automatiquement.</div>` +
+    (l.length ? `<div class="qc-actions"><button class="dlc-btn-sm" onclick="document.querySelectorAll('.qs-chk').forEach(c=>c.checked=true)">Tout cocher</button>
+      <button class="btn btn-primary" onclick="appliquerSeuils()">✓ Appliquer les seuils cochés</button></div>
+      <table class="conso-table"><tr><th></th><th>Produit</th><th class="num">Stock habituel</th><th class="num">Seuil actuel</th><th class="num">Suggéré</th></tr>` +
+      l.map(x => `<tr><td><input type="checkbox" class="qs-chk" value="${esc(x.d.code)}" data-s="${x.sug}" ${x.cur == null ? 'checked' : ''}></td><td>${esc(x.d.produit)}</td>
+        <td class="num">${Math.round(x.moy * 10) / 10} ${esc(x.d.unite || '')}<br><small style="color:var(--text3)">${x.nb} comptage${x.nb > 1 ? 's' : ''}</small></td>
+        <td class="num">${x.cur != null ? x.cur : '—'}</td><td class="num"><b>${x.sug}</b></td></tr>`).join('') + '</table>'
+      : '<div class="quick-empty">Rien à suggérer pour l\'instant (il faut au moins un inventaire compté).</div>');
+}
+function appliquerSeuils() {
+  const sel = [...document.querySelectorAll('.qs-chk:checked')];
+  if (!sel.length) return;
+  sel.forEach(c => { const d = DATA.find(x => x.code === c.value); if (d) SEUILS_DATA[d.code] = { min: Number(c.dataset.s), unite: d.unite || '' }; });
+  saveAllData(); render();
+  alert('✓ ' + sel.length + ' seuil(s) enregistré(s).');
+  qcRender();
+}
+
+// ── Bons de commande par fournisseur (PDF + email prêt à envoyer) ───
+function openCommandesFournisseurs() {
+  CONTACTS = _lsJSON(CONTACTS_KEY, {}) || {};
+  const par = {};
+  (CMD_DATA || []).filter(c => c.qteCmd > 0).forEach(c => { const f = c.fournisseur || '(sans fournisseur)'; (par[f] = par[f] || []).push(c); });
+  let ov = document.getElementById('cmdf-overlay');
+  if (!ov) { ov = document.createElement('div'); ov.id = 'cmdf-overlay'; ov.className = 'quick-overlay'; document.body.appendChild(ov); }
+  const fourns = Object.keys(par).sort();
+  ov.innerHTML = `<div class="quick-top"><div class="quick-title">✉️ Bons de commande par fournisseur</div><button class="quick-close" onclick="document.getElementById('cmdf-overlay').classList.remove('open');document.body.style.overflow=''" aria-label="Fermer">✕</button></div>
+    <div class="qc-body">${fourns.length ? fourns.map(f => {
+      const items = par[f], tot = items.reduce((s, c) => s + c.qteCmd * c.prix, 0), ct = CONTACTS[f] || {};
+      return `<div class="conso-card"><div class="conso-title">${esc(f)} — ${items.length} ligne${items.length > 1 ? 's' : ''} · ${_eur(tot)} HT</div>
+        <div class="cmdf-row"><input class="dlc-input" type="email" placeholder="email de commande du fournisseur" value="${esc(ct.email || '')}" onchange="setContactFournisseur(${jsArg(f)},this.value)">
+        <button class="dlc-btn-sm" onclick="bonCommandePDF(${jsArg(f)})">📄 PDF</button>
+        <button class="btn btn-primary" onclick="bonCommandeEmail(${jsArg(f)})">✉️ Email</button></div></div>`;
+    }).join('') : '<div class="quick-empty">Aucune ligne de commande. Générez d\'abord la commande (⚡ Générer depuis seuils).</div>'}</div>`;
+  ov.classList.add('open'); document.body.style.overflow = 'hidden';
+}
+function setContactFournisseur(f, email) {
+  CONTACTS[f] = Object.assign({}, CONTACTS[f], { email: String(email || '').trim() });
+  saveModule(CONTACTS_KEY, 'fournisseurs_contacts', CONTACTS);
+}
+function _lignesFournisseur(f) { return (CMD_DATA || []).filter(c => c.qteCmd > 0 && (c.fournisseur || '(sans fournisseur)') === f); }
+function bonCommandePDF(f) {
+  const items = _lignesFournisseur(f), tot = items.reduce((s, c) => s + c.qteCmd * c.prix, 0), date = new Date().toLocaleDateString('fr-FR');
+  openHtmlInNewTab(`<html><head><meta charset="UTF-8"><title>Bon de commande ${esc(f)}</title><style>body{font-family:Arial,sans-serif;font-size:12px;padding:12mm}h1{font-size:18px;color:#1a3a5c;margin:0}table{width:100%;border-collapse:collapse;margin-top:14px}th{background:#1a3a5c;color:#fff;padding:6px;text-align:left}td{padding:5px 6px;border-bottom:1px solid #ddd}.n{text-align:right}.tot td{font-weight:700;border-top:2px solid #1a3a5c}@media print{th{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>
+    <h1>BON DE COMMANDE</h1><p><b>${esc(RESTAURANT_NAME)}</b><br>6 rue Emile Guyemard · 38000 Grenoble<br>Date : ${date}</p><p>Fournisseur : <b>${esc(f)}</b></p>
+    <table><tr><th>Désignation</th><th>Réf.</th><th class="n">Quantité</th><th>Unité</th><th class="n">Prix HT</th><th class="n">Montant HT</th></tr>
+    ${items.map(c => `<tr><td>${esc(c.produit)}</td><td>${esc(c.code)}</td><td class="n">${c.qteCmd}</td><td>${esc(c.unite)}</td><td class="n">${c.prix.toFixed(2)} €</td><td class="n">${(c.qteCmd * c.prix).toFixed(2)} €</td></tr>`).join('')}
+    <tr class="tot"><td colspan="5">Total HT estimé</td><td class="n">${tot.toFixed(2)} €</td></tr></table>
+    <p style="margin-top:30px">Merci de confirmer la date de livraison.<br><br>Signature :</p></body></html>`);
+}
+function bonCommandeEmail(f) {
+  const items = _lignesFournisseur(f), to = (CONTACTS[f] && CONTACTS[f].email) || '';
+  if (!to && !confirm('Aucune adresse email enregistrée pour ' + f + '.\nOuvrir quand même le brouillon ?')) return;
+  const corps = ['Bonjour,', '', `Merci de bien vouloir nous livrer la commande suivante :`, '',
+    ...items.map(c => `- ${c.produit} : ${c.qteCmd} ${c.unite}`), '',
+    'Merci de nous confirmer la date de livraison.', '', 'Cordialement,', RESTAURANT_NAME, '6 rue Emile Guyemard · 38000 Grenoble'].join('\n');
+  window.location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent('Commande ' + RESTAURANT_NAME + ' — ' + new Date().toLocaleDateString('fr-FR')) + '&body=' + encodeURIComponent(corps);
+}
+
+// ── Pertes de la période (onglet Historique) ───────────────────────
+function renderPertes() {
+  const box = document.getElementById('pertes-card'); if (!box) return;
+  const snaps = _snapsTries();
+  const debId = document.getElementById('conso-debut')?.value;
+  const deb = snaps.find(s => String(s.id) === debId) || snaps[snaps.length - 1];
+  const t0 = deb ? new Date(deb.date) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  const prix = c => (DATA.find(d => d.code === c) || {}).prix || 0;
+  const pertes = (TRAC_DATA || []).filter(t => t.type === 'perte' && t.date && new Date(t.date) > t0)
+    .map(t => ({ t, val: (Number(t.qte) || 0) * prix(t.code) })).sort((a, b) => b.val - a.val);
+  const dlcPerimees = (DLC_DATA || []).filter(d => d.qte && dlcDaysLeft(d.date) < 0 && new Date(d.date) > t0)
+    .map(d => ({ d, val: Number(d.qte) * prix(d.code) })).sort((a, b) => b.val - a.val);
+  const totP = pertes.reduce((s, x) => s + x.val, 0), totD = dlcPerimees.reduce((s, x) => s + x.val, 0);
+  box.innerHTML = `<div class="conso-title">🗑 Pertes depuis ${deb ? '« ' + esc(deb.label) + ' »' : 'le début du mois'} : ${_eur(totP + totD)}</div>
+    <div class="conso-foot">Pertes déclarées dans la Traçabilité : <b>${_eur(totP)}</b> (${pertes.length}) · lots dont la DLC est dépassée : <b>${_eur(totD)}</b> (${dlcPerimees.length}, estimation).</div>` +
+    (pertes.length || dlcPerimees.length ? `<table class="conso-table">` +
+      pertes.slice(0, 10).map(x => `<tr><td>${esc(x.t.produit)}<br><small style="color:var(--text3)">${_fmtDT(x.t.date)}${x.t.note ? ' · ' + esc(x.t.note) : ''}</small></td><td class="num">${esc(x.t.qte)} ${esc(x.t.unite || '')}</td><td class="num neg">${_eur(x.val)}</td></tr>`).join('') +
+      dlcPerimees.slice(0, 10).map(x => `<tr><td>${esc(x.d.produit)} <small>(DLC ${new Date(x.d.date).toLocaleDateString('fr-FR')})</small></td><td class="num">${esc(x.d.qte)}</td><td class="num neg">${_eur(x.val)}</td></tr>`).join('') + '</table>'
+      : '<div class="conso-foot">Aucune perte enregistrée sur la période. Pensez à déclarer casse et produits jetés dans la Traçabilité (type « Perte »).</div>');
+}
+
+// ── Hausses de prix fournisseurs (> 5 %) et impact sur les recettes ─
+async function renderHausses() {
+  const box = document.getElementById('hausses-card'); if (!box) return;
+  let rows = [];
+  try { rows = (await _rpcPlus('haccp_journal_lire', { p_code: null, p_limite: 500 })).filter(r => r.champ === 'prix'); } catch (e) { rows = []; }
+  // Complément : historique des prix enregistré dans l'appli
+  Object.entries(PRIX_HISTO_DATA || {}).forEach(([code, h]) => {
+    const l = (h || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    for (let i = 1; i < l.length; i++) rows.push({ at: l[i].date, code, ancien: String(l[i - 1].prix), nouveau: String(l[i].prix), champ: 'prix' });
+  });
+  const limite = Date.now() - 90 * 86400000, vu = new Set();
+  const hausses = rows.filter(r => new Date(r.at).getTime() >= limite)
+    .map(r => ({ r, a: parseFloat(r.ancien), n: parseFloat(r.nouveau) }))
+    .filter(x => x.a > 0 && x.n > x.a * 1.05)
+    .sort((a, b) => String(b.r.at).localeCompare(String(a.r.at)))
+    .filter(x => { if (vu.has(x.r.code)) return false; vu.add(x.r.code); return true; });
+  const recettesTouchees = code => (RECETTES_DATA || []).filter(rc => (rc.ingredients || []).some(i => (i.code_produit || i.code) === code));
+  box.innerHTML = `<div class="conso-title">📈 Hausses de prix de plus de 5 % (90 derniers jours) : ${hausses.length}</div>` +
+    (hausses.length ? `<table class="conso-table"><tr><th>Produit</th><th class="num">Avant</th><th class="num">Après</th><th class="num">Hausse</th><th>Recettes touchées</th></tr>` +
+      hausses.slice(0, 25).map(x => {
+        const d = DATA.find(p => p.code === x.r.code);
+        const rec = recettesTouchees(x.r.code);
+        return `<tr><td>${esc(d ? d.produit : x.r.code)}<br><small style="color:var(--text3)">${new Date(x.r.at).toLocaleDateString('fr-FR')}${d && d.fournisseur ? ' · ' + esc(d.fournisseur) : ''}</small></td>
+          <td class="num">${x.a.toFixed(2)} €</td><td class="num">${x.n.toFixed(2)} €</td><td class="num neg">+${Math.round((x.n / x.a - 1) * 100)} %</td>
+          <td>${rec.length ? rec.map(r => esc(r.nom)).join(', ') : '<small style="color:var(--text3)">—</small>'}</td></tr>`;
+      }).join('') + '</table>' : '<div class="conso-foot">Aucune hausse significative récente.</div>');
+}
+const _invPlusRenderAnalyses0 = invPlusRenderAnalyses;
+invPlusRenderAnalyses = function() { _invPlusRenderAnalyses0(); renderPertes(); renderHausses(); };
