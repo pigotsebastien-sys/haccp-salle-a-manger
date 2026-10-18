@@ -645,8 +645,8 @@ async function edgeErrorMessage(resp){
 function buildZoneTabs(){
   const wrap=document.getElementById('zone-tabs');
   wrap.innerHTML=['TOUT',...Object.keys(ZONES)].map(z=>{
-    const info=ZONES[z];const cnt=z==='TOUT'?DATA.length:DATA.filter(d=>d.zone===z).length;
-    return`<button class="zone-chip${z===activeZone?' active':''}" onclick="setZone('${z}')"><span class="dot" style="background:${info?info.color:'#888'}"></span>${z==='TOUT'?'Toutes':(info?info.label:z)} (${cnt})</button>`;
+    const info=ZONES[z];const zItems=z==='TOUT'?DATA:DATA.filter(d=>d.zone===z);const cnt=zItems.length;const fait=zItems.filter(d=>d.qte!=null).length;
+    return`<button class="zone-chip${z===activeZone?' active':''}" onclick="setZone('${z}')"><span class="dot" style="background:${info?info.color:'#888'}"></span>${z==='TOUT'?'Toutes':(info?info.label:z)} (${fait}/${cnt})</button>`;
   }).join('');
 }
 function buildFilters(){
@@ -679,7 +679,8 @@ function getFiltered(){
     // « Tri : par zone » ne triait rien : les zones apparaissaient mélangées
     const zOrder=Object.keys(ZONES);
     const zi=z=>{const i=zOrder.indexOf(z);return i<0?zOrder.length:i;};
-    items=[...items].sort((a,b)=>zi(a.zone)-zi(b.zone)||a.produit.localeCompare(b.produit,'fr',{sensitivity:'base'}));
+    // Ordre des étagères (inventaire rapide) s'il a été défini, sinon alphabétique
+    items=[...items].sort(typeof ordreComptage==='function'?ordreComptage:(a,b)=>zi(a.zone)-zi(b.zone)||a.produit.localeCompare(b.produit,'fr',{sensitivity:'base'}));
   } else if(sort==='alpha'){
     items=[...items].sort((a,b)=>a.produit.localeCompare(b.produit,'fr',{sensitivity:'base'}));
   } else if(sort==='prix_desc'){
@@ -790,7 +791,7 @@ function render(){
         <div class="product-name" style="display:flex;align-items:center;gap:4px">${esc(d.produit)}<span style="font-size:10px;color:var(--text3);flex-shrink:0">✏️</span></div>
         <div class="product-meta"><span class="haccp-pill ${hc(d.zone)}">${hl(d.zone)}</span>${badge}${crossBadge}${seuilBadge}<span class="fourn-text">${esc(d.fournisseur||'')}</span></div></div>
       <div class="cell cell-prix">${d.prix?d.prix.toFixed(2)+' €':'—'}<br><span style="font-size:10px;color:var(--text3)">${esc(d.unite||'')}</span></div>
-      <div class="cell"><input class="qte-input" type="number" inputmode="decimal" min="0" step="0.01" value="${d.qte!==null&&d.qte!==undefined?d.qte:''}" placeholder="0" data-code="${d.code}" oninput="updInput(this)"></div>
+      <div class="cell"><input class="qte-input" type="number" inputmode="decimal" min="0" step="0.01" value="${d.qte!==null&&d.qte!==undefined?d.qte:''}" placeholder="0" data-code="${esc(d.code)}" oninput="updInput(this)" onfocus="this.dataset.prev=this.value" onchange="if(typeof ecartCheckInput==='function')ecartCheckInput(this)"></div>
       <div class="cell cell-montant${m===null?' montant-zero':''}" id="m-${d.code}">${m!==null?m.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'—'}</div>
     </div>`;
   }).join('');
@@ -801,86 +802,7 @@ function render(){
 }
 function updInput(inp){upd(inp.dataset.code,inp.value);}
 
-// ══════════════════════════════════════════════════════════
-// INVENTAIRE RAPIDE (18/10/2026) — un produit à la fois, gros boutons,
-// passage automatique au suivant. Sur tablette (≥ 768 px), la liste de la
-// zone s'affiche à gauche pour voir l'avancement et sauter à un produit.
-// ══════════════════════════════════════════════════════════
-let _qList=[],_qIdx=0;
-function _qOrder(a,b){const z=Object.keys(ZONES);const zi=x=>{const i=z.indexOf(x);return i<0?z.length:i;};return zi(a.zone)-zi(b.zone)||a.produit.localeCompare(b.produit,'fr',{sensitivity:'base'});}
-function openQuickInv(){
-  const sel=document.getElementById('quick-zone');
-  sel.innerHTML='<option value="TOUT">Toutes les zones</option>'+Object.keys(ZONES).filter(z=>DATA.some(d=>d.zone===z)).map(z=>`<option value="${esc(z)}">${esc(ZONES[z].label)} (${DATA.filter(d=>d.zone===z).length})</option>`).join('');
-  sel.value=(activeZone&&activeZone!=='TOUT'&&DATA.some(d=>d.zone===activeZone))?activeZone:'TOUT';
-  document.getElementById('quick-overlay').classList.add('open');
-  document.body.style.overflow='hidden';
-  quickRebuild();
-}
-function closeQuickInv(){
-  document.getElementById('quick-overlay').classList.remove('open');
-  document.body.style.overflow='';
-  render();updateStats();scheduleBilanRebuild();
-}
-function quickRebuild(){
-  const z=document.getElementById('quick-zone').value;
-  const onlyMissing=document.getElementById('quick-missing').checked;
-  // Liste figée à l'ouverture : un produit saisi ne disparaît pas sous les doigts
-  _qList=DATA.filter(d=>(z==='TOUT'||d.zone===z)&&(!onlyMissing||d.qte===null||d.qte===undefined)).sort(_qOrder).map(d=>d.code);
-  _qIdx=0;
-  quickRender();
-}
-function _qItem(){return DATA.find(d=>d.code===_qList[_qIdx]);}
-function quickRender(){
-  const card=document.getElementById('quick-card'),list=document.getElementById('quick-list');
-  const items=_qList.map(c=>DATA.find(d=>d.code===c)).filter(Boolean);
-  const done=items.filter(d=>d.qte!==null&&d.qte!==undefined).length;
-  const pct=items.length?Math.round(done/items.length*100):0;
-  document.getElementById('quick-progress-fill').style.width=pct+'%';
-  document.getElementById('quick-progress-txt').textContent=items.length?`${done} / ${items.length} produits comptés (${pct} %) — produit ${_qIdx+1} sur ${items.length}`:'';
-  list.innerHTML=items.map((d,i)=>`<button class="quick-li${i===_qIdx?' current':''}${d.qte!=null?' done':''}" onclick="quickGo(${i})">
-      <span class="quick-li-name">${esc(d.produit)}</span><span class="quick-li-q">${d.qte!=null?esc(d.qte)+' '+esc(d.unite||''):'—'}</span></button>`).join('');
-  const cur=list.querySelector('.current');if(cur&&cur.scrollIntoView)cur.scrollIntoView({block:'nearest'});
-  const d=_qItem();
-  if(!d){card.innerHTML=`<div class="quick-empty">${items.length?'':'Aucun produit à compter avec ces filtres.'}<br><br><button class="quick-big primary" onclick="closeQuickInv()">✓ Terminer</button></div>`;return;}
-  card.innerHTML=`
-    <div class="quick-zone-pill" style="background:${(ZONES[d.zone]||{color:'#888'}).color}22;color:${(ZONES[d.zone]||{color:'#555'}).color}">${esc((ZONES[d.zone]||{label:d.zone}).label)}</div>
-    <div class="quick-name">${esc(d.produit)}</div>
-    <div class="quick-meta">${esc(d.code)}${d.fournisseur?' · '+esc(d.fournisseur):''} · ${d.prix?d.prix.toFixed(2)+' € / '+esc(d.unite||'u.'):'prix non renseigné'}</div>
-    <div class="quick-input-row">
-      <button class="quick-step" onclick="quickStep(-1)">−1</button>
-      <button class="quick-step" onclick="quickStep(-0.5)">−½</button>
-      <input id="quick-qte" class="quick-qte" type="number" inputmode="decimal" min="0" step="0.01" value="${d.qte!=null?d.qte:''}" placeholder="0" onkeydown="if(event.key==='Enter'){event.preventDefault();quickNext(true);}">
-      <button class="quick-step" onclick="quickStep(0.5)">+½</button>
-      <button class="quick-step" onclick="quickStep(1)">+1</button>
-    </div>
-    <div class="quick-unit">${esc(d.unite||'')}</div>
-    <div class="quick-actions">
-      <button class="quick-big" onclick="quickPrev()" ${_qIdx===0?'disabled':''}>◀ Précédent</button>
-      <button class="quick-big" onclick="quickSetZero()">0</button>
-      <button class="quick-big" onclick="quickNext(false)">Passer ▶</button>
-      <button class="quick-big primary" onclick="quickNext(true)">✓ Valider et suivant</button>
-    </div>`;
-  const inp=document.getElementById('quick-qte');
-  if(inp&&window.matchMedia('(pointer:fine)').matches)setTimeout(()=>{inp.focus();inp.select();},30);
-}
-function quickStep(delta){
-  const inp=document.getElementById('quick-qte');
-  const v=parseFloat(String(inp.value).replace(',','.'))||0;
-  inp.value=Math.max(0,Math.round((v+delta)*100)/100);
-}
-function quickSetZero(){document.getElementById('quick-qte').value='0';quickNext(true);}
-function _qSave(){
-  const d=_qItem();const inp=document.getElementById('quick-qte');
-  if(!d||!inp)return;
-  const raw=String(inp.value).trim();
-  if(raw==='')return; // champ vide : on ne modifie pas la quantité existante
-  upd(d.code,raw);
-  const field=document.querySelector(`input.qte-input[data-code="${CSS.escape(d.code)}"]`);
-  if(field)field.value=d.qte!=null?d.qte:'';
-}
-function quickNext(save){if(save)_qSave();if(_qIdx<_qList.length-1)_qIdx++;else _qIdx=_qList.length;quickRender();}
-function quickPrev(){_qSave();if(_qIdx>0)_qIdx--;quickRender();}
-function quickGo(i){_qSave();_qIdx=i;quickRender();}
+// Inventaire rapide : voir js/inventaire-plus.js
 let bilanTimer=null;
 function scheduleBilanRebuild(){
   // Rebuild le bilan seulement si l'onglet bilan est actif (ou après 1s sinon)
@@ -3116,7 +3038,7 @@ function openAddProduct(){
   document.getElementById('ap-edit-actions').style.display='none';
   document.getElementById('addprod-feedback').className='addprod-feedback';
   // Réinitialiser les champs
-  ['ap-nom','ap-prix','ap-unite','ap-qte','ap-fourn','ap-cat'].forEach(id=>{document.getElementById(id).value='';});
+  ['ap-nom','ap-prix','ap-unite','ap-qte','ap-fourn','ap-cat','ap-colisage','ap-ean'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('ap-zone').value='';
   document.getElementById('ap-seuil').value='';
   document.getElementById('ap-seuil-unit').textContent='';
@@ -3142,6 +3064,8 @@ function openEditProduct(code){
   document.getElementById('ap-unite').value=item.unite||'';
   document.getElementById('ap-qte').value=item.qte!=null?item.qte:'';
   document.getElementById('ap-fourn').value=item.fournisseur||'';
+  document.getElementById('ap-colisage').value=item.colisage>0?item.colisage:'';
+  document.getElementById('ap-ean').value=item.ean||'';
   // Seuil mini : n'était pas rechargé → enregistrer la fiche effaçait le seuil existant
   const _s=SEUILS_DATA[code];
   document.getElementById('ap-seuil').value=(_s&&_s.min!=null)?_s.min:'';
@@ -3982,7 +3906,9 @@ const CaApp = {
       const codesListText = this.codes.map(c=>`${c.code} = ${c.libelle}`).join("\n");
       const systemPrompt = "Tu es un assistant comptable qui ventile les factures fournisseurs d'un restaurant selon le plan de ventilation suivant (code = libellé) :\n"+codesListText+
         "\n\nAnalyse la facture fournie (photo ou PDF) et découpe son montant en une ou plusieurs lignes de ventilation, une ligne par catégorie de produits réellement présente sur la facture. Pour chaque ligne, choisis le code EXACTEMENT parmi la liste ci-dessus, sans en inventer un nouveau. Si un seul type de produit est présent, renvoie une seule ligne. Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balises markdown, au format exact :\n"+
-        '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_bl":"...","lignes":[{"code":"...","montant_ht":0.00,"taux_tva":0}]}\n'+
+        '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_bl":"...","lignes":[{"code":"...","montant_ht":0.00,"taux_tva":0}],"articles":[{"designation":"...","reference":"...","prix_unitaire_ht":0.00,"unite":"..."}]}\n'+
+        // 18/10/2026 : « articles » = chaque produit facturé avec son prix unitaire HT net (après remise), pour mettre à jour les prix de l'inventaire
+        'Dans articles, liste chaque produit facturé avec son prix unitaire HT net après remise et son unité de facturation (KG, L, PCE, BTL, CTN…).\n'+
         "Les taux de TVA possibles sont 0, 5.5, 10 ou 20. Si une information est illisible ou absente, mets null.";
 
       // 18/10/2026 : le plan de ventilation (systemPrompt) était construit mais
@@ -4026,6 +3952,8 @@ const CaApp = {
 
       this.scan.common = { date: dateOk?parsed.date:localISODate(), fournisseur: supplier?supplier.nom:"", bl: parsed.numero_bl||parsed.bl||"" };
       this.scan.lines = lines;
+      // Articles lus sur la facture → proposés pour la mise à jour des prix de l'inventaire
+      this.scan.articles = (Array.isArray(parsed.articles)?parsed.articles:[]).map(a=>({designation:String(a.designation||'').trim(),reference:String(a.reference||'').trim(),prix_ht:Number(a.prix_unitaire_ht),unite:String(a.unite||'').trim()})).filter(a=>a.designation&&isFinite(a.prix_ht)&&a.prix_ht>0);
 
       const notes=[];
       if(!dateOk) notes.push("date non reconnue (à corriger)");
@@ -4256,6 +4184,7 @@ const CaApp = {
           <button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>
         </div>
         ${s.note?`<div class="banner" style="margin-bottom:16px;">${esc(s.note)}</div>`:''}
+        ${(s.articles&&s.articles.length)?`<div class="banner" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>💰 ${s.articles.length} prix d'articles lus sur la facture</span><button class="btn btn-primary" onclick="invoiceArticlesToPrix()">Comparer avec l'inventaire</button></div>`:''}
         <div class="row" style="align-items:flex-start;">
           ${s.previewUrl?`<img src="${s.previewUrl}" alt="Aperçu" style="width:200px;max-height:280px;object-fit:contain;border:1px solid #ece5d5;border-radius:8px;background:#faf6ee;">`:''}
           <div style="flex:1 1 380px;">
@@ -5573,6 +5502,8 @@ function _validateForm(){
     unite:document.getElementById('ap-unite').value.trim().toUpperCase(),
     qte,
     fournisseur:document.getElementById('ap-fourn').value.trim().toUpperCase(),
+    colisage:(v=>isNaN(v)||v<=0?null:v)(parseFloat(String(document.getElementById('ap-colisage').value).replace(',','.'))),
+    ean:document.getElementById('ap-ean').value.replace(/\s/g,'')||null,
   };
 }
 
@@ -5590,6 +5521,8 @@ function submitAddProduct(){
     qte:vals.qte,
     fournisseur:vals.fournisseur,
     status:'custom',
+    colisage:vals.colisage,
+    ean:vals.ean,
   };
   DATA.push(newItem);
   // ── Envoyer vers Supabase ──
@@ -5630,6 +5563,8 @@ function submitEditProduct(){
   item.unite=vals.unite;
   item.qte=vals.qte;
   item.fournisseur=vals.fournisseur;
+  item.colisage=vals.colisage;
+  item.ean=vals.ean;
   // Seuil
   const seuilValE=parseFloat(document.getElementById('ap-seuil').value);
   if(!isNaN(seuilValE)&&seuilValE>=0)SEUILS_DATA[_editCode]={min:seuilValE,unite:vals.unite};
@@ -5925,12 +5860,15 @@ function renderConsommation(){
   const box=document.getElementById('conso-card');if(!box)return;
   if(!HISTO_DATA.length){box.innerHTML='';return;}
   const prevD=box.querySelector('#conso-debut')?.value,prevF=box.querySelector('#conso-fin')?.value;
-  const caN=box.querySelector('#conso-ca-n')?.value||'',caB=box.querySelector('#conso-ca-b')?.value||'';
   const snaps=[...HISTO_DATA].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   const optSnap=s=>`<option value="${esc(String(s.id))}">${esc(s.label)} — ${new Date(s.date).toLocaleDateString('fr-FR')}</option>`;
   const debut=snaps.find(s=>String(s.id)===prevD)||snaps[Math.max(0,snaps.length-1)];
   const finId=prevF||'actuel';
   const fin=finId==='actuel'?{label:'Inventaire actuel',date:new Date().toISOString(),items:DATA}:(snaps.find(s=>String(s.id)===finId)||{label:'Inventaire actuel',date:new Date().toISOString(),items:DATA});
+  // CA HT mémorisé par mois (mois de l'inventaire de fin), partagé entre appareils
+  const moisFin=typeof caMoisDe==='function'?caMoisDe(fin.date):'';
+  const caStore=(typeof CA_MENSUEL!=='undefined'&&CA_MENSUEL[moisFin])||{};
+  const caN=caStore.nourriture!=null?String(caStore.nourriture):'',caB=caStore.boissons!=null?String(caStore.boissons):'';
   const sD=_stockSplit(debut.items),sF=_stockSplit(fin.items);
   const ach=_achatsEntre(debut.date,fin.date);
   const conso={nourriture:sD.nourriture+ach.nourriture-sF.nourriture,boissons:sD.boissons+ach.boissons-sF.boissons};
@@ -5943,27 +5881,28 @@ function renderConsommation(){
   const avertNeg=(conso.nourriture<0||conso.boissons<0)?'<div class="conso-warn">⚠️ Consommation négative : il manque probablement des factures dans le Cahier d\'achats, ou l\'inventaire de fin contient des erreurs.</div>':'';
   box.innerHTML=`<div class="conso-title">🧮 Consommation et ratio matière</div>
     <div class="conso-sel">
-      <label>Inventaire de début<select id="conso-debut" onchange="renderConsommation()">${snaps.map(optSnap).join('')}</select></label>
-      <label>Inventaire de fin<select id="conso-fin" onchange="renderConsommation()"><option value="actuel">Inventaire actuel (en cours)</option>${snaps.map(optSnap).join('')}</select></label>
+      <label>Inventaire de début<select id="conso-debut" onchange="renderHistorique()">${snaps.map(optSnap).join('')}</select></label>
+      <label>Inventaire de fin<select id="conso-fin" onchange="renderHistorique()"><option value="actuel">Inventaire actuel (en cours)</option>${snaps.map(optSnap).join('')}</select></label>
     </div>
     <table class="conso-table"><tr><th></th><th class="num">🍴 Nourriture</th><th class="num">🥤 Boissons & café</th></tr>
       ${ligne('Stock de début',f(sD.nourriture),f(sD.boissons))}
       ${ligne('+ Achats HT de la période ('+ach.nb+' factures)',f(ach.nourriture),f(ach.boissons))}
       ${ligne('− Stock de fin',f(sF.nourriture),f(sF.boissons))}
       <tr class="conso-total"><td>= Consommation</td><td class="num">${f(conso.nourriture)}</td><td class="num">${f(conso.boissons)}</td></tr>
-      <tr><td>Chiffre d'affaires HT de la période</td>
-        <td class="num"><input id="conso-ca-n" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA nourriture" value="${esc(caN)}" onchange="renderConsommation()"></td>
-        <td class="num"><input id="conso-ca-b" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA boissons" value="${esc(caB)}" onchange="renderConsommation()"></td></tr>
+      <tr><td>Chiffre d'affaires HT de ${esc(moisFin?new Date(moisFin+'-15').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'la période')}</td>
+        <td class="num"><input id="conso-ca-n" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA nourriture" value="${esc(caN)}" onchange="consoSaveCA(${jsArg(moisFin)});renderConsommation()"></td>
+        <td class="num"><input id="conso-ca-b" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA boissons" value="${esc(caB)}" onchange="consoSaveCA(${jsArg(moisFin)});renderConsommation()"></td></tr>
       <tr class="conso-total"><td>Ratio matière</td><td class="num">${ratio('nourriture')}</td><td class="num">${ratio('boissons')}</td></tr>
     </table>
     <div class="conso-foot">Ratio global : <b>${ratioTot}</b>${ach.exclus?` · ${f(ach.exclus)} d'autres achats (entretien, matériel…) non comptés`:''}<br>
     Période : achats datés du lendemain de « ${esc(debut.label)} » jusqu'au ${new Date(fin.date).toLocaleDateString('fr-FR')} inclus. Les stocks sont valorisés aux prix enregistrés dans chaque inventaire.</div>${avertNeg}`;
-  if(prevD)box.querySelector('#conso-debut').value=prevD;
-  box.querySelector('#conso-fin').value=finId;
+  box.querySelector('#conso-debut').value=String(debut.id);
+  box.querySelector('#conso-fin').value=fin.id!=null?String(fin.id):'actuel';
 }
 
 function renderHistorique(){
   renderConsommation();
+  if(typeof invPlusRenderAnalyses==='function')invPlusRenderAnalyses();
   const el=document.getElementById('histo-list');
   if(!HISTO_DATA.length){
     el.innerHTML='<div class="histo-empty">Aucun inventaire archivé.<br><br>Cliquez sur <b>📸 Archiver l\'inventaire actuel</b> après chaque inventaire mensuel pour conserver un historique et comparer les consommations.</div>';
@@ -5971,7 +5910,7 @@ function renderHistorique(){
   }
   el.innerHTML=HISTO_DATA.map((snap,idx)=>{
     const prev=HISTO_DATA[idx+1];
-    const diffVal=prev?snap.total-prev.total:null;
+    const diffVal=prev?(snap.total||0)-(prev.total||0):null;
     const diffStr=diffVal!==null?(diffVal>0?'+':'')+diffVal.toFixed(2)+' €':'';
     const diffCls=diffVal===null?'':diffVal>0?'diff-pos':diffVal<0?'diff-neg':'diff-zero';
     return`<div class="histo-card">
@@ -5981,7 +5920,7 @@ function renderHistorique(){
           <div class="histo-card-meta">${new Date(snap.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})} · ${snap.refs} références${diffVal!==null?' · <span class="'+diffCls+'" style="font-weight:600">'+diffStr+'</span>':''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <div class="histo-card-val">${snap.total.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div>
+          <div class="histo-card-val">${(snap.total||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div>
           <span style="color:var(--text3);font-size:14px">▼</span>
         </div>
       </div>

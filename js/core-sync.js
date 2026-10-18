@@ -69,6 +69,9 @@
     'ca_suppliers':   'ca_suppliers',
     'ca_codes':       'ca_codes',
     'pieces':         'haccp_salleamanger_pieces_v1',
+    // 18/10/2026 (3) : ordre de comptage des étagères et CA mensuel (ratio matière)
+    'ordre_comptage': 'haccp_ordre_comptage_v1',
+    'ca_mensuel':     'haccp_ca_mensuel_v1',
   };
   // Modules dont les données existaient sur chaque appareil AVANT d'être
   // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
@@ -349,6 +352,9 @@
           if (typeof render==='function') render();
           if (typeof updateStats==='function') updateStats();
           if (typeof buildBilan==='function') buildBilan();
+          // Comptage à plusieurs : avancement mis à jour en direct dans l'inventaire rapide
+          if (typeof quickRefreshProgress==='function') quickRefreshProgress();
+          if (typeof buildZoneTabs==='function') buildZoneTabs();
           break;
         case 'dlc':
           try{const r=localStorage.getItem(DLC_KEY);if(r)DLC_DATA=JSON.parse(r);}catch(e){}
@@ -390,6 +396,10 @@
         case 'ca_suppliers':
         case 'ca_codes':
           if (window.CaApp && typeof window.CaApp.reloadFromStorage === 'function') window.CaApp.reloadFromStorage();
+          break;
+        case 'ordre_comptage':
+        case 'ca_mensuel':
+          if (typeof invPlusReload==='function') invPlusReload(id);
           break;
         case 'pieces':
           if (typeof loadPieces==='function') loadPieces();
@@ -663,7 +673,7 @@
 
 
   // ── Diagnostic visible : état de la synchro de cet appareil ──
-  const APP_SYNC_LABEL = 'Synchro v5 (18/10)';
+  const APP_SYNC_LABEL = 'Synchro v6 (18/10)';
   function syncStatusText() {
     const raw = localStorage.getItem('haccp_session');
     let email = null;
@@ -701,7 +711,7 @@
   // Charger, mettre à jour ET ajouter les produits depuis Supabase
   async function syncProductsFromCloud() {
     try {
-      const r = await supa('/rest/v1/haccp_products?select=code,zone,cat,produit,unite,prix,fournisseur,status&order=code');
+      const r = await supa('/rest/v1/haccp_products?select=code,zone,cat,produit,unite,prix,fournisseur,status,colisage,ean&order=code');
       if (!r.ok) return;
       const rows = await r.json();
       if (!rows || !rows.length) return;
@@ -709,6 +719,9 @@
       rows.forEach(row => {
         const item = DATA.find(d => d.code === row.code);
         if (item) {
+          // Colisage et code-barres (18/10/2026)
+          item.colisage = row.colisage != null ? parseFloat(row.colisage) : null;
+          item.ean = row.ean || null;
           // Mettre à jour prix, nom, zone, fournisseur
           if (Math.abs(item.prix - parseFloat(row.prix)) > 0.001) { item.prix = parseFloat(row.prix); updated++; }
           if (item.produit !== row.produit) { item.produit = row.produit; updated++; }
@@ -726,7 +739,9 @@
             prix: parseFloat(row.prix) || 0,
             qte: null,
             fournisseur: row.fournisseur || '',
-            status: row.status || 'new'
+            status: row.status || 'new',
+            colisage: row.colisage != null ? parseFloat(row.colisage) : null,
+            ean: row.ean || null
           });
           added++;
         }
@@ -772,7 +787,9 @@
         unite: item.unite,
         prix: item.prix,
         fournisseur: item.fournisseur || '',
-        status: item.status || ''
+        status: item.status || '',
+        colisage: item.colisage > 0 ? item.colisage : null,
+        ean: item.ean || null
       };
       let r = await supa('/rest/v1/haccp_products?code=eq.' + encodeURIComponent(item.code), {
         method: 'PATCH',
