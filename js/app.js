@@ -1994,7 +1994,7 @@ function exportFullBackup(){
   const fb=document.getElementById('save-feedback');
   if(fb){fb.className='voice-feedback ok';fb.textContent='✓ Sauvegarde complète téléchargée (catalogue + tous les modules de cet appareil).';}
 }
-// Copies faites automatiquement chaque dimanche par Supabase (12 conservées)
+// Copies faites automatiquement chaque nuit par Supabase (conservées jusqu'à 24 mois, voir supabase/2026-10-19_sauvegardes.sql)
 async function showServerBackups(){
   const box=document.getElementById('server-backups');
   if(box.style.display==='block'){box.style.display='none';return;}
@@ -2008,7 +2008,7 @@ async function showServerBackups(){
       `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:13px">
         <span>${new Date(b.taken_at).toLocaleString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})} <small style="color:var(--text3)">${esc(b.kind)} · ${b.taille_ko} Ko</small></span>
         <button class="dlc-btn-sm" onclick="downloadServerBackup(${Number(b.id)})">⬇️ Télécharger</button></div>`).join('')+'</div>'
-      :'<div class="voice-hint">Aucune sauvegarde pour l\'instant (la première est faite le dimanche suivant).</div>';
+      :'<div class="voice-hint">Aucune sauvegarde pour l\'instant (la première est faite la nuit prochaine).</div>';
   }catch(e){box.innerHTML='<div class="voice-feedback err">❌ '+esc(e.message)+'</div>';}
 }
 async function downloadServerBackup(id){

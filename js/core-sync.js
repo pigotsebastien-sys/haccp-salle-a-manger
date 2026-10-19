@@ -695,7 +695,7 @@
 
 
   // ── Diagnostic visible : état de la synchro de cet appareil ──
-  const APP_SYNC_LABEL = 'Synchro v10 (18/10)';
+  const APP_SYNC_LABEL = 'Synchro v11 (19/10)';
   function syncStatusText() {
     const raw = localStorage.getItem('haccp_session');
     let email = null;

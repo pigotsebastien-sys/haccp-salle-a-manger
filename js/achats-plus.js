@@ -577,7 +577,8 @@ function apEtapesCloture(m) {
     { id: 'reclam', bloquant: false, ok: !recl.length, titre: 'Réclamations traitées', recl },
     { id: 'inventaire', bloquant: true, ok: !!snap, titre: 'Inventaire de fin de mois archivé', snap },
     { id: 'ca', bloquant: true, ok: ca.nourriture > 0 && ca.boissons != null, titre: 'Chiffre d\'affaires HT du mois saisi', ca },
-    { id: 'envoi', bloquant: true, ok: !!c.envoyeLe, titre: 'Achats envoyés au cabinet comptable', c }
+    { id: 'envoi', bloquant: true, ok: !!c.envoyeLe, titre: 'Achats envoyés au cabinet comptable', c },
+    { id: 'sauvegarde', bloquant: false, ok: !!c.sauvegardeLe, titre: 'Copie de sauvegarde rangée sur votre ordinateur (OneDrive)', c }
   ];
 }
 function apRappelCloture() {
@@ -619,6 +620,7 @@ function apRenderCloture() {
     if (e.id === 'ca') return `<span style="display:inline-flex;gap:8px;flex-wrap:wrap;align-items:center">🍴 <input id="ap-ca-n" type="number" step="0.01" min="0" style="width:120px" value="${e.ca.nourriture ?? ''}" placeholder="CA nourriture"> 🥤 <input id="ap-ca-b" type="number" step="0.01" min="0" style="width:120px" value="${e.ca.boissons ?? ''}" placeholder="CA boissons"> <button class="btn btn-ghost" onclick="apCloCA(${jsArg(m)})">Enregistrer</button></span>`;
     if (e.id === 'envoi') return `<span style="display:inline-flex;gap:8px;flex-wrap:wrap;align-items:center">✉️ <input id="ap-cab-mail" type="email" style="width:240px" value="${esc(CA_CLOTURES.parametres.cabinetEmail || '')}" placeholder="adresse e-mail du cabinet" onchange="apCabinetMail(this.value)">
       <button class="btn ${e.ok ? 'btn-ghost' : 'btn-primary'}" onclick="apPreparerEnvoi(${jsArg(m)})">📦 Préparer l'envoi (ZIP + e-mail)</button></span>${e.c.envoyeLe ? `<div style="font-size:12px;color:#8a8478;margin-top:4px">Préparé le ${esc(e.c.envoyeLe.split('-').reverse().join('/'))} — ${e.c.nbFichiers || 0} fichier(s) de factures dans le ZIP</div>` : ''}`;
+    if (e.id === 'sauvegarde') return `<button class="btn btn-ghost" onclick="apSauvegardeZip(${jsArg(m)})">🗂 Télécharger la sauvegarde complète (données + PDF des factures de l'année)</button>${e.c.sauvegardeLe ? `<div style="font-size:12px;color:#8a8478;margin-top:4px">Téléchargée le ${esc(e.c.sauvegardeLe.split('-').reverse().join('/'))} — rangez le fichier dans un dossier OneDrive.</div>` : '<div style="font-size:12px;color:#8a8478;margin-top:4px">Le serveur fait déjà une copie chaque nuit ; celle-ci est une copie de plus, chez vous, avec les PDF. Non bloquant.</div>'}`;
     return '';
   };
   let resultat = '';
@@ -711,6 +713,11 @@ function apCloturer(m) {
   };
   CA_CLOTURES.mois[m] = Object.assign({}, CA_CLOTURES.mois[m], { clotureLe: localISODate(), resultat });
   apSave('ca_clotures'); CaApp.toast(monthLabel(m) + ' clôturé.'); CaApp.render();
+  // Copie du serveur à la clôture (après l'envoi des dernières modifications)
+  setTimeout(async () => {
+    try { await ensureFreshToken(false); const r = await supa('/rest/v1/rpc/haccp_backup_cloture', { method: 'POST', body: '{}' }); if (!r.ok) console.warn('[SAUVEGARDE] clôture', r.status); }
+    catch (e) { console.warn('[SAUVEGARDE] clôture :', e.message); }
+  }, 8000);
 }
 function apRouvrir(m) {
   if (!confirm('Rouvrir ' + monthLabel(m).toLowerCase() + ' ? Le résultat de la clôture sera recalculé à la prochaine clôture.')) return;
@@ -821,4 +828,55 @@ function apImprimerAnnee() {
     .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
     @media print{body{margin:10mm}}</style></head><body>${el.innerHTML}</body></html>`);
   w.document.close(); setTimeout(() => w.print(), 400);
+}
+
+// ── 11. Sauvegarde complète chez l'utilisateur (ZIP : données du serveur + PDF des factures) ──
+async function apSauvegardeZip(m) {
+  const annee = String(m || localISODate()).slice(0, 4);
+  const toast = (t, k) => { if (window.CaApp && CaApp._initialized && document.getElementById('panel-factures-ca')?.classList.contains('active')) CaApp.toast(t, k); else showSyncToast(t); };
+  toast('Préparation de la sauvegarde…');
+  try {
+    if (!window.JSZip) await apLoadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    if (!CaApp._initialized) CaApp.loadFromStorage();
+    const zip = new JSZip();
+    // Données : version du serveur (référence commune à tous les appareils), sinon celle de cet appareil
+    let store = null, produits = null, source = 'serveur';
+    try {
+      if (!(await ensureFreshToken(false))) throw new Error('non connecté');
+      const r1 = await supa('/rest/v1/haccp_store?select=id,data,updated_at,updated_by');
+      const r2 = await supa('/rest/v1/haccp_products?select=*&order=code');
+      if (!r1.ok || !r2.ok) throw new Error('lecture refusée');
+      store = {}; (await r1.json()).forEach(r => { store[r.id] = { data: r.data, updated_at: r.updated_at, updated_by: r.updated_by }; });
+      produits = await r2.json();
+    } catch (e) {
+      source = 'appareil (' + e.message + ')'; store = {};
+      Object.entries(SYNC_MODULES).forEach(([id, key]) => { try { const v = localStorage.getItem(key); if (v) store[id] = { data: JSON.parse(v) }; } catch (x) { } });
+      produits = DATA.concat(window.ARCHIVES || []);
+    }
+    zip.file('donnees.json', JSON.stringify({ app: 'Inventaire SP Conseil — La Salle à Manger · Grenoble', type: 'sauvegarde-complete', source, exportedAt: new Date().toISOString(), store, produits }, null, 1));
+    // PDF / photos des factures de l'année
+    const facts = apFactures(CaApp.invoices.filter(i => i.date.startsWith(annee)));
+    const propre = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9-]+/g, '_').replace(/^_|_$/g, '');
+    let nb = 0, ko = 0, sans = 0;
+    for (const f of facts) {
+      const path = (f.lignes.find(l => l.fichier) || {}).fichier;
+      if (!path) { sans++; continue; }
+      try { zip.file(`Factures/${f.date.slice(0, 7)}/${[f.date, propre(f.fournisseur), propre(f.bl || f.id)].join('_')}.${path.split('.').pop()}`, await apFichierBlob(path)); nb++; }
+      catch (e) { ko++; }
+    }
+    zip.file('LISEZMOI.txt', `Sauvegarde complète — Inventaire SP Conseil (La Salle à Manger · Grenoble)\r\nFaite le ${new Date().toLocaleString('fr-FR')} — données : ${source}\r\n\r\n` +
+      `donnees.json : toutes les données de l'appli (inventaire, historique, cahier d'achats, règles, clôtures…) et le catalogue des ${produits.length} produits.\r\n` +
+      `Factures/ : ${nb} facture(s) de ${annee} (PDF ou photo)${sans ? ', ' + sans + ' facture(s) sans fichier joint' : ''}${ko ? ', ' + ko + ' fichier(s) illisible(s)' : ''}.\r\n\r\n` +
+      `Rangez ce fichier dans un dossier OneDrive. Le serveur garde en plus une copie chaque nuit (24 mois).\r\n` +
+      `Pour restaurer : confiez ce fichier à l'administrateur de l'appli (procédure : supabase/2026-10-19_sauvegardes.sql).\r\n`);
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    const nom = `Sauvegarde_Inventaire_SP_Conseil_${localISODate()}.zip`;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nom; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    if (m) { CA_CLOTURES.mois[m] = Object.assign({}, CA_CLOTURES.mois[m], { sauvegardeLe: localISODate() }); apSave('ca_clotures'); if (CaApp._initialized && CaApp.tab === 'cloture') CaApp.render(); }
+    const fb = document.getElementById('save-feedback');
+    const msg = `✓ ${nom} téléchargé : données (${source}) + ${nb} facture(s). Rangez-le dans un dossier OneDrive.`;
+    if (fb) { fb.className = 'voice-feedback ok'; fb.textContent = msg; }
+    toast(msg.replace('✓ ', ''));
+  } catch (e) { toast('Sauvegarde impossible : ' + e.message, 'error'); }
 }

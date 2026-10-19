@@ -12,13 +12,13 @@
 <meta name="apple-mobile-web-app-title" content="SP Conseil">
 <link rel="manifest" href="manifest.json">
 <title>Inventaire SP Conseil — La Salle à Manger Grenoble</title>
-<script src="js/favicon.js?v=20261018i"></script>
-<link rel="stylesheet" href="style.css?v=20261018i">
+<script src="js/favicon.js?v=20261019a"></script>
+<link rel="stylesheet" href="style.css?v=20261019a">
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
-  <script src="js/core-sync.js?v=20261018i"></script>
+  <script src="js/core-sync.js?v=20261019a"></script>
 
-<script src="js/sw-register.js?v=20261018i"></script>
+<script src="js/sw-register.js?v=20261019a"></script>
 
 </head>
 <body role="application" aria-label="Inventaire SP Conseil — La Salle à Manger">
@@ -1015,8 +1015,9 @@
       <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" onchange="importInventoryJSON(this)">
       <button class="va-btn" style="width:100%;background:var(--green-bg);color:var(--green-text);font-weight:600" onclick="syncNowButton()">🔄 Synchroniser maintenant (et voir l'état)</button>
       <button class="va-btn" id="inv-backup-btn" style="display:none;width:100%;background:var(--info-bg);color:var(--info-text)" onclick="restoreInvBackup()">♻️ Récupérer l'inventaire de cet appareil (avant synchro)</button>
-      <button class="va-btn" style="width:100%;background:var(--info-bg);color:var(--info-text);font-weight:600" onclick="showServerBackups()">☁️ Sauvegardes hebdomadaires du serveur</button>
+      <button class="va-btn" style="width:100%;background:var(--info-bg);color:var(--info-text);font-weight:600" onclick="showServerBackups()">☁️ Sauvegardes du serveur (chaque nuit, 24 mois)</button>
       <div id="server-backups" style="display:none;width:100%"></div>
+      <button class="va-btn" style="width:100%;font-weight:600" onclick="apSauvegardeZip()">🗂 Sauvegarde complète + PDF des factures (ZIP, à ranger sur OneDrive)</button>
       <button class="va-btn" style="width:100%" onclick="exportFullBackup()">📦 Télécharger toutes les données de cet appareil</button>
       <button class="va-btn" style="width:100%" onclick="clearAutoSave()">🗑 Effacer la sauvegarde automatique</button>
     </div>
@@ -1305,9 +1306,9 @@
 
 
 <div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div></div>
-<script src="js/app.js?v=20261018i"></script>
-<script src="js/inventaire-plus.js?v=20261018i"></script>
-<script src="js/achats-plus.js?v=20261018i"></script>
+<script src="js/app.js?v=20261019a"></script>
+<script src="js/inventaire-plus.js?v=20261019a"></script>
+<script src="js/achats-plus.js?v=20261019a"></script>
 
 <!-- CENTRE D'ENVOI EMAIL ══════════════════════════════ -->
 <div class="send-overlay" id="send-overlay">
