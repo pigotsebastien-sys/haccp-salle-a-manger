@@ -45,6 +45,14 @@ var tempCalMonth = new Date().getMonth();
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function nowTime(){ return new Date().toTimeString().slice(0,5); }
 
+// Identité de l'auteur = compte connecté (et non plus des initiales tapées à la main),
+// pour une traçabilité HACCP fiable. Repli sur l'identifiant d'appareil si non connecté.
+function autocCurrentUser(){ return (typeof getCurrentUserIdentifier==='function') ? getCurrentUserIdentifier() : ''; }
+
+// Un registre HACCP ne doit pas pouvoir être réécrit après coup : toute date antérieure
+// à aujourd'hui est verrouillée en lecture seule (seule la journée en cours est modifiable).
+function autocIsLocked(dateStr){ return dateStr < todayStr(); }
+
 // ── Chargement / sauvegarde ──────────────────────────────────────────
 function autocLoad(){
   try{ var r=localStorage.getItem(HUILE_KEY); if(r){ var d=JSON.parse(r); if(d && d.entries) HUILE_DATA=d; } }catch(e){}
@@ -89,6 +97,9 @@ function autocInit(){
   var nd=document.getElementById('nett-date');   if(nd && !nd.value) nd.value=todayStr();
   var td=document.getElementById('temp-date');   if(td && !td.value) td.value=todayStr();
   var cd=document.getElementById('cell-date');   if(cd && !cd.value) cd.value=todayStr();
+  // Visa = identité du compte connecté, affichée en lecture seule (plus de saisie libre)
+  var me=autocCurrentUser();
+  ['huile-visa','cell-visa','anom-visa'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=me; });
   renderTempChambres();
   renderCellule();
   tempRenderCal();
@@ -128,10 +139,13 @@ var TEMP_STATUS_RANK={conforme:1, surveiller:2, nonconforme:3};
 
 function setTempVal(chambreId, service, field, value){
   var date=tempDate();
+  if(autocIsLocked(date)){ renderTempChambres(); return; } // jour clos : lecture seule
   if(!TEMP_DATA.entries[date]) TEMP_DATA.entries[date]={};
   if(!TEMP_DATA.entries[date][chambreId]) TEMP_DATA.entries[date][chambreId]={};
-  if(!TEMP_DATA.entries[date][chambreId][service]) TEMP_DATA.entries[date][chambreId][service]={temp:'',visa:''};
+  if(!TEMP_DATA.entries[date][chambreId][service]) TEMP_DATA.entries[date][chambreId][service]={temp:'',visa:'',action:''};
   TEMP_DATA.entries[date][chambreId][service][field]=value;
+  // Le visa suit automatiquement le compte connecté dès qu'une température est saisie
+  if(field==='temp' && value!=='') TEMP_DATA.entries[date][chambreId][service].visa=autocCurrentUser();
   autocSaveTempData();
   if(field==='temp') renderTempChambres(); // recalcule le badge de statut
   tempRenderCal();
@@ -142,6 +156,7 @@ function renderTempChambres(){
   var prog=document.getElementById('temp-progress');
   if(!list) return;
   var date=tempDate();
+  var locked=autocIsLocked(date);
   var dayData=TEMP_DATA.entries[date]||{};
   var filled=0, total=TEMP_CHAMBRES.length*TEMP_SERVICES.length;
   TEMP_CHAMBRES.forEach(function(ch){
@@ -152,26 +167,29 @@ function renderTempChambres(){
   });
   if(prog) prog.textContent = filled+'/'+total+' relevés';
 
-  list.innerHTML = TEMP_CHAMBRES.map(function(ch){
+  var lockBanner = locked ? '<div class="autoc-lock-banner">🔒 Jour clos — lecture seule (seule la journée en cours est modifiable)</div>' : '';
+
+  list.innerHTML = lockBanner + TEMP_CHAMBRES.map(function(ch){
     var worst=null;
     var blocks = TEMP_SERVICES.map(function(svc){
-      var cur=(dayData[ch.id] && dayData[ch.id][svc]) || {temp:'',visa:''};
+      var cur=(dayData[ch.id] && dayData[ch.id][svc]) || {temp:'',visa:'',action:''};
       var st=tempStatus(ch, cur.temp);
       if(st && (!worst || TEMP_STATUS_RANK[st]>TEMP_STATUS_RANK[worst])) worst=st;
       var borderColor = st==='conforme' ? 'var(--green-text)' : st==='surveiller' ? 'var(--amber-text)' : st==='nonconforme' ? 'var(--pink-text)' : 'var(--border2)';
+      var dis = locked ? ' disabled' : '';
       // Action corrective obligatoire (exigence HACCP) dès que la température est hors seuil
       var actionField = st==='nonconforme' ? (
         '<div style="margin-top:4px">'+
-          '<input type="text" class="rec-input" style="width:100%;border-color:'+(cur.action?'var(--border2)':'var(--pink-text)')+'" '+
+          '<input type="text" class="rec-input" style="width:100%;border-color:'+(cur.action?'var(--border2)':'var(--pink-text)')+'"'+dis+' '+
             'placeholder="⚠️ Action corrective obligatoire" value="'+(cur.action||'').replace(/"/g,'&quot;')+'" '+
             'oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'action\',this.value)">'+
         '</div>'
       ) : '';
       return '<div style="flex:1;min-width:0">'+
         '<div class="rec-label">'+(svc==='matin'?'Matin':'Soir')+'</div>'+
-        '<div style="display:flex;gap:4px">'+
-          '<input type="number" step="0.1" class="rec-input" style="width:64px;border-color:'+borderColor+'" placeholder="°C" value="'+(cur.temp===''||cur.temp==null?'':cur.temp)+'" oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'temp\',this.value)">'+
-          '<input type="text" class="rec-input" style="width:56px" placeholder="Visa" value="'+(cur.visa||'').replace(/"/g,'&quot;')+'" oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'visa\',this.value)">'+
+        '<div style="display:flex;gap:4px;align-items:center">'+
+          '<input type="number" step="0.1" class="rec-input" style="width:64px;border-color:'+borderColor+'"'+dis+' placeholder="°C" value="'+(cur.temp===''||cur.temp==null?'':cur.temp)+'" oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'temp\',this.value)">'+
+          (cur.visa?'<span style="font-size:10px;color:var(--text2)">'+cur.visa+'</span>':'')+
         '</div>'+actionField+'</div>';
     }).join('');
     var badge = worst ? '<span class="dlc-badge '+TEMP_STATUS_CLS[worst]+'">'+TEMP_STATUS_LABEL[worst]+'</span>' : '';
@@ -187,9 +205,8 @@ function renderTempChambres(){
 // ── Cellule de refroidissement ──
 function saveCellule(){
   var produit=document.getElementById('cell-produit').value.trim();
-  var visa=document.getElementById('cell-visa').value.trim();
   if(!produit){ alert('Veuillez indiquer la nature du produit'); return; }
-  if(!visa){ alert('Veuillez saisir le visa (initiales)'); return; }
+  var visa=autocCurrentUser();
   TEMP_DATA.cellule.unshift({
     id: Date.now(),
     date: document.getElementById('cell-date').value || todayStr(),
@@ -207,14 +224,9 @@ function saveCellule(){
   document.getElementById('cell-t-entree').value='';
   document.getElementById('cell-heure-sortie').value='';
   document.getElementById('cell-t-sortie').value='';
-  document.getElementById('cell-visa').value='';
   renderCellule();
 }
-function deleteCellule(id){
-  TEMP_DATA.cellule = TEMP_DATA.cellule.filter(function(c){ return c.id!==id; });
-  autocSaveTempData();
-  renderCellule();
-}
+// Pas de suppression : un refroidissement enregistré reste au registre (traçabilité HACCP).
 // Durée en minutes entre deux heures "HH:MM" (gère le passage de minuit)
 function minutesBetween(h1,h2){
   if(!h1||!h2) return null;
@@ -241,7 +253,6 @@ function renderCellule(){
       '<div class="dlc-card-meta">'+(c.heureEntree||'—')+' ('+(c.tEntree||'—')+'°C) → '+(c.heureSortie||'—')+' ('+(c.tSortie||'—')+'°C)'+(mins!=null?' · '+mins+' min':'')+' · Visa : '+c.visa+'</div></div></div>'+
       badge+
       '</div>'+
-      '<div class="dlc-card-actions"><button class="dlc-btn-sm" onclick="deleteCellule('+c.id+')">🗑 Supprimer</button></div>'+
     '</div>';
   }).join('');
 }
@@ -332,12 +343,10 @@ function updateAutocAlertDot(){
 // ══════════════════════════════════════════════════════════════════
 function saveHuile(){
   var date=document.getElementById('huile-date').value || todayStr();
-  var visa=document.getElementById('huile-visa').value.trim();
-  if(!visa){ alert('Veuillez saisir le visa (initiales)'); return; }
   var entry={
     id: Date.now(),
     date: date,
-    visa: visa,
+    visa: autocCurrentUser(),
     filtrage: document.getElementById('huile-filtrage').value,
     changement: document.getElementById('huile-changement').value,
     indice: document.getElementById('huile-indice').value,
@@ -347,15 +356,24 @@ function saveHuile(){
   };
   HUILE_DATA.entries.unshift(entry);
   autocSaveHuileData();
-  document.getElementById('huile-visa').value='';
   document.getElementById('huile-note').value='';
   renderHuile();
 }
 
-function deleteHuile(id){
-  HUILE_DATA.entries = HUILE_DATA.entries.filter(function(e){ return e.id!==id; });
-  autocSaveHuileData();
-  renderHuile();
+// Pas de suppression (registre HACCP) : une entrée erronée se corrige en ajoutant
+// une nouvelle entrée datée qui la référence, jamais en effaçant l'originale.
+function corrigerHuile(id){
+  var e=HUILE_DATA.entries.find(function(x){ return x.id===id; });
+  if(!e) return;
+  document.getElementById('huile-date').value=todayStr();
+  document.getElementById('huile-filtrage').value=e.filtrage;
+  document.getElementById('huile-changement').value=e.changement;
+  document.getElementById('huile-indice').value=e.indice;
+  document.getElementById('huile-chrono').value=e.chrono;
+  var noteEl=document.getElementById('huile-note');
+  noteEl.value='Correction de l\'entrée du '+e.date+(e.note?' ("'+e.note+'")':'')+' : ';
+  noteEl.focus();
+  noteEl.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 var HUILE_LABELS = {bon:'🟢 Bon', moyen:'🟡 À surveiller', mauvais:'🔴 Mauvais',
@@ -379,7 +397,7 @@ function renderHuile(){
         '<span class="dlc-badge '+HUILE_BADGE_CLS[e.indice]+'">'+HUILE_LABELS[e.indice]+'</span>'+
         '<span class="dlc-badge '+HUILE_BADGE_CLS[e.chrono]+'">'+HUILE_LABELS[e.chrono]+'</span>'+
       '</div></div>'+
-      '<div class="dlc-card-actions"><button class="dlc-btn-sm" onclick="deleteHuile('+e.id+')">🗑 Supprimer</button></div>'+
+      '<div class="dlc-card-actions"><button class="dlc-btn-sm" onclick="corrigerHuile('+e.id+')">✏️ Corriger (nouvelle entrée)</button></div>'+
     '</div>';
   }).join('');
 }
@@ -402,22 +420,15 @@ function nettDate(){ var el=document.getElementById('nett-date'); return (el && 
 
 function nettToggle(zoneId){
   var date=nettDate();
+  if(autocIsLocked(date)){ renderNettoyage(); return; } // jour clos : lecture seule
   if(!NETT_DATA.entries[date]) NETT_DATA.entries[date]={};
   var cur=NETT_DATA.entries[date][zoneId] || {done:false,visa:''};
   cur.done = !cur.done;
+  cur.visa = cur.done ? autocCurrentUser() : '';
   NETT_DATA.entries[date][zoneId]=cur;
   autocSaveNettData();
   renderNettoyage();
   nettRenderCal();
-}
-
-function nettSetVisa(zoneId, value){
-  var date=nettDate();
-  if(!NETT_DATA.entries[date]) NETT_DATA.entries[date]={};
-  var cur=NETT_DATA.entries[date][zoneId] || {done:true,visa:''};
-  cur.visa=value;
-  NETT_DATA.entries[date][zoneId]=cur;
-  autocSaveNettData();
 }
 
 function addNettZone(){
@@ -443,16 +454,18 @@ function renderNettoyage(){
   var prog=document.getElementById('nett-progress');
   if(!list) return;
   var date=nettDate();
+  var locked=autocIsLocked(date);
   var dayData=NETT_DATA.entries[date]||{};
   var zones=NETT_DATA.zones||[];
   var doneCount=zones.filter(function(z){ return dayData[z.id] && dayData[z.id].done; }).length;
   if(prog) prog.textContent = doneCount+'/'+zones.length+' zones nettoyées';
-  list.innerHTML = zones.map(function(z){
+  var lockBanner = locked ? '<div class="autoc-lock-banner">🔒 Jour clos — lecture seule (seule la journée en cours est modifiable)</div>' : '';
+  list.innerHTML = lockBanner + zones.map(function(z){
     var st=dayData[z.id]||{done:false,visa:''};
     return '<div class="autoc-zone-row">'+
-      '<input type="checkbox" class="autoc-zone-check" '+(st.done?'checked':'')+' onchange="nettToggle(\''+z.id+'\')">'+
+      '<input type="checkbox" class="autoc-zone-check" '+(st.done?'checked':'')+(locked?' disabled':'')+' onchange="nettToggle(\''+z.id+'\')">'+
       '<span class="autoc-zone-label'+(st.done?' done':'')+'">'+z.label+'</span>'+
-      (st.done?'<input type="text" class="autoc-zone-visa" placeholder="Visa" value="'+(st.visa||'').replace(/"/g,'&quot;')+'" oninput="nettSetVisa(\''+z.id+'\',this.value)">':'')+
+      (st.done?'<span style="font-size:10px;color:var(--text2)">'+st.visa+'</span>':'')+
       '<button class="autoc-zone-remove" onclick="removeNettZone(\''+z.id+'\')" title="Retirer la zone">✕</button>'+
     '</div>';
   }).join('');
@@ -521,15 +534,13 @@ function autocToggleAnomalieForm(){
 
 function saveAnomalie(){
   var desc=document.getElementById('anom-desc').value.trim();
-  var visa=document.getElementById('anom-visa').value.trim();
   if(!desc){ alert('Veuillez décrire l\'anomalie constatée'); return; }
-  if(!visa){ alert('Veuillez saisir le visa (initiales)'); return; }
   var entry={
     id: Date.now(),
     date: document.getElementById('anom-date').value || todayStr(),
     heure: document.getElementById('anom-heure').value || nowTime(),
     description: desc,
-    visa: visa,
+    visa: autocCurrentUser(),
     status: 'ouverte',
     steps: {},
     ts: Date.now()
@@ -537,19 +548,13 @@ function saveAnomalie(){
   ANOM_DATA.entries.unshift(entry);
   autocSaveAnomData();
   document.getElementById('anom-desc').value='';
-  document.getElementById('anom-visa').value='';
   autocToggleAnomalieForm();
   renderAnomalies();
   updateAutocAlertDot();
 }
 
-function deleteAnomalie(id){
-  if(!confirm('Supprimer cette fiche d\'anomalie ?')) return;
-  ANOM_DATA.entries = ANOM_DATA.entries.filter(function(a){ return a.id!==id; });
-  autocSaveAnomData();
-  renderAnomalies();
-  updateAutocAlertDot();
-}
+// Pas de suppression : une anomalie déclarée reste au registre (traçabilité HACCP),
+// même une fois clôturée.
 
 function autocOpenAnomStep(id, step){
   anomUIState[id] = {openStep: step};
@@ -561,17 +566,17 @@ function autocCancelAnomStep(id){
 }
 
 // step: 'analyse' | 'action' | 'verif'
+// Visa cuisine = celui qui valide l'étape (compte connecté). Le visa gestionnaire est
+// une confirmation distincte, apposée séparément (voir confirmGestionnaire) — il arrive
+// souvent que le gestionnaire relise et valide plus tard, depuis son propre compte.
 function saveAnomStep(id, step){
   var entry = ANOM_DATA.entries.find(function(a){ return a.id===id; });
   if(!entry) return;
   var pfx = 'anomstep-'+id+'-';
-  var visaCuisine = (document.getElementById(pfx+'vc')||{}).value || '';
-  var visaGest    = (document.getElementById(pfx+'vg')||{}).value || '';
-  var texte       = (document.getElementById(pfx+'texte')||{}).value || '';
-  if(!visaCuisine.trim()){ alert('Veuillez saisir le visa cuisine'); return; }
+  var texte = (document.getElementById(pfx+'texte')||{}).value || '';
   var stepData = {
     date: todayStr(), heure: nowTime(),
-    visaCuisine: visaCuisine.trim(), visaGestionnaire: visaGest.trim(),
+    visaCuisine: autocCurrentUser(), visaGestionnaire: '',
     texte: texte.trim()
   };
   if(step==='verif'){
@@ -586,6 +591,16 @@ function saveAnomStep(id, step){
   updateAutocAlertDot();
 }
 
+// Confirmation du gestionnaire sur une étape déjà validée (depuis son propre compte,
+// possiblement plus tard) — ne modifie rien d'autre dans l'étape.
+function confirmGestionnaire(id, step){
+  var entry = ANOM_DATA.entries.find(function(a){ return a.id===id; });
+  if(!entry || !entry.steps[step]) return;
+  entry.steps[step].visaGestionnaire = autocCurrentUser();
+  autocSaveAnomData();
+  renderAnomalies();
+}
+
 function anomStepForm(entry, step, title, withResultat){
   var pfx='anomstep-'+entry.id+'-';
   return '<div class="autoc-step-form">'+
@@ -593,21 +608,22 @@ function anomStepForm(entry, step, title, withResultat){
     '<div class="rec-form-grid" style="padding:0">'+
       '<div class="full"><div class="rec-label">Description / analyse</div><input class="rec-input" type="text" id="'+pfx+'texte" placeholder="Détails…"></div>'+
       (withResultat ? '<div class="full"><div class="rec-label">Résultat</div><select class="rec-input" id="'+pfx+'resultat"><option value="efficace">✓ Action efficace</option><option value="inefficace">✕ Action inefficace — à reprendre</option></select></div>' : '')+
-      '<div><div class="rec-label">Visa cuisine</div><input class="rec-input" type="text" id="'+pfx+'vc" placeholder="Initiales"></div>'+
-      '<div><div class="rec-label">Visa gestionnaire</div><input class="rec-input" type="text" id="'+pfx+'vg" placeholder="Initiales"></div>'+
     '</div>'+
     '<div style="margin-top:10px;display:flex;gap:8px">'+
-      '<button class="btn btn-primary" onclick="saveAnomStep('+entry.id+',\''+step+'\')">✓ Valider</button>'+
+      '<button class="btn btn-primary" onclick="saveAnomStep('+entry.id+',\''+step+'\')">✓ Valider (visa : '+autocCurrentUser()+')</button>'+
       '<button class="btn" onclick="autocCancelAnomStep('+entry.id+')">Annuler</button>'+
     '</div>'+
   '</div>';
 }
 
-function stepSummary(label, s){
+function stepSummary(label, s, anomId, step){
   if(!s) return '';
+  var gestBlock = s.visaGestionnaire
+    ? ' · Visa gestionnaire : <b>'+s.visaGestionnaire+'</b>'
+    : ' · <button class="dlc-btn-sm" onclick="confirmGestionnaire('+anomId+',\''+step+'\')">✓ Confirmer (gestionnaire)</button>';
   return '<div class="autoc-step-summary"><b>'+label+'</b> — '+s.date+' '+s.heure+
     (s.texte?' · '+s.texte:'')+' · Visa cuisine : <b>'+(s.visaCuisine||'—')+'</b>'+
-    (s.visaGestionnaire?' · Visa gestionnaire : <b>'+s.visaGestionnaire+'</b>':'')+
+    gestBlock+
     (s.resultat?' · '+(s.resultat==='efficace'?'✅ Efficace':'❌ Inefficace'):'')+
   '</div>';
 }
@@ -626,9 +642,9 @@ function renderAnomalies(){
         '<span class="autoc-status autoc-status-'+a.status+'">'+ANOM_STATUS_LABEL[a.status]+'</span>'+
       '</div>';
 
-    html += stepSummary('Analyse des causes', a.steps.analyse);
-    html += stepSummary('Action corrective', a.steps.action);
-    html += stepSummary('Vérification de l\'efficacité', a.steps.verif);
+    html += stepSummary('Analyse des causes', a.steps.analyse, a.id, 'analyse');
+    html += stepSummary('Action corrective', a.steps.action, a.id, 'action');
+    html += stepSummary('Vérification de l\'efficacité', a.steps.verif, a.id, 'verif');
 
     if(ui.openStep==='analyse') html += anomStepForm(a,'analyse','Traitement de l\'anomalie — analyse des causes', false);
     if(ui.openStep==='action')  html += anomStepForm(a,'action','Action corrective', false);
@@ -639,8 +655,7 @@ function renderAnomalies(){
       if(a.status==='ouverte') actions += '<button class="btn" onclick="autocOpenAnomStep('+a.id+',\'analyse\')">▶ Analyse des causes</button>';
       else if(a.status==='analyse') actions += '<button class="btn" onclick="autocOpenAnomStep('+a.id+',\'action\')">▶ Action corrective</button>';
       else if(a.status==='action') actions += '<button class="btn" onclick="autocOpenAnomStep('+a.id+',\'verif\')">▶ Vérifier l\'efficacité</button>';
-      actions += '<button class="dlc-btn-sm" onclick="deleteAnomalie('+a.id+')">🗑 Supprimer</button>';
-      html += '<div class="autoc-card-actions">'+actions+'</div>';
+      if(actions) html += '<div class="autoc-card-actions">'+actions+'</div>';
     }
 
     html += '</div>';

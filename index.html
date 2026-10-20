@@ -1110,7 +1110,7 @@
         <div><div class="rec-label">T° entrée (°C)</div><input class="rec-input" type="number" step="0.1" id="cell-t-entree" placeholder="ex : 63"></div>
         <div><div class="rec-label">Heure sortie</div><input class="rec-input" type="time" id="cell-heure-sortie"></div>
         <div><div class="rec-label">T° sortie (°C)</div><input class="rec-input" type="number" step="0.1" id="cell-t-sortie" placeholder="ex : 8"></div>
-        <div class="full"><div class="rec-label">Visa</div><input class="rec-input" type="text" id="cell-visa" placeholder="Initiales"></div>
+        <div class="full"><div class="rec-label">Visa (compte connecté)</div><input class="rec-input" type="text" id="cell-visa" readonly></div>
       </div>
       <div style="padding:4px 16px 14px;font-size:11px;color:var(--text2)">Objectif : refroidir de +63°C à +10°C maximum en moins de 2h, puis conserver entre 0°C et 3°C.</div>
       <div style="padding:0 16px 14px"><button class="btn btn-primary" onclick="saveCellule()">✓ Enregistrer</button></div>
@@ -1139,7 +1139,7 @@
       <div class="dlc-section-title">🍟 Nouveau contrôle</div>
       <div class="rec-form-grid">
         <div><div class="rec-label">Date</div><input class="rec-input" type="date" id="huile-date"></div>
-        <div><div class="rec-label">Visa</div><input class="rec-input" type="text" id="huile-visa" placeholder="Initiales"></div>
+        <div><div class="rec-label">Visa (compte connecté)</div><input class="rec-input" type="text" id="huile-visa" readonly></div>
         <div><div class="rec-label">Filtrage effectué</div>
           <select class="rec-input" id="huile-filtrage"><option value="oui">✓ Oui</option><option value="non">✕ Non</option></select>
         </div>
@@ -1213,7 +1213,7 @@
           <div><div class="rec-label">Date</div><input class="rec-input" type="date" id="anom-date"></div>
           <div><div class="rec-label">Heure</div><input class="rec-input" type="time" id="anom-heure"></div>
           <div class="full"><div class="rec-label">Description</div><input class="rec-input" type="text" id="anom-desc" placeholder="Nature de l'anomalie constatée"></div>
-          <div><div class="rec-label">Visa</div><input class="rec-input" type="text" id="anom-visa" placeholder="Initiales"></div>
+          <div><div class="rec-label">Visa (compte connecté)</div><input class="rec-input" type="text" id="anom-visa" readonly></div>
         </div>
         <div style="padding:4px 16px 14px;display:flex;gap:8px">
           <button class="btn btn-primary" onclick="saveAnomalie()">✓ Enregistrer</button>
