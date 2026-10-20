@@ -520,7 +520,14 @@ const CONTACTS_KEY = 'haccp_fournisseurs_contacts_v1';  // {fournisseur: {email,
 let CONTACTS = _lsJSON(CONTACTS_KEY, {}) || {};
 const _invPlusReload0 = invPlusReload;
 invPlusReload = function(id) {
-  if (id === 'fournisseurs_contacts') { CONTACTS = _lsJSON(CONTACTS_KEY, {}) || {}; return; }
+  if (id === 'fournisseurs_contacts') {
+    CONTACTS = _lsJSON(CONTACTS_KEY, {}) || {};
+    // Si la fenêtre des bons de commande est déjà ouverte quand un autre appareil
+    // met à jour un contact fournisseur, le champ email affiché restait figé sur
+    // l'ancienne valeur tant qu'on ne refermait pas la fenêtre.
+    if (document.getElementById('cmdf-overlay')?.classList.contains('open')) openCommandesFournisseurs();
+    return;
+  }
   _invPlusReload0(id);
 };
 async function _rpcPlus(name, args) {
