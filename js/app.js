@@ -1206,8 +1206,8 @@ const VOICE_NAV = {
   'dlc':            ()=>switchTabByName('dlc'),
   'dates':          ()=>switchTabByName('dlc'),
   'alertes':        ()=>switchTabByName('dlc'),
-  'temperatures':   ()=>switchTabByName('dlc'),
-  'températures':   ()=>switchTabByName('dlc'),
+  'temperatures':   ()=>openAutocTemp(),
+  'températures':   ()=>openAutocTemp(),
   'historique':     ()=>switchTabByName('historique'),
   'commandes':      ()=>switchTabByName('commande'),
   'commande':       ()=>switchTabByName('commande'),
@@ -1265,9 +1265,6 @@ const VOICE_CMDS = {
   'economat':                ()=>{setZone('ECONOMAT');return'Zone Économat';},
   'toutes zones':            ()=>{setZone('TOUT');return'Toutes les zones';},
   'tout':                    ()=>{setZone('TOUT');return'Toutes les zones';},
-  // Relevé températures vocal
-  'enregistrer températures':()=>{saveTempReleve();return'🌡 Relevé enregistré';},
-  'sauvegarder températures':()=>{saveTempReleve();return'🌡 Relevé enregistré';},
 };
 
 // ── Commandes de traçabilité rapide ──
@@ -1287,13 +1284,16 @@ const MOIS = {
   'juillet':7,'août':8,'aout':8,'septembre':9,'octobre':10,'novembre':11,'décembre':12,'decembre':12
 };
 
-// ── Température vocale : "frigo un trois degrés" ──
+// ── Température vocale : "fruits légumes trois degrés" ──
+// Zones alignées sur les chambres froides du module Autocontrôles (js/autocontroles.js, TEMP_CHAMBRES)
 const TEMP_VOICE_ZONES = {
-  'frigo 1':       'frigo1','frigo un':'frigo1','premier frigo':'frigo1',
-  'frigo 2':       'frigo2','frigo deux':'frigo2','deuxième frigo':'frigo2','deuxieme frigo':'frigo2',
-  'congélateur':   'congel','congelateur':'congel','congel':'congel',
-  'cave':          'cave','boissons cave':'cave','cellier':'cave',
-  'cuisine':       'cuisine',
+  'fruits légumes':    'fruits_legumes','fruits et légumes':'fruits_legumes','fruits legumes':'fruits_legumes',
+  'mep viande':        'mep_viande','viande':'mep_viande',
+  'bof':                'bof',
+  'mep':                'mep',
+  'desserts':           'desserts',
+  'congel mep':         'congel_mep','congélateur mep':'congel_mep',
+  'congélateur':        'congelateur','congelateur':'congelateur','congel':'congelateur',
 };
 
 // ── parseCmd étendu — toute l'application ──
@@ -1521,23 +1521,15 @@ function sendCmd(raw, allAlternatives){
     if(inp)inp.value='';return;
   }
 
-  // TEMPÉRATURE
+  // TEMPÉRATURE (chambres froides du module Autocontrôles)
   if(parsed.cmd==='temp'){
-    // Saisir dans le champ de la zone
-    const tempInp=document.getElementById('temp-'+parsed.zoneId);
-    if(tempInp){
-      tempInp.value=parsed.val;
-      checkTempLive(parsed.zoneId,
-        TEMP_ZONES.find(z=>z.id===parsed.zoneId)?.min||0,
-        TEMP_ZONES.find(z=>z.id===parsed.zoneId)?.max||100
-      );
-    }
+    if(typeof autocLoad==='function') autocLoad();
+    const service=new Date().getHours()<14?'matin':'soir';
+    if(typeof setTempVal==='function') setTempVal(parsed.zoneId, service, 'temp', String(parsed.val));
     fb.className='voice-feedback ok';
-    fb.innerHTML=`🌡 <b>${parsed.zoneLabel}</b> → <b>${parsed.val}°C</b>`;
+    fb.innerHTML=`🌡 <b>${parsed.zoneLabel}</b> (${service}) → <b>${parsed.val}°C</b>`;
     if(inp)inp.value='';
-    // Aller sur l'onglet DLC si pas déjà là
-    if(!document.getElementById('panel-dlc')?.classList.contains('active'))
-      switchTabByName('dlc');
+    if(typeof openAutocTemp==='function') openAutocTemp();
     return;
   }
 
@@ -1738,7 +1730,6 @@ const STORAGE_KEY='haccp_salleamanger_inventaire_v1';
 const DLC_KEY='haccp_dlc_v1';
 const HISTO_KEY='haccp_historique_v1';
 const SEUILS_KEY='haccp_seuils_v1';
-const TEMP_KEY='haccp_temperatures_v1';
 const ALLERGENS_KEY='haccp_allergenes_v1';
 const CMD_KEY='haccp_commande_v1';
 
@@ -1760,19 +1751,9 @@ const ALLERGENS_LIST=[
   {id:'mollusques',label:'Mollusques',emoji:'🦑'},
 ];
 
-// Zones de stockage avec seuils de température HACCP
-const TEMP_ZONES=[
-  {id:'frigo1',label:'Frigo 1',min:0,max:4,unit:'°C'},
-  {id:'frigo2',label:'Frigo 2',min:0,max:4,unit:'°C'},
-  {id:'congel',label:'Congélateur',min:-25,max:-18,unit:'°C'},
-  {id:'cave',label:'Cave / Boissons',min:8,max:15,unit:'°C'},
-  {id:'cuisine',label:'Cuisine',min:0,max:63,unit:'°C'},
-];
-
 let DLC_DATA=[];
 let HISTO_DATA=[];
 let SEUILS_DATA={};   // {code: {min, unite}}
-let TEMP_DATA=[];     // [{date, releves:{frigo1:3.2, congel:-21...}}]
 let ALLERGEN_DATA={}; // {code: [allergen_id, ...]}
 let CMD_DATA=[];      // [{code, produit, fournisseur, qteCmd, unite, prix, note}]
 
@@ -1781,7 +1762,6 @@ function loadAllData(){
   try{const r=localStorage.getItem(DLC_KEY);if(r)DLC_DATA=JSON.parse(r);}catch(e){}
   try{const r=localStorage.getItem(HISTO_KEY);if(r)HISTO_DATA=JSON.parse(r);}catch(e){}
   try{const r=localStorage.getItem(SEUILS_KEY);if(r)SEUILS_DATA=JSON.parse(r);}catch(e){}
-  try{const r=localStorage.getItem(TEMP_KEY);if(r)TEMP_DATA=JSON.parse(r);}catch(e){}
   try{const r=localStorage.getItem(ALLERGENS_KEY);if(r)ALLERGEN_DATA=JSON.parse(r);}catch(e){}
   try{const r=localStorage.getItem(CMD_KEY);if(r)CMD_DATA=JSON.parse(r);}catch(e){}
   loadNewModules();
@@ -1797,8 +1777,6 @@ function saveAllData(){
   try{localStorage.setItem(DLC_KEY,JSON.stringify(DLC_DATA));syncToCloud('dlc',DLC_DATA);}catch(e){}
   try{localStorage.setItem(HISTO_KEY,JSON.stringify(HISTO_DATA));syncToCloud('historique',HISTO_DATA);}catch(e){}
   try{localStorage.setItem(SEUILS_KEY,JSON.stringify(SEUILS_DATA));syncToCloud('seuils',SEUILS_DATA);}catch(e){}
-  try{syncToCloud('temperatures', JSON.parse(localStorage.getItem(TEMP_KEY)||'[]'));
-  localStorage.setItem(TEMP_KEY,JSON.stringify(TEMP_DATA));syncToCloud('temperatures',TEMP_DATA);}catch(e){}
   try{localStorage.setItem(ALLERGENS_KEY,JSON.stringify(ALLERGEN_DATA));syncToCloud('allergenes',ALLERGEN_DATA);}catch(e){}
   try{localStorage.setItem(CMD_KEY,JSON.stringify(CMD_DATA));syncToCloud('commande',CMD_DATA);}catch(e){}
 }
@@ -2573,6 +2551,49 @@ function exportPiecesCSV(){
 
 
 // ── EXPORT EXCEL ───────────────────────────────────────────
+// ── Helpers styles Excel (SheetJS) — utilisés par exportExcel() ET buildUnifiedExcel() ──
+// Remontés au niveau global le 20/10/2026 : ils étaient déclarés à l'intérieur d'exportExcel()
+// et donc invisibles depuis buildUnifiedExcel() (fonction distincte plus bas dans le fichier),
+// qui plantait silencieusement sur chaque onglet (ReferenceError attrapé et juste loggé en
+// console.warn) — le Centre d'envoi générait donc un classeur Excel sans aucun onglet.
+function fl(argb){return{type:'pattern',pattern:'solid',fgColor:{argb}};}
+function bd(s){s=s||'thin';const e={style:s,color:{argb:'FFBBBBBB'}};return{top:e,bottom:e,left:e,right:e};}
+function bdD(){const e={style:'medium',color:{argb:'FF777777'}};return{top:e,bottom:e,left:e,right:e};}
+function al(h,v){return{horizontal:h||'left',vertical:v||'center',wrapText:false};}
+
+function setS(ws,addr,s){
+  if(!ws[addr]){ws[addr]={t:'z',v:''};}
+  ws[addr].s=s;
+}
+
+function styleHdr(ws,row,ncols,bg,fg){
+  for(let c=0;c<ncols;c++){
+    const a=XLSX.utils.encode_cell({r:row,c});
+    if(!ws[a])ws[a]={t:'z',v:''};
+    ws[a].s={font:{bold:true,color:{argb:fg||'FFFFFFFF'},sz:10,name:'Arial'},
+             fill:fl(bg||'FF1A3A5C'),border:bdD(),alignment:al('center','center')};
+  }
+}
+
+function styleRow(ws,row,ncols,bg,opts){
+  opts=opts||{};
+  for(let c=0;c<ncols;c++){
+    const a=XLSX.utils.encode_cell({r:row,c});
+    if(!ws[a])ws[a]={t:'z',v:''};
+    const isN=typeof ws[a].v==='number';
+    ws[a].s={font:{bold:!!opts.bold,color:{argb:opts.fg||'FF1A1A18'},sz:10,name:'Arial'},
+             fill:fl(bg||'FFFFFFFF'),border:bd(),
+             alignment:al(isN?'right':'left','center'),
+             ...(isN&&!opts.noNum?{numFmt:'#,##0.00'}:{})};
+  }
+}
+
+function titleRow(ws,addr,val,bg,fg,sz){
+  ws[addr]={t:'s',v:val};
+  ws[addr].s={font:{bold:true,color:{argb:fg||'FFFFFFFF'},sz:sz||13,name:'Arial'},
+              fill:fl(bg||'FF1A3A5C'),alignment:{horizontal:'left',vertical:'center'}};
+}
+
 function exportExcel(){
   if(typeof XLSX==='undefined'){
     alert('La bibliothèque Excel (SheetJS) n\'est pas encore chargée. Vérifiez votre connexion internet et réessayez.');
@@ -2603,43 +2624,7 @@ function exportExcel(){
           'BOF':'FFFBEAF0','FRAIS BCP':'FFE1F5EE','AUTRE':'FFF1EFE8'},
   };
 
-  function fl(argb){return{type:'pattern',pattern:'solid',fgColor:{argb}};}
-  function bd(s){s=s||'thin';const e={style:s,color:{argb:'FFBBBBBB'}};return{top:e,bottom:e,left:e,right:e};}
-  function bdD(){const e={style:'medium',color:{argb:'FF777777'}};return{top:e,bottom:e,left:e,right:e};}
-  function al(h,v){return{horizontal:h||'left',vertical:v||'center',wrapText:false};}
-
-  function setS(ws,addr,s){
-    if(!ws[addr]){ws[addr]={t:'z',v:''};}
-    ws[addr].s=s;
-  }
-
-  function styleHdr(ws,row,ncols,bg,fg){
-    for(let c=0;c<ncols;c++){
-      const a=XLSX.utils.encode_cell({r:row,c});
-      if(!ws[a])ws[a]={t:'z',v:''};
-      ws[a].s={font:{bold:true,color:{argb:fg||C.WHITE},sz:10,name:'Arial'},
-               fill:fl(bg||C.HD),border:bdD(),alignment:al('center','center')};
-    }
-  }
-
-  function styleRow(ws,row,ncols,bg,opts){
-    opts=opts||{};
-    for(let c=0;c<ncols;c++){
-      const a=XLSX.utils.encode_cell({r:row,c});
-      if(!ws[a])ws[a]={t:'z',v:''};
-      const isN=typeof ws[a].v==='number';
-      ws[a].s={font:{bold:!!opts.bold,color:{argb:opts.fg||C.DARK},sz:10,name:'Arial'},
-               fill:fl(bg||C.WHITE),border:bd(),
-               alignment:al(isN?'right':'left','center'),
-               ...(isN&&!opts.noNum?{numFmt:'#,##0.00'}:{})};
-    }
-  }
-
-  function titleRow(ws,addr,val,bg,fg,sz){
-    ws[addr]={t:'s',v:val};
-    ws[addr].s={font:{bold:true,color:{argb:fg||C.WHITE},sz:sz||13,name:'Arial'},
-                fill:fl(bg||C.HD),alignment:{horizontal:'left',vertical:'center'}};
-  }
+  // (helpers styles fl/bd/bdD/al/setS/styleHdr/styleRow/titleRow : voir déclarations globales plus haut)
 
   // ═══════════════════════════════════════════
   // FEUILLE 1 : Inventaire complet
@@ -4173,7 +4158,7 @@ function tileGoTo(name) {
   if (header) header.style.display = '';
   
   // 3. Naviguer vers le bon module
-  var moreModules = ['reception-mp','factures','tracabilite','historique','prix','carte-allergenes','pieces'];
+  var moreModules = ['reception-mp','factures','tracabilite','historique','prix','carte-allergenes','pieces','autocontroles'];
   if (moreModules.indexOf(name) >= 0) {
     switchTabMore(name, null);
   } else {
@@ -5429,10 +5414,10 @@ function renderDLC(){
         <div><div style="font-size:12px;font-weight:500">${d.produit}</div><div style="font-size:10px;color:var(--text3)">${(ZONES[d.zone]||{label:d.zone}).label}</div></div>
         <button class="dlc-btn-sm" onclick="openDLCAdd('${d.code}')">+ DLC</button>
       </div>`).join('')+'</div>';
-    renderTempGrid();return;
+    return;
   }
   const el=document.getElementById('dlc-list');
-  if(!items.length){el.innerHTML='<div class="histo-empty">Aucune DLC enregistrée — appuyez sur « + Saisir DLC »</div>';renderTempGrid();return;}
+  if(!items.length){el.innerHTML='<div class="histo-empty">Aucune DLC enregistrée — appuyez sur « + Saisir DLC »</div>';return;}
   el.innerHTML=items.map(d=>{
     const days=dlcDaysLeft(d.date);const c=dlcColor(days);
     const daysLabel=days<0?`Expiré depuis ${Math.abs(days)}j`:days===0?`Expire aujourd\'hui`:`${days}j restants`;
@@ -5457,58 +5442,6 @@ function renderDLC(){
       </div>
     </div>`;
   }).join('');
-  renderTempGrid();
-}
-
-// ── Relevés de températures ──
-function renderTempGrid(){
-  const last=TEMP_DATA.length?TEMP_DATA[TEMP_DATA.length-1]:null;
-  document.getElementById('temp-grid').innerHTML=TEMP_ZONES.map(z=>{
-    const lastVal=last&&last.releves[z.id]!=null?last.releves[z.id]:'';
-    const isOk=lastVal===''||lastVal===null?null:(lastVal>=z.min&&lastVal<=z.max);
-    const statusHtml=lastVal!==''&&lastVal!==null?
-      `<div class="temp-status ${isOk?'temp-ok':'temp-alert'}">${isOk?'✓ OK':'⚠ HORS SEUIL'} (seuil ${z.min}/${z.max}${z.unit})</div>`:'';
-    return`<div class="temp-card">
-      <div class="temp-card-label">${z.label}</div>
-      <div class="temp-input-wrap">
-        <input class="temp-input" id="temp-${z.id}" type="number" inputmode="decimal" step="0.1"
-          placeholder="—" value="${lastVal}" oninput="checkTempLive('${z.id}',${z.min},${z.max})">
-        <span class="temp-unit">${z.unit}</span>
-      </div>
-      <div id="temp-status-${z.id}" class="temp-status">${isOk===null?'':''}${isOk===true?`<span class="temp-ok">✓ OK</span>`:isOk===false?`<span class="temp-alert">⚠ HORS SEUIL (seuil ${z.min}/${z.max}${z.unit})</span>`:''}</div>
-    </div>`;
-  }).join('');
-}
-function checkTempLive(id,min,max){
-  const v=parseFloat(document.getElementById('temp-'+id).value);
-  const el=document.getElementById('temp-status-'+id);
-  if(isNaN(v)){el.innerHTML='';return;}
-  if(v>=min&&v<=max)el.innerHTML=`<span class="temp-ok">✓ OK</span>`;
-  else el.innerHTML=`<span class="temp-alert">⚠ HORS SEUIL (${min}/${max}°C)</span>`;
-}
-function saveTempReleve(){
-  const releves={};
-  TEMP_ZONES.forEach(z=>{
-    const v=parseFloat(document.getElementById('temp-'+z.id).value);
-    releves[z.id]=isNaN(v)?null:v;
-  });
-  TEMP_DATA.push({date:new Date().toISOString(),releves});
-  if(TEMP_DATA.length>365)TEMP_DATA=TEMP_DATA.slice(-365);
-  saveAllData();
-  renderTempGrid();
-  alert('Relevé enregistré ✓');
-}
-function showTempHistory(){
-  const el=document.getElementById('temp-history');
-  if(el.style.display!=='none'){el.style.display='none';return;}
-  const last20=[...TEMP_DATA].reverse().slice(0,20);
-  if(!last20.length){el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px 0">Aucun relevé enregistré.</div>';el.style.display='block';return;}
-  el.innerHTML='<div style="border:.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">'+
-    last20.map((r,i)=>`<div class="temp-histo-row" style="padding:8px 12px;background:${i%2===0?'var(--bg)':'var(--bg2)'}">
-      <span class="temp-histo-date">${new Date(r.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
-      <span style="font-size:11px;color:var(--text)">${TEMP_ZONES.filter(z=>r.releves[z.id]!=null).map(z=>`${z.label} : <b>${r.releves[z.id]}${z.unit}</b>`).join(' · ')}</span>
-    </div>`).join('')+'</div>';
-  el.style.display='block';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -6009,11 +5942,16 @@ function buildDashboard(){
     const c=calcRecetteCout(r);return s+(c/(r.prixVente*r.couverts)*100);
   },0)/recFC.length):null;
 
-  // ── Températures ──
-  const lastTemp=TEMP_DATA.length?TEMP_DATA[TEMP_DATA.length-1]:null;
-  const tempAlerts=lastTemp?TEMP_ZONES.filter(z=>{
-    const v=lastTemp.releves[z.id];return v!=null&&(v<z.min||v>z.max);
-  }):[];
+  // ── Températures (relevés du jour — chambres froides, module Autocontrôles) ──
+  const tempToday=(typeof TEMP_DATA!=='undefined'&&TEMP_DATA.entries&&TEMP_DATA.entries[todayStr])||{};
+  const tempReadings=(typeof TEMP_CHAMBRES!=='undefined'?TEMP_CHAMBRES:[]).flatMap(ch=>['matin','soir'].map(svc=>{
+    const cur=tempToday[ch.id]&&tempToday[ch.id][svc];
+    const v=cur&&cur.temp;
+    if(v===''||v==null)return null;
+    return {label:ch.label+' ('+(svc==='matin'?'matin':'soir')+')',value:v,status:tempStatus(ch,v)};
+  }).filter(Boolean));
+  const lastTemp=tempReadings.length?true:null;
+  const tempAlerts=tempReadings.filter(r=>r.status!=='conforme');
 
   // ── Traçabilité du jour ──
   const tracToday=TRAC_DATA.filter(t=>t.date.slice(0,10)===todayStr);
@@ -6131,24 +6069,22 @@ function buildDashboard(){
 
   // ══ 4. TEMPÉRATURES ══
   html+=`
-  <div style="border:.5px solid ${tempAlerts.length>0?'var(--pink-text)':'var(--border)'};border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px;cursor:pointer" onclick="switchTabByName('dlc')">
+  <div style="border:.5px solid ${tempAlerts.length>0?'var(--pink-text)':'var(--border)'};border-radius:var(--radius-lg);overflow:hidden;margin-bottom:12px;cursor:pointer" onclick="openAutocTemp()">
     <div style="padding:10px 14px;background:${tempAlerts.length>0?'var(--pink-bg)':lastTemp?'var(--green-bg)':'var(--bg2)'};display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:${tempAlerts.length>0?'var(--pink-text)':lastTemp?'var(--green-text)':'var(--text2)'}">🌡 Températures</div>
         <div style="font-size:13px;font-weight:600;color:${tempAlerts.length>0?'var(--pink-text)':lastTemp?'var(--green-text)':'var(--text2)'};margin-top:2px">
-          ${tempAlerts.length>0?`⚠️ ${tempAlerts.length} hors seuil : ${tempAlerts.map(z=>z.label).join(', ')}`:lastTemp?'✅ Toutes températures OK':'Aucun relevé — Saisir →'}
+          ${tempAlerts.length>0?`⚠️ ${tempAlerts.length} hors seuil : ${tempAlerts.map(r=>r.label).join(', ')}`:lastTemp?'✅ Toutes températures OK':'Aucun relevé aujourd’hui — Saisir →'}
         </div>
-        ${lastTemp?`<div style="font-size:10px;color:var(--text3);margin-top:1px">Relevé : ${new Date(lastTemp.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`:''}
       </div>
       <div style="font-size:28px">${tempAlerts.length>0?'🔴':lastTemp?'🟢':'⚪'}</div>
     </div>
     ${lastTemp?`<div style="display:flex;flex-wrap:wrap;gap:0;border-top:.5px solid var(--border)">
-      ${TEMP_ZONES.filter(z=>lastTemp.releves[z.id]!=null).map((z,i)=>{
-        const v=lastTemp.releves[z.id];
-        const ok=v>=z.min&&v<=z.max;
+      ${tempReadings.map(r=>{
+        const ok=r.status==='conforme';
         return`<div style="padding:8px 12px;flex:1;min-width:80px;border-right:.5px solid var(--border);text-align:center;background:${ok?'var(--bg)':'var(--pink-bg)'}">
-          <div style="font-size:10px;color:var(--text2)">${z.label}</div>
-          <div style="font-size:14px;font-weight:700;color:${ok?'var(--green-text)':'var(--pink-text)'}">${v}${z.unit}</div>
+          <div style="font-size:10px;color:var(--text2)">${r.label}</div>
+          <div style="font-size:14px;font-weight:700;color:${ok?'var(--green-text)':'var(--pink-text)'}">${r.value}°C</div>
         </div>`;
       }).join('')}
     </div>`:''}
@@ -7365,6 +7301,7 @@ function switchTabMore(name,btn){
   if(name==='carte-allergenes')renderCartAlg();
   if(name==='pieces'){try{const r=localStorage.getItem(PIECES_KEY);PIECES=r?JSON.parse(r):[];}catch(e){PIECES=[];} renderPieces(); detectCameraContext();}
   if(name==='reception-mp'){recLoad();renderReceptions();recRenderCal();}
+  if(name==='autocontroles'){if(typeof autocInit==='function')autocInit();}
   if(name==='factures'){
     var caDiv=document.getElementById('panel-factures-ca');
     if(caDiv) caDiv.style.display='block';
@@ -7445,6 +7382,34 @@ const SEND_MODULES = [
     desc:'Toutes les factures du mois',
     excel: ()=>buildExcelFactures(),
     pdf:   ()=>buildPDFFactures(),
+    defaultOn: false,
+  },
+  {
+    id:'temperatures', icon:'🌡️', name:'Températures (chambres froides)',
+    desc:'Relevés matin/soir par chambre + cellule de refroidissement',
+    excel: ()=>buildExcelTemperatures(),
+    pdf:   ()=>buildPDFTemperatures(),
+    defaultOn: false,
+  },
+  {
+    id:'huile_friture', icon:'🍟', name:'Huile de friture',
+    desc:'Filtrage, indice bandelette, changements d\'huile',
+    excel: ()=>buildExcelHuile(),
+    pdf:   ()=>buildPDFHuile(),
+    defaultOn: false,
+  },
+  {
+    id:'nettoyage', icon:'🧽', name:'Nettoyage',
+    desc:'Checklist des zones nettoyées, par jour',
+    excel: ()=>buildExcelNettoyage(),
+    pdf:   ()=>buildPDFNettoyage(),
+    defaultOn: false,
+  },
+  {
+    id:'anomalies', icon:'⚠️', name:'Anomalies',
+    desc:'Fiches de non-conformité et actions correctives',
+    excel: ()=>buildExcelAnomalies(),
+    pdf:   ()=>buildPDFAnomalies(),
     defaultOn: false,
   },
 ];
@@ -7748,6 +7713,86 @@ function buildUnifiedExcel(modules){
         ws['!cols']=[{wch:14},{wch:20},{wch:12},{wch:38},{wch:8},{wch:8},{wch:12},{wch:14}];
       }
 
+      else if(mod.id==='temperatures'){
+        const COLS=['Chambre','Service','Température (°C)','Visa','Statut'];
+        const rows=[];
+        const now2=new Date();
+        const monthTotal=new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate();
+        for(let d=1; d<=monthTotal; d++){
+          const ds=now2.getFullYear()+'-'+String(now2.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+          const dayData=(TEMP_DATA.entries&&TEMP_DATA.entries[ds])||{};
+          TEMP_CHAMBRES.forEach(ch=>{
+            TEMP_SERVICES.forEach(svc=>{
+              const cur=dayData[ch.id]&&dayData[ch.id][svc];
+              const v=cur&&cur.temp;
+              if(v===''||v==null)return;
+              const st=tempStatus(ch,v);
+              rows.push([ds+' · '+ch.label,svc==='matin'?'Matin':'Soir',parseFloat(v),cur.visa||'',TEMP_STATUS_LABEL[st]]);
+            });
+          });
+        }
+        ws=XLSX.utils.aoa_to_sheet([['TEMPÉRATURES CHAMBRES FROIDES — La Salle à Manger',...Array(4).fill('')],['Édition du '+dateStr+' · mois en cours',...Array(4).fill('')],[],COLS,...rows]);
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:4}},{s:{r:1,c:0},e:{r:1,c:4}}];
+        if(ws['A1'])ws['A1'].s={font:{bold:true,color:{argb:C.WHITE},sz:13,name:'Arial'},fill:fl(C.HD),alignment:al('left')};
+        styleHdr(ws,3,5,C.HD);
+        rows.forEach((r,i)=>{
+          const bg=r[4]==='Non conforme'?'FFFFDDDD':r[4]==='À surveiller'?'FFFFFACC':i%2===0?'FFFFFFFF':C.ALT;
+          styleRow(ws,4+i,5,bg);
+        });
+        ws['!cols']=[{wch:30},{wch:10},{wch:16},{wch:10},{wch:14}];
+      }
+
+      else if(mod.id==='huile_friture'){
+        const COLS=['Date','Visa','Filtrage','Changement huile','Indice bandelette','Temps chrono','Observation'];
+        const rows=(HUILE_DATA.entries||[]).map(e=>[e.date,e.visa,e.filtrage==='oui'?'Oui':'Non',e.changement==='oui'?'Oui':'Non',HUILE_LABELS[e.indice]||e.indice,HUILE_LABELS[e.chrono]||e.chrono,e.note||'']);
+        ws=XLSX.utils.aoa_to_sheet([['CONTRÔLE HUILE DE FRITURE — La Salle à Manger',...Array(6).fill('')],['Édition du '+dateStr,...Array(6).fill('')],[],COLS,...rows]);
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
+        if(ws['A1'])ws['A1'].s={font:{bold:true,color:{argb:C.WHITE},sz:13,name:'Arial'},fill:fl(C.HD),alignment:al('left')};
+        styleHdr(ws,3,7,C.HD);
+        rows.forEach((_,i)=>styleRow(ws,4+i,7,i%2===0?'FFFFFFFF':C.ALT));
+        ws['!cols']=[{wch:12},{wch:8},{wch:10},{wch:14},{wch:16},{wch:14},{wch:30}];
+      }
+
+      else if(mod.id==='nettoyage'){
+        const now3=new Date();
+        const monthTotal=new Date(now3.getFullYear(),now3.getMonth()+1,0).getDate();
+        const COLS=['Zone',...Array.from({length:monthTotal},(_,i)=>String(i+1))];
+        const rows=(NETT_DATA.zones||[]).map(z=>{
+          const row=[z.label];
+          for(let d=1; d<=monthTotal; d++){
+            const ds=now3.getFullYear()+'-'+String(now3.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+            const st=(NETT_DATA.entries[ds]||{})[z.id];
+            row.push(st&&st.done?(st.visa||'✓'):'');
+          }
+          return row;
+        });
+        ws=XLSX.utils.aoa_to_sheet([['NETTOYAGE — La Salle à Manger',...Array(monthTotal).fill('')],['Édition du '+dateStr+' · mois en cours',...Array(monthTotal).fill('')],[],COLS,...rows]);
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:monthTotal}},{s:{r:1,c:0},e:{r:1,c:monthTotal}}];
+        if(ws['A1'])ws['A1'].s={font:{bold:true,color:{argb:C.WHITE},sz:13,name:'Arial'},fill:fl(C.HD),alignment:al('left')};
+        styleHdr(ws,3,monthTotal+1,C.HD);
+        rows.forEach((_,i)=>styleRow(ws,4+i,monthTotal+1,i%2===0?'FFFFFFFF':C.ALT));
+        ws['!cols']=[{wch:26},...Array.from({length:monthTotal},()=>({wch:4}))];
+      }
+
+      else if(mod.id==='anomalies'){
+        const COLS=['Date','Heure','Description','Visa','Statut','Analyse des causes','Action corrective','Vérification'];
+        const rows=(ANOM_DATA.entries||[]).map(a=>[
+          a.date,a.heure,a.description,a.visa,ANOM_STATUS_LABEL[a.status]||a.status,
+          a.steps.analyse?a.steps.analyse.texte:'',
+          a.steps.action?a.steps.action.texte:'',
+          a.steps.verif?(a.steps.verif.resultat==='efficace'?'Efficace':'Inefficace'):''
+        ]);
+        ws=XLSX.utils.aoa_to_sheet([['ANOMALIES & ACTIONS CORRECTIVES — La Salle à Manger',...Array(7).fill('')],['Édition du '+dateStr,...Array(7).fill('')],[],COLS,...rows]);
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:7}},{s:{r:1,c:0},e:{r:1,c:7}}];
+        if(ws['A1'])ws['A1'].s={font:{bold:true,color:{argb:C.WHITE},sz:13,name:'Arial'},fill:fl(C.HD),alignment:al('left')};
+        styleHdr(ws,3,8,C.HD);
+        rows.forEach((r,i)=>{
+          const bg=r[4]==='🔴 Ouverte'?'FFFFDDDD':i%2===0?'FFFFFFFF':C.ALT;
+          styleRow(ws,4+i,8,bg);
+        });
+        ws['!cols']=[{wch:12},{wch:8},{wch:34},{wch:8},{wch:16},{wch:30},{wch:30},{wch:12}];
+      }
+
       else if(mod.id==='commande'){
         // Utilise les données CMD_DATA existantes
         const COLS=['Code','Produit','Fournisseur','Unité','Qté à commander','Prix HT (€)','Montant HT (€)'];
@@ -7852,18 +7897,29 @@ button,a,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transpa
         html+=`<tr class="${cl}"><td>${d.produit}</td><td>${d.type}</td><td>${new Date(d.date).toLocaleDateString('fr-FR')}</td><td style="font-weight:600;color:${days<0?'#cc0000':days<=2?'#e65100':days<=7?'#633806':'#27500a'}">${days<0?'EXPIRÉ':days+'j'}</td><td>${days<0?'⛔ Retirer':days<=2?'🚨 Urgent':days<=7?'⚠️ Surveiller':'✅ OK'}</td></tr>`;
       });
       html+=`</table>`;
-      // Températures
-      if(TEMP_DATA.length){
-        const last=TEMP_DATA[TEMP_DATA.length-1];
-        html+=`<h2 style="margin-top:10px">🌡 Dernier relevé de températures</h2>`;
-        html+=`<div class="meta">${new Date(last.date).toLocaleString('fr-FR')}</div>`;
-        html+=`<table><tr><th>Zone</th><th>Température</th><th>Seuil</th><th>Statut</th></tr>`;
-        TEMP_ZONES.forEach(z=>{
-          const v=last.releves[z.id];if(v==null)return;
-          const ok=v>=z.min&&v<=z.max;
-          html+=`<tr class="${ok?'ok':'alert'}"><td>${z.label}</td><td style="font-weight:700;color:${ok?'#27500a':'#cc0000'}">${v}${z.unit}</td><td>${z.min}/${z.max}${z.unit}</td><td>${ok?'✅ OK':'⚠️ HORS SEUIL'}</td></tr>`;
-        });
-        html+=`</table>`;
+      // Températures (relevé du jour — chambres froides)
+      if(typeof TEMP_DATA!=='undefined' && typeof TEMP_CHAMBRES!=='undefined'){
+        const todayKey=new Date().toISOString().slice(0,10);
+        const dayData=(TEMP_DATA.entries&&TEMP_DATA.entries[todayKey])||{};
+        const hasAny=TEMP_CHAMBRES.some(ch=>['matin','soir'].some(svc=>{
+          const v=dayData[ch.id]&&dayData[ch.id][svc]&&dayData[ch.id][svc].temp;
+          return v!==''&&v!=null;
+        }));
+        if(hasAny){
+          html+=`<h2 style="margin-top:10px">🌡 Relevé de températures du jour</h2>`;
+          html+=`<div class="meta">${new Date().toLocaleDateString('fr-FR')}</div>`;
+          html+=`<table><tr><th>Chambre</th><th>Service</th><th>Température</th><th>Statut</th></tr>`;
+          TEMP_CHAMBRES.forEach(ch=>{
+            ['matin','soir'].forEach(svc=>{
+              const v=dayData[ch.id]&&dayData[ch.id][svc]&&dayData[ch.id][svc].temp;
+              if(v===''||v==null)return;
+              const st=tempStatus(ch,v);
+              const ok=st==='conforme';
+              html+=`<tr class="${ok?'ok':'alert'}"><td>${ch.label}</td><td>${svc==='matin'?'Matin':'Soir'}</td><td style="font-weight:700;color:${ok?'#27500a':'#cc0000'}">${v}°C</td><td>${TEMP_STATUS_LABEL[st]}</td></tr>`;
+            });
+          });
+          html+=`</table>`;
+        }
       }
     }
 
@@ -7926,6 +7982,101 @@ button,a,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transpa
       });
     }
 
+    else if(mod.id==='temperatures'){
+      const now2=new Date();
+      const monthLabel=now2.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+      let total=0, nonConf=0, surveil=0;
+      const monthTotal=new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate();
+      const rows=[];
+      for(let d=1; d<=monthTotal; d++){
+        const ds=now2.getFullYear()+'-'+String(now2.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+        const dayData=(TEMP_DATA.entries&&TEMP_DATA.entries[ds])||{};
+        TEMP_CHAMBRES.forEach(ch=>TEMP_SERVICES.forEach(svc=>{
+          const cur=dayData[ch.id]&&dayData[ch.id][svc];
+          const v=cur&&cur.temp;
+          if(v===''||v==null)return;
+          total++;
+          const st=tempStatus(ch,v);
+          if(st==='nonconforme')nonConf++; else if(st==='surveiller')surveil++;
+          rows.push({ds,ch,svc,v,visa:cur.visa||'',st});
+        }));
+      }
+      html+=`<div class="meta">Chambres froides — ${monthLabel}</div>`;
+      html+=`<div class="summary">
+        <div class="sum-box"><div class="sum-label">Relevés</div><div class="sum-val">${total}</div></div>
+        <div class="sum-box"><div class="sum-label">🟡 À surveiller</div><div class="sum-val" style="color:#633806">${surveil}</div></div>
+        <div class="sum-box"><div class="sum-label">🔴 Non conformes</div><div class="sum-val" style="color:#cc0000">${nonConf}</div></div>
+      </div>`;
+      html+=`<table><tr><th>Date</th><th>Chambre</th><th>Service</th><th>T°</th><th>Visa</th><th>Statut</th></tr>`;
+      rows.forEach(r=>{
+        const cl=r.st==='nonconforme'?'alert':r.st==='conforme'?'ok':'';
+        html+=`<tr class="${cl}"><td>${new Date(r.ds).toLocaleDateString('fr-FR')}</td><td>${r.ch.label}</td><td>${r.svc==='matin'?'Matin':'Soir'}</td><td style="font-weight:700">${r.v}°C</td><td>${r.visa}</td><td>${TEMP_STATUS_LABEL[r.st]}</td></tr>`;
+      });
+      html+=`</table>`;
+      if(TEMP_DATA.cellule&&TEMP_DATA.cellule.length){
+        html+=`<h2 style="margin-top:10px">🧊 Cellule de refroidissement</h2>`;
+        html+=`<table><tr><th>Date</th><th>Produit</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th>Visa</th></tr>`;
+        TEMP_DATA.cellule.forEach(c=>{
+          html+=`<tr><td>${c.date}</td><td>${c.produit}</td><td>${c.heureEntree||'—'} (${c.tEntree||'—'}°C)</td><td>${c.heureSortie||'—'} (${c.tSortie||'—'}°C)</td><td>${c.heureEntree&&c.heureSortie?'—':''}</td><td>${c.visa}</td></tr>`;
+        });
+        html+=`</table>`;
+      }
+    }
+
+    else if(mod.id==='huile_friture'){
+      const entries=HUILE_DATA.entries||[];
+      const changements=entries.filter(e=>e.changement==='oui').length;
+      html+=`<div class="summary">
+        <div class="sum-box"><div class="sum-label">Contrôles</div><div class="sum-val">${entries.length}</div></div>
+        <div class="sum-box"><div class="sum-label">Changements d'huile</div><div class="sum-val">${changements}</div></div>
+      </div>`;
+      html+=`<table><tr><th>Date</th><th>Visa</th><th>Filtrage</th><th>Changement</th><th>Indice</th><th>Temps chrono</th><th>Observation</th></tr>`;
+      entries.forEach(e=>{
+        html+=`<tr><td>${e.date}</td><td>${e.visa}</td><td>${e.filtrage==='oui'?'✓':'✕'}</td><td>${e.changement==='oui'?'✓':'✕'}</td><td>${HUILE_LABELS[e.indice]||''}</td><td>${HUILE_LABELS[e.chrono]||''}</td><td>${e.note||'—'}</td></tr>`;
+      });
+      html+=`</table>`;
+    }
+
+    else if(mod.id==='nettoyage'){
+      const now3=new Date();
+      const monthLabel=now3.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+      const monthTotal=new Date(now3.getFullYear(),now3.getMonth()+1,0).getDate();
+      const zones=NETT_DATA.zones||[];
+      html+=`<div class="meta">Checklist de nettoyage — ${monthLabel}</div>`;
+      html+=`<table style="font-size:7px"><tr><th>Zone</th>${Array.from({length:monthTotal},(_,i)=>`<th>${i+1}</th>`).join('')}</tr>`;
+      zones.forEach(z=>{
+        html+=`<tr><td style="font-size:8px">${z.label}</td>`;
+        for(let d=1; d<=monthTotal; d++){
+          const ds=now3.getFullYear()+'-'+String(now3.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+          const st=(NETT_DATA.entries[ds]||{})[z.id];
+          html+=`<td style="text-align:center;background:${st&&st.done?'#f0fff0':'transparent'}">${st&&st.done?'✓':''}</td>`;
+        }
+        html+=`</tr>`;
+      });
+      html+=`</table>`;
+    }
+
+    else if(mod.id==='anomalies'){
+      const entries=ANOM_DATA.entries||[];
+      const ouvertes=entries.filter(a=>a.status!=='cloturee').length;
+      html+=`<div class="summary">
+        <div class="sum-box"><div class="sum-label">Anomalies déclarées</div><div class="sum-val">${entries.length}</div></div>
+        <div class="sum-box"><div class="sum-label">🔴 En cours</div><div class="sum-val" style="color:#cc0000">${ouvertes}</div></div>
+      </div>`;
+      entries.forEach(a=>{
+        html+=`<p style="font-weight:700;font-size:10px;margin:8px 0 2px">${a.date} ${a.heure} — ${a.description} <span style="font-weight:400;color:#888">(${ANOM_STATUS_LABEL[a.status]})</span></p>`;
+        html+=`<table><tr><th>Étape</th><th>Date</th><th>Détail</th><th>Visa cuisine</th><th>Visa gestionnaire</th></tr>`;
+        html+=`<tr><td>Déclaration</td><td>${a.date} ${a.heure}</td><td>${a.description}</td><td>${a.visa}</td><td>—</td></tr>`;
+        ['analyse','action','verif'].forEach(step=>{
+          const s=a.steps[step];
+          if(!s)return;
+          const label=step==='analyse'?'Analyse des causes':step==='action'?'Action corrective':'Vérification efficacité';
+          html+=`<tr><td>${label}</td><td>${s.date} ${s.heure}</td><td>${s.texte||(s.resultat==='efficace'?'Efficace':s.resultat==='inefficace'?'Inefficace':'')}</td><td>${s.visaCuisine||'—'}</td><td>${s.visaGestionnaire||'—'}</td></tr>`;
+        });
+        html+=`</table>`;
+      });
+    }
+
     if(idx>0)html+=`</div>`;
   });
 
@@ -7964,9 +8115,17 @@ function buildPDFBilan(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='bilan')])
 function buildPDFDLC(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='dlc')]);}
 function buildPDFPrix(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='prix')]);}
 function buildPDFFactures(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='factures')]);}
+function buildPDFTemperatures(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='temperatures')]);}
+function buildPDFHuile(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='huile_friture')]);}
+function buildPDFNettoyage(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='nettoyage')]);}
+function buildPDFAnomalies(){buildUnifiedPDF([SEND_MODULES.find(m=>m.id==='anomalies')]);}
 function buildExcelInventaire(){/* handled in buildUnifiedExcel */}
 function buildExcelBilan(){/* handled in buildUnifiedExcel */}
 function buildExcelDLC(){/* handled in buildUnifiedExcel */}
+function buildExcelTemperatures(){/* handled in buildUnifiedExcel */}
+function buildExcelHuile(){/* handled in buildUnifiedExcel */}
+function buildExcelNettoyage(){/* handled in buildUnifiedExcel */}
+function buildExcelAnomalies(){/* handled in buildUnifiedExcel */}
 function buildExcelTrac(){/* handled in buildUnifiedExcel */}
 function buildExcelRecettes(){/* handled in buildUnifiedExcel */}
 function buildExcelFactures(){/* handled in buildUnifiedExcel */}

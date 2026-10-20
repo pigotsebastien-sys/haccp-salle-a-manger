@@ -302,21 +302,6 @@ select:focus{outline:none}
 .dlc-btn-sm:active{opacity:.7}
 .dlc-section-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;padding:16px 16px 8px;display:flex;align-items:center;gap:6px}
 .dlc-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
-/* Températures */
-.temp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 16px 12px}
-@media(min-width:600px){.temp-grid{grid-template-columns:repeat(3,1fr)}}
-.temp-card{border:.5px solid var(--border);border-radius:var(--radius-lg);padding:12px;background:var(--bg2)}
-.temp-card-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;display:flex;align-items:center;gap:4px}
-.temp-input-wrap{display:flex;align-items:center;gap:6px}
-.temp-input{font-family:var(--mono);font-size:18px;font-weight:700;padding:6px 8px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg);color:var(--text);width:80px;text-align:center}
-.temp-unit{font-size:13px;color:var(--text2)}
-.temp-status{font-size:10px;margin-top:4px;font-weight:600}
-.temp-ok{color:var(--green-text)}
-.temp-warn{color:var(--amber-text)}
-.temp-alert{color:var(--pink-text)}
-.temp-histo-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--border);font-size:12px}
-.temp-histo-date{color:var(--text2);font-size:11px}
-
 /* ══ HISTORIQUE ════════════════════════════════════════════ */
 .histo-wrap{padding:12px 16px 100px}
 .histo-toolbar{margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
@@ -1280,4 +1265,36 @@ input[type="text"], input[type="email"], input[type="password"],
 input[type="number"], input[type="date"], select, textarea {
   font-size: 16px !important;
 }
+
+/* ══ AUTOCONTRÔLES HACCP (huile friture / nettoyage / anomalies) ══ */
+.autoc-wrap{padding:12px 0 0}
+.autoc-toolbar-global{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 10px}
+.autoc-dossier-feedback{margin:0 16px 10px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5;background:var(--info-bg);color:var(--info-text)}
+.autoc-dossier-feedback.ok{background:var(--green-bg);color:var(--green-text)}
+.autoc-subnav{display:flex;gap:6px;padding:0 16px 14px;overflow-x:auto}
+.autoc-subnav-btn{font-family:var(--font);font-size:13px;font-weight:500;padding:8px 14px;background:var(--bg2);border:.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;white-space:nowrap;min-height:38px;flex-shrink:0}
+.autoc-subnav-btn.active{background:var(--info-bg);color:var(--info-text);border-color:transparent;font-weight:700}
+.autoc-sub{display:none}
+.autoc-sub.active{display:block}
+
+.autoc-zone-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--border)}
+.autoc-zone-row:last-child{border-bottom:none}
+.autoc-zone-check{width:22px;height:22px;flex-shrink:0;cursor:pointer}
+.autoc-zone-label{flex:1;font-size:13px;min-width:0}
+.autoc-zone-label.done{color:var(--green-text);font-weight:600}
+.autoc-zone-visa{width:72px;font-size:12px;padding:6px 8px;border-radius:6px;border:.5px solid var(--border2);background:var(--bg);color:var(--text)}
+.autoc-zone-remove{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:2px 4px;flex-shrink:0}
+
+.autoc-card{border:.5px solid var(--border);border-radius:var(--radius-lg);margin:0 0 10px;overflow:hidden;background:var(--bg2)}
+.autoc-card-head{padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.autoc-card-desc{font-size:13px;font-weight:600;line-height:1.35}
+.autoc-card-meta{font-size:11px;color:var(--text2);margin-top:2px}
+.autoc-status{font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;white-space:nowrap;flex-shrink:0}
+.autoc-status-ouverte{background:var(--pink-bg);color:var(--pink-text)}
+.autoc-status-analyse,.autoc-status-action{background:var(--amber-bg);color:var(--amber-text)}
+.autoc-status-cloturee{background:var(--green-bg);color:var(--green-text)}
+.autoc-step-summary{padding:8px 12px;border-top:.5px solid var(--border);font-size:12px;color:var(--text2);line-height:1.5}
+.autoc-step-summary b{color:var(--text)}
+.autoc-step-form{padding:10px 12px;border-top:.5px solid var(--border);background:var(--bg)}
+.autoc-card-actions{padding:8px 12px;border-top:.5px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
 

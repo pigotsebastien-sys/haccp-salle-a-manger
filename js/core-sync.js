@@ -49,6 +49,9 @@
     'tracabilite':    'haccp_tracabilite_v1',
     'prix_historique':'haccp_prix_historique_v1',
     'plats':          'haccp_plats_v1',
+    'huile_friture':  'haccp_huile_friture_v1',
+    'nettoyage':      'haccp_nettoyage_v1',
+    'anomalies':      'haccp_anomalies_v1',
   };
 
   let ws = null;
@@ -135,9 +138,11 @@
         case 'seuils':
           try{const r=localStorage.getItem(SEUILS_KEY);if(r)SEUILS_DATA=JSON.parse(r);}catch(e){}
           break;
+        case 'huile_friture':
+        case 'nettoyage':
+        case 'anomalies':
         case 'temperatures':
-          try{const r=localStorage.getItem(TEMP_KEY);if(r)TEMP_DATA=JSON.parse(r);}catch(e){}
-          if (typeof renderTemperatures==='function') renderTemperatures();
+          if (typeof autocReload==='function') autocReload(id);
           break;
         default: break;
       }

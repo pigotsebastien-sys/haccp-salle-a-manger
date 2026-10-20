@@ -219,6 +219,11 @@
   </div>
   <div class="tab-more-separator"></div>
   <div class="tab-more-group">
+    <div class="tab-more-group-label">🧪 Autocontrôles</div>
+    <button class="tab-more-item" onclick="switchTabMore('autocontroles',this)">🧪 Autocontrôles HACCP</button>
+  </div>
+  <div class="tab-more-separator"></div>
+  <div class="tab-more-group">
     <div class="tab-more-group-label">📊 Analyse</div>
     <button class="tab-more-item" onclick="switchTabMore('tracabilite',this)">📋 Traçabilité</button>
     <button class="tab-more-item" onclick="switchTabMore('historique',this)">📈 Historique</button>
@@ -316,6 +321,11 @@
     <div class="tile-sm" onclick="tileGoTo('historique')">
       <div class="tile-sm-icon">📈</div>
       <div class="tile-sm-label">Historique</div>
+    </div>
+    <div class="tile-sm" onclick="tileGoTo('autocontroles')">
+      <div class="tile-sm-dot" id="autoc-alert-dot" style="display:none"></div>
+      <div class="tile-sm-icon">🧪</div>
+      <div class="tile-sm-label">Autocontrôles</div>
     </div>
   </div>
 </div>
@@ -713,14 +723,11 @@
     </div>
     <div id="dlc-list"></div>
 
-    <!-- Relevés températures -->
+    <!-- Relevés de températures : déplacés dans Autocontrôles HACCP (chambres froides + cellule de refroidissement) -->
     <div class="dlc-section-title">🌡 Relevés de températures</div>
-    <div class="temp-grid" id="temp-grid"></div>
-    <div style="padding:0 16px 8px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="saveTempReleve()">✓ Enregistrer le relevé</button>
-      <button class="btn" onclick="showTempHistory()">📋 Historique relevés</button>
+    <div style="padding:0 16px 80px">
+      <button class="btn btn-primary" onclick="openAutocTemp()">🌡 Ouvrir les relevés de températures</button>
     </div>
-    <div id="temp-history" style="display:none;padding:0 16px 80px"></div>
   </div>
 </div>
 
@@ -1016,6 +1023,155 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
 
+<!-- AUTOCONTRÔLES HACCP : huile de friture / nettoyage / anomalies -->
+<div id="panel-autocontroles" class="panel">
+  <div class="autoc-wrap">
+    <div class="autoc-toolbar-global">
+      <button class="btn" onclick="genererResumeMensuel()">📊 Résumé mensuel</button>
+      <button class="btn btn-primary" onclick="ouvrirDossierControle()">📁 Dossier de contrôle (disque)</button>
+    </div>
+    <div id="dossier-feedback" class="autoc-dossier-feedback" style="display:none"></div>
+    <div class="autoc-subnav">
+      <button class="autoc-subnav-btn active" onclick="autocSwitch('temperatures',this)">🌡️ Températures</button>
+      <button class="autoc-subnav-btn" onclick="autocSwitch('huile',this)">🍟 Huile friture</button>
+      <button class="autoc-subnav-btn" onclick="autocSwitch('nettoyage',this)">🧽 Nettoyage</button>
+      <button class="autoc-subnav-btn" onclick="autocSwitch('anomalies',this)">⚠️ Anomalies</button>
+    </div>
+
+    <!-- TEMPÉRATURES (chambres froides + cellule de refroidissement) -->
+    <div class="autoc-sub active" id="autoc-sub-temperatures">
+      <div class="dlc-toolbar">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="dlc-select" type="date" id="temp-date" onchange="renderTempChambres()">
+          <span id="temp-progress" style="font-size:12px;color:var(--text2);font-weight:600"></span>
+          <button class="btn" onclick="exportTempCSV()">📊 Export mois (CSV)</button>
+        </div>
+      </div>
+      <div id="temp-chambres-list" style="padding:0 16px"></div>
+
+      <div class="dlc-section-title">🧊 Cellule de refroidissement</div>
+      <div class="rec-form-grid">
+        <div><div class="rec-label">Date</div><input class="rec-input" type="date" id="cell-date"></div>
+        <div><div class="rec-label">Nature du produit</div><input class="rec-input" type="text" id="cell-produit" placeholder="Ex : Rôti de bœuf"></div>
+        <div><div class="rec-label">Heure entrée</div><input class="rec-input" type="time" id="cell-heure-entree"></div>
+        <div><div class="rec-label">T° entrée (°C)</div><input class="rec-input" type="number" step="0.1" id="cell-t-entree" placeholder="ex : 63"></div>
+        <div><div class="rec-label">Heure sortie</div><input class="rec-input" type="time" id="cell-heure-sortie"></div>
+        <div><div class="rec-label">T° sortie (°C)</div><input class="rec-input" type="number" step="0.1" id="cell-t-sortie" placeholder="ex : 8"></div>
+        <div class="full"><div class="rec-label">Visa</div><input class="rec-input" type="text" id="cell-visa" placeholder="Initiales"></div>
+      </div>
+      <div style="padding:4px 16px 14px;font-size:11px;color:var(--text2)">Objectif : refroidir de +63°C à +10°C maximum en moins de 2h, puis conserver entre 0°C et 3°C.</div>
+      <div style="padding:0 16px 14px"><button class="btn btn-primary" onclick="saveCellule()">✓ Enregistrer</button></div>
+      <div id="cellule-list" style="padding:0 16px 10px"></div>
+
+      <div class="dlc-section-title">📅 Vue mensuelle</div>
+      <div class="rec-cal-wrap" style="margin:0 16px 90px">
+        <div class="rec-cal-header">
+          <div class="rec-cal-nav">
+            <button class="rec-cal-btn" onclick="tempCalPrev()">‹</button>
+            <div class="rec-cal-title" id="temp-cal-label"></div>
+            <button class="rec-cal-btn" onclick="tempCalNext()">›</button>
+          </div>
+          <div class="rec-cal-legend">
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot ok"></span>Conforme</span>
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot warn"></span>À surveiller</span>
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot danger"></span>Non conforme</span>
+          </div>
+        </div>
+        <div class="rec-cal-grid" id="temp-cal-grid"></div>
+      </div>
+    </div>
+
+    <!-- HUILE DE FRITURE -->
+    <div class="autoc-sub" id="autoc-sub-huile">
+      <div class="dlc-section-title">🍟 Nouveau contrôle</div>
+      <div class="rec-form-grid">
+        <div><div class="rec-label">Date</div><input class="rec-input" type="date" id="huile-date"></div>
+        <div><div class="rec-label">Visa</div><input class="rec-input" type="text" id="huile-visa" placeholder="Initiales"></div>
+        <div><div class="rec-label">Filtrage effectué</div>
+          <select class="rec-input" id="huile-filtrage"><option value="oui">✓ Oui</option><option value="non">✕ Non</option></select>
+        </div>
+        <div><div class="rec-label">Changement d'huile</div>
+          <select class="rec-input" id="huile-changement"><option value="non">✕ Non</option><option value="oui">✓ Oui</option></select>
+        </div>
+        <div><div class="rec-label">Indice (bandelette test)</div>
+          <select class="rec-input" id="huile-indice">
+            <option value="bon">🟢 Bon</option>
+            <option value="moyen">🟡 À surveiller</option>
+            <option value="mauvais">🔴 Mauvais</option>
+          </select>
+        </div>
+        <div><div class="rec-label">Temps de friture (chrono)</div>
+          <select class="rec-input" id="huile-chrono">
+            <option value="conforme">🟢 Conforme</option>
+            <option value="limite">🟡 Limite</option>
+            <option value="depasse">🔴 Dépassé</option>
+          </select>
+        </div>
+        <div class="full"><div class="rec-label">Observation (facultatif)</div><input class="rec-input" type="text" id="huile-note" placeholder="Remarque…"></div>
+      </div>
+      <div style="padding:4px 16px 14px"><button class="btn btn-primary" onclick="saveHuile()">✓ Enregistrer le contrôle</button></div>
+      <div class="dlc-section-title">📋 Historique</div>
+      <div style="padding:0 16px 8px"><button class="btn" onclick="exportHuileCSV()">📊 Export CSV</button></div>
+      <div id="huile-list" style="padding:0 16px 90px"></div>
+    </div>
+
+    <!-- NETTOYAGE -->
+    <div class="autoc-sub" id="autoc-sub-nettoyage">
+      <div class="dlc-toolbar">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="dlc-select" type="date" id="nett-date" onchange="renderNettoyage()">
+          <span id="nett-progress" style="font-size:12px;color:var(--text2);font-weight:600"></span>
+          <button class="btn" onclick="exportNettoyageCSV()">📊 Export mois (CSV)</button>
+        </div>
+      </div>
+      <div id="nett-list" style="padding:0 16px"></div>
+      <div style="padding:10px 16px">
+        <div style="display:flex;gap:8px">
+          <input class="dlc-input" type="text" id="nett-new-zone" placeholder="+ Ajouter une zone (ex: Chambre froide 3)">
+          <button class="btn" onclick="addNettZone()">Ajouter</button>
+        </div>
+      </div>
+      <div class="dlc-section-title">📅 Vue mensuelle</div>
+      <div class="rec-cal-wrap" style="margin:0 16px 90px">
+        <div class="rec-cal-header">
+          <div class="rec-cal-nav">
+            <button class="rec-cal-btn" onclick="nettCalPrev()">‹</button>
+            <div class="rec-cal-title" id="nett-cal-label"></div>
+            <button class="rec-cal-btn" onclick="nettCalNext()">›</button>
+          </div>
+          <div class="rec-cal-legend">
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot ok"></span>Complet</span>
+            <span class="rec-cal-leg-item"><span class="rec-cal-dot warn"></span>Partiel</span>
+          </div>
+        </div>
+        <div class="rec-cal-grid" id="nett-cal-grid"></div>
+      </div>
+    </div>
+
+    <!-- ANOMALIES -->
+    <div class="autoc-sub" id="autoc-sub-anomalies">
+      <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="autocToggleAnomalieForm()" id="anomalie-form-toggle">+ Déclarer une anomalie</button>
+        <button class="btn" onclick="exportAnomaliesCSV()">📊 Export CSV</button>
+      </div>
+      <div class="autoc-section" id="anomalie-form-wrap" style="display:none">
+        <div class="dlc-section-title">⚠️ Description de l'anomalie</div>
+        <div class="rec-form-grid">
+          <div><div class="rec-label">Date</div><input class="rec-input" type="date" id="anom-date"></div>
+          <div><div class="rec-label">Heure</div><input class="rec-input" type="time" id="anom-heure"></div>
+          <div class="full"><div class="rec-label">Description</div><input class="rec-input" type="text" id="anom-desc" placeholder="Nature de l'anomalie constatée"></div>
+          <div><div class="rec-label">Visa</div><input class="rec-input" type="text" id="anom-visa" placeholder="Initiales"></div>
+        </div>
+        <div style="padding:4px 16px 14px;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="saveAnomalie()">✓ Enregistrer</button>
+          <button class="btn" onclick="autocToggleAnomalieForm()">Annuler</button>
+        </div>
+      </div>
+      <div id="anomalie-list" style="padding:0 16px 90px"></div>
+    </div>
+  </div>
+</div>
+
 <div id="panel-reception-mp" class="panel">
 <div id="reception-module" style="max-width:960px;margin:0 auto;padding:16px">
 
@@ -1240,6 +1396,7 @@
 
 <div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div>
 <script src="js/ca-app.js"></script></div>
+<script src="js/autocontroles.js"></script>
 <script src="js/app.js"></script>
 
 <!-- CENTRE D'ENVOI EMAIL ══════════════════════════════ -->
