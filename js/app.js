@@ -3114,6 +3114,7 @@ async function analyzeReceptionPhoto(input) {
     if (preview) { preview.src = 'data:image/jpeg;base64,' + b64; preview.style.display = 'block'; }
     if (status) status.innerHTML = '<span style="color:var(--info-text)">⏳ Analyse IA…</span>';
 
+    if (typeof ensureFreshToken === 'function') await ensureFreshToken(false);
     var response = await fetch(SUPA_URL + '/functions/v1/scan-etiquette', {
       method: 'POST',
       headers: edgeHeaders(),
@@ -3875,12 +3876,23 @@ const CaApp = {
   async analyzeBatch(files){
     this.resetScan();
     this.batch = { running:true, current:null, items: files.map(f=>({ id:uid(), name:f.name, file:f, status:"en attente", scan:null })) };
-    for(const it of this.batch.items){
+    for(let idx=0; idx<this.batch.items.length; idx++){
+      const it = this.batch.items[idx];
       if(!this.batch) return; // lot abandonné
+      // 20/10/2026 : plusieurs factures analysées coup sur coup déclenchaient la
+      // limite de débit de l'IA (429) sur les suivantes — seule la 1ère du lot
+      // passait. Une courte pause entre chaque fichier, plus un nouvel essai
+      // automatique si la limite est tout de même atteinte, corrige ça.
+      if(idx>0) await new Promise(r=>setTimeout(r, 2000));
       it.status = "analyse…";
       this.scan = this.freshScan(); this.scan.file = it.file;
       if(it.file.type.startsWith("image/")) this.scan.previewUrl = URL.createObjectURL(it.file);
       await this.analyzeInvoiceFile(it.file);
+      if(this.scan.error && /trop de scans/i.test(this.scan.error) && this.batch){
+        await new Promise(r=>setTimeout(r, 8000));
+        if(!this.batch) return;
+        await this.analyzeInvoiceFile(it.file);
+      }
       it.scan = this.scan;
       it.status = this.scan.error ? "erreur" : "à vérifier";
     }
@@ -3962,6 +3974,11 @@ const CaApp = {
     this.scan.loading = true; this.scan.error=""; this.scan.note=""; this.scan.common=null; this.scan.lines=[];
     this.render();
     try{
+      // Manquait ici : un lot de plusieurs factures prend assez de temps pour que
+      // le jeton de connexion arrive à expiration en cours de route (il était
+      // valide pour la 1ère facture, plus pour les suivantes) → 401 sur les
+      // factures suivantes du lot.
+      if(typeof ensureFreshToken==='function') await ensureFreshToken(false);
       const isPdf = file.type === "application/pdf";
       let base64, contentBlock;
       if(isPdf){
