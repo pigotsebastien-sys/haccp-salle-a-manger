@@ -87,6 +87,9 @@
     'doublons_ignores':'haccp_doublons_ignores_v1',
     // Clôtures mensuelles + paramètres (adresse du cabinet comptable)
     'ca_clotures':     'ca_clotures',
+    // 20/10/2026 : les 2 prénoms d'opérateur Autocontrôles (celui qui vise les
+    // relevés) n'étaient gardés que sur l'appareil où ils avaient été réglés.
+    'autoc_operateurs':'haccp_autoc_operateurs_v1',
   };
   // Modules dont les données existaient sur chaque appareil AVANT d'être
   // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
@@ -436,6 +439,11 @@
           if (typeof recLoad==='function') recLoad();
           if (typeof renderReceptions==='function') renderReceptions();
           if (typeof recRenderCal==='function') recRenderCal();
+          break;
+        case 'autoc_operateurs':
+          if (typeof autocLoadOperateurs==='function') autocLoadOperateurs();
+          if (typeof renderAutocOperateurs==='function') renderAutocOperateurs();
+          if (typeof autocRefreshVisaFields==='function') autocRefreshVisaFields();
           break;
         default: break;
       }

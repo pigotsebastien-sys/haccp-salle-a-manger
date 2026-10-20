@@ -42,7 +42,13 @@ var nettCalMonth = new Date().getMonth();
 var tempCalYear  = new Date().getFullYear();
 var tempCalMonth = new Date().getMonth();
 
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+// Date locale (pas UTC) : toISOString() décale la date pendant la nuit en France
+// (ex. 00h30 heure locale = 23h30 UTC la veille), ce qui désynchronisait le
+// verrouillage des relevés de la veille avec le reste de l'appli (localISODate,
+// utilisée partout ailleurs). Repli sur UTC seulement si app.js n'est pas chargé.
+function todayStr(){
+  return (typeof localISODate==='function') ? localISODate() : new Date().toISOString().slice(0,10);
+}
 function nowTime(){ return new Date().toTimeString().slice(0,5); }
 
 // Identité de l'auteur = compte connecté (et non plus des initiales tapées à la main),
@@ -62,6 +68,10 @@ function autocLoadOperateurs(){
 }
 function autocSaveOperateurs(){
   try{ localStorage.setItem(AUTOC_OP_KEY, JSON.stringify(AUTOC_OPERATEURS)); }catch(e){}
+  // Sans ceci, chaque appareil (tablette, téléphone) garde ses propres prénoms et
+  // son propre opérateur actif : le visa auto-apposé sur les relevés peut afficher
+  // le mauvais nom selon l'appareil utilisé pour la saisie.
+  if(typeof syncToCloud==='function') syncToCloud('autoc_operateurs', AUTOC_OPERATEURS);
 }
 function autocRefreshVisaFields(){
   var me=autocCurrentUser();
