@@ -9,19 +9,19 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="HACCP LSM">
-<link rel="manifest" href="data:application/json,{%22name%22:%22Inventaire%20HACCP%22,%22short_name%22:%22HACCP%20LSM%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%231A3A5C%22,%22theme_color%22:%22%231A3A5C%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg%20xmlns%3D%27http://www.w3.org/2000/svg%27%20viewBox%3D%270%200%20512%20512%27%3E%3Crect%20width%3D%27512%27%20height%3D%27512%27%20rx%3D%27100%27%20fill%3D%27%231A3A5C%27/%3E%3Ctext%20x%3D%27256%27%20y%3D%27340%27%20text-anchor%3D%27middle%27%20font-size%3D%27260%27%3E%F0%9F%8D%BD%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22512x512%22,%22type%22:%22image/svg+xml%22}]}">
-<title>Inventaire HACCP — La Salle à Manger Grenoble</title>
-<script src="js/favicon.js"></script>
-<link rel="stylesheet" href="style.css">
+<meta name="apple-mobile-web-app-title" content="SP Conseil">
+<link rel="manifest" href="manifest.json">
+<title>Inventaire SP Conseil — La Salle à Manger Grenoble</title>
+<script src="js/favicon.js?v=20261019a"></script>
+<link rel="stylesheet" href="style.css?v=20261019a">
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
-  <script src="js/core-sync.js"></script>
+  <script src="js/core-sync.js?v=20261019a"></script>
 
-<script src="js/sw-register.js"></script>
+<script src="js/sw-register.js?v=20261019a"></script>
 
 </head>
-<body role="application" aria-label="Inventaire HACCP La Salle à Manger">
+<body role="application" aria-label="Inventaire SP Conseil — La Salle à Manger">
 <button id="btn-home-float" onclick="goHomeScreen()" title="Retour accueil">🏠</button>
 
 <!-- ── BANNIÈRE HORS-LIGNE ── -->
@@ -33,8 +33,8 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">🍽</div>
-    <div class="login-title">HACCP · La Salle à Manger</div>
-    <div class="login-subtitle">Grenoble — Espace sécurisé</div>
+    <div class="login-title">Inventaire SP Conseil</div>
+    <div class="login-subtitle">La Salle à Manger · Grenoble — Espace sécurisé</div>
     
     <div class="login-field">
       <label class="login-label" for="login-email">Adresse email</label>
@@ -86,8 +86,7 @@
                onkeydown="if(event.key==='Enter') doSignup()">
       </div>
       <div id="signup-info" style="font-size:11px;color:#6b6b68;margin-bottom:10px;padding:8px;background:#f7f5f0;border-radius:6px">
-        ⚠️ Comptes autorisés : <strong>@lasalleamanger.fr</strong> ou <strong>@gmail.com</strong>.<br>
-        Votre compte sera activé après validation par l'administrateur.
+        ⚠️ Seules les adresses <strong>préalablement autorisées par l'administrateur</strong> peuvent créer un compte.
       </div>
       <button class="login-btn" id="signup-btn" onclick="doSignup()" 
               style="background:#0F6E56">
@@ -98,7 +97,7 @@
       </div>
     </div>
   </div>
-  <div class="login-version">HACCP LSM v2 · Cloudflare Pages · Supabase</div>
+  <div class="login-version">Inventaire SP Conseil · HACCP · La Salle à Manger</div>
 </div>
 
 
@@ -108,7 +107,7 @@
 <div class="app-header" style="position:sticky;top:0;z-index:100">
   <div class="header-top">
     <div>
-      <h1>🍽 Inventaire HACCP <span id="sync-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-left:6px;vertical-align:middle;transition:background .3s" title="Connexion..."></span></h1>
+      <h1>🍽 Inventaire SP Conseil <span id="sync-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b;margin-left:6px;vertical-align:middle;transition:background .3s" title="Connexion..."></span> <small id="app-sync-version" style="font-size:10px;opacity:.6;font-weight:400"></small></h1>
       <p id='header-date-line'>La Salle à Manger · Grenoble</p>
     </div>
     <div class="header-actions">
@@ -116,6 +115,7 @@
       <button class="btn" onclick="doLogout()" title="Déconnexion" style="font-size:14px;padding:6px 10px">🔓</button>
       <button class="btn" onclick="goHomeScreen()" title="Accueil" style="font-size:16px;padding:6px 10px">🏠</button>
       <button class="btn" onclick="openVoice()" style="background:var(--info-bg);color:var(--info-text);border-color:transparent;font-weight:600">🎙 Saisie</button>
+      <button class="btn" onclick="openQuickInv()" title="Inventaire rapide : un produit à la fois" style="background:var(--amber-bg);color:var(--amber-text);border-color:transparent;font-weight:700">⚡ Inventaire rapide</button>
       <button class="btn btn-addprod" onclick="openAddProduct()">+ Produit</button>
       <button class="btn" onclick="openMercuriale()" title="Comparer une mercuriale fournisseur" style="background:var(--amber-bg);color:var(--amber-text);border-color:transparent;font-weight:600">📋 Mercuriale</button>
       <button class="btn btn-send" onclick="openSendCenter()" title="Envoyer par email">✉️ Envoyer</button>
@@ -128,6 +128,8 @@
       <button class="more-item more-green" onclick="exportExcel();closeMoreMenu()">📊 Export Excel</button>
       <button class="more-item" onclick="exportCSV();closeMoreMenu()">⬇ Export CSV</button>
       <button class="more-item" onclick="printInventory();closeMoreMenu()">🖨 Imprimer</button>
+      <button class="more-item" onclick="closeMoreMenu();openRegistresHACCP()">📑 Registres HACCP du mois (PDF)</button>
+      <button class="more-item" onclick="closeMoreMenu();openQualite()">🧹 Qualité du catalogue</button>
       <div class="more-separator"></div>
       <button class="more-item more-red" onclick="closeMoreMenu();resetInventory()">🔄 Remise à zéro</button>
     </div>
@@ -159,6 +161,18 @@
         Enregistrer le mot de passe
       </button>
       <div class="account-msg" id="acc-pwd-msg"></div>
+    </div>
+
+    <!-- Accès de l'équipe (administrateur uniquement) -->
+    <div class="account-section" id="team-section" style="display:none">
+      <div class="account-label">👥 Accès de l'équipe</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Seules ces adresses peuvent se connecter et voir les données. Après l'ajout, la personne crée son compte depuis l'écran de connexion (« Créer un compte »).</div>
+      <div id="team-list" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px">
+        <input class="account-input" id="team-email" type="email" placeholder="prenom@exemple.fr" style="flex:1;margin:0" onkeydown="if(event.key==='Enter')teamAdd()">
+        <button class="account-btn" style="width:auto;margin:0;padding:0 14px" onclick="teamAdd()">Ajouter</button>
+      </div>
+      <div class="account-msg" id="team-msg"></div>
     </div>
 
     <!-- Déconnexion -->
@@ -203,7 +217,7 @@
 <div class="tab-bar-wrap"><div class="tab-bar">
   <button class="tab-btn active" data-tab="inventaire" onclick="switchTab('inventaire',this)">Inventaire</button>
   <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard',this)">📊 Bilan</button>
-  <button class="tab-btn" data-tab="dlc" onclick="switchTab('dlc',this)">🌡 DLC<span id="dlc-tab-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;margin-left:4px;vertical-align:middle"></span></button>
+  <button class="tab-btn" data-tab="dlc" onclick="switchTab('dlc',this)">🌡 DLC<span id="dlc-tab-dot" style="display:none;width:7px;height:7px;border-radius:50%;background:#ef4444;margin-left:4px;vertical-align:middle"></span></button>
   <button class="tab-btn" data-tab="recettes" onclick="switchTab('recettes',this)">👨‍🍳 Recettes</button>
   <button class="tab-btn" data-tab="commande" onclick="switchTab('commande',this)">🛒 Commandes</button>
   <button class="tab-btn" data-tab="allergenes" onclick="switchTab('allergenes',this)">⚠️ Déclaration allergènes</button>
@@ -290,6 +304,10 @@
   <!-- Modules secondaires -->
   <div class="tiles-section-title">Autres modules</div>
   <div class="tiles-grid">
+    <div class="tile-sm" onclick="tileGoTo('inventaire');openQuickInv()">
+      <div class="tile-sm-icon">⚡</div>
+      <div class="tile-sm-label">Inventaire rapide</div>
+    </div>
     <div class="tile-sm" onclick="tileGoTo('dlc')">
       <div class="tile-sm-icon">🌡</div>
       <div class="tile-sm-label">DLC</div>
@@ -741,6 +759,12 @@
       </div>
     </div>
     <div id="histo-compare-bar" style="display:none"></div>
+    <div id="conso-card" class="conso-card"></div>
+    <div id="evolution-card" class="conso-card"></div>
+    <div id="ecarts-card" class="conso-card"></div>
+    <div id="pertes-card" class="conso-card"></div>
+    <div id="hausses-card" class="conso-card"></div>
+    <div id="dormants-card" class="conso-card"></div>
     <div id="histo-list"></div>
   </div>
 </div>
@@ -754,6 +778,8 @@
         <button class="btn" onclick="addCmdLine()">+ Ajouter ligne</button>
         <button class="btn" style="background:var(--green-bg);color:var(--green-text);border-color:transparent" onclick="exportCmdExcel()">📊 Excel</button>
         <button class="btn" onclick="exportCmdPDF()">📄 PDF</button>
+        <button class="btn btn-primary" onclick="openCommandesFournisseurs()">✉️ Envoyer par fournisseur</button>
+        <button class="btn" onclick="openQualite('seuils')">📉 Seuils suggérés</button>
       </div>
       <div class="cmd-fourn-filter">
         <label style="font-size:11px;color:var(--text2);margin-right:6px">Fournisseur</label>
@@ -772,7 +798,7 @@
       <div class="allergen-intro-text">Marquez les allergènes présents dans chaque produit. Obligatoire (14 allergènes réglementaires — Règlement UE 1169/2011).</div>
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="exportAllergenPDF()">📄 Fiche allergènes PDF</button>
-        <button class="btn" onclick="resetAllergenToPresets()" style="font-size:12px">↩ Réinitialiser aux valeurs par défaut</button>
+        <button class="btn" onclick="resetAllergenToPresets()" style="font-size:12px">↩ Recharger depuis le serveur</button>
       </div>
     </div>
     <div class="allergen-search-bar">
@@ -782,7 +808,6 @@
   </div>
 </div>
 
-<div id="panel-factures" class="panel"><div class="inv-list" id="inv-list"></div></div>
 
 <!-- PIÈCES COMPTABLES -->
 <div id="panel-pieces" class="panel">
@@ -952,6 +977,25 @@
 </div>
 
 
+<!-- INVENTAIRE RAPIDE (téléphone + tablette) -->
+<div id="quick-overlay" class="quick-overlay" role="dialog" aria-modal="true" aria-label="Inventaire rapide">
+  <div class="quick-top">
+    <div class="quick-title">⚡ Inventaire rapide</div>
+    <select id="quick-zone" class="quick-select" onchange="quickRebuild()"></select>
+    <label class="quick-check"><input type="checkbox" id="quick-missing" onchange="quickRebuild()"> Sans quantité seulement</label>
+    <button class="quick-tool" onclick="quickScan()" title="Scanner un code-barres">📷 Scanner</button>
+    <button class="quick-tool" id="quick-reorder-btn" onclick="quickToggleReorder()" title="Ranger les produits dans l'ordre des étagères">↕ Ordre des étagères</button>
+    <button class="quick-close" onclick="closeQuickInv()" aria-label="Fermer">✕</button>
+  </div>
+  <div class="quick-zones" id="quick-zones"></div>
+  <div class="quick-progress"><div class="quick-progress-fill" id="quick-progress-fill"></div></div>
+  <div class="quick-progress-txt" id="quick-progress-txt"></div>
+  <div class="quick-body">
+    <div class="quick-list" id="quick-list"></div>
+    <div class="quick-card" id="quick-card"></div>
+  </div>
+</div>
+
 <!-- PAGE IMPRIMABLE (générée dynamiquement, visible uniquement à l'impression) -->
 <div class="print-page" id="print-page"></div>
 
@@ -971,6 +1015,12 @@
       <button class="va-btn" style="background:var(--info-bg);color:var(--info-text);font-weight:600;width:100%" onclick="exportInventoryJSON()">⬇️ Télécharger une copie (.json)</button>
       <button class="va-btn" style="background:var(--bg2);width:100%" onclick="document.getElementById('import-file-input').click()">📂 Ouvrir / Importer (.json)</button>
       <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" onchange="importInventoryJSON(this)">
+      <button class="va-btn" style="width:100%;background:var(--green-bg);color:var(--green-text);font-weight:600" onclick="syncNowButton()">🔄 Synchroniser maintenant (et voir l'état)</button>
+      <button class="va-btn" id="inv-backup-btn" style="display:none;width:100%;background:var(--info-bg);color:var(--info-text)" onclick="restoreInvBackup()">♻️ Récupérer l'inventaire de cet appareil (avant synchro)</button>
+      <button class="va-btn" style="width:100%;background:var(--info-bg);color:var(--info-text);font-weight:600" onclick="showServerBackups()">☁️ Sauvegardes du serveur (chaque nuit, 24 mois)</button>
+      <div id="server-backups" style="display:none;width:100%"></div>
+      <button class="va-btn" style="width:100%;font-weight:600" onclick="apSauvegardeZip()">🗂 Sauvegarde complète + PDF des factures (ZIP, à ranger sur OneDrive)</button>
+      <button class="va-btn" style="width:100%" onclick="exportFullBackup()">📦 Télécharger toutes les données de cet appareil</button>
       <button class="va-btn" style="width:100%" onclick="clearAutoSave()">🗑 Effacer la sauvegarde automatique</button>
     </div>
     <div class="voice-feedback" id="save-feedback"></div>
@@ -1018,9 +1068,12 @@
 </div>
 
 <!-- SheetJS pour export Excel natif -->
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- 18/10/2026 : 0.18.5 (npm) a des failles connues à la LECTURE de fichiers
+     (CVE-2023-30533, CVE-2024-22363) — or la mercuriale lit des .xlsx reçus.
+     La version corrigée n'est publiée que sur le CDN officiel SheetJS. -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <!-- OCR pour la reconnaissance automatique des factures (best-effort, nécessite internet la 1ère fois) -->
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js" defer></script>
 
 
 <!-- AUTOCONTRÔLES HACCP : huile de friture / nettoyage / anomalies -->
@@ -1186,6 +1239,16 @@
       Nouvelle réception
     </div>
 
+    <!-- Scan IA de l'étiquette (pré-remplit produit, fournisseur, DLC, lot…) -->
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+      <label class="rec-btn btn-primary" style="cursor:pointer">
+        📸 Scanner l'étiquette (IA)
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="analyzeReceptionPhoto(this)">
+      </label>
+      <img id="rec-photo-preview" alt="" style="display:none;max-height:48px;border-radius:6px">
+      <span id="rec-photo-status" style="font-size:12px"></span>
+    </div>
+
     <div class="rec-row-1">
       <div class="rec-form-group">
         <label class="rec-form-label">📅 Date</label>
@@ -1290,7 +1353,7 @@
 
     <div class="rec-row-4">
       <div class="rec-form-group" style="flex:1">
-        <label class="rec-form-label">💬 Observations / réserves</label>
+        <label class="rec-form-label">💬 Observations / réserves / action corrective <small style="font-weight:400">(obligatoire si non conforme)</small></label>
         <textarea class="rec-form-control" id="rec-obs"
           placeholder="Anomalies constatées, actions prises..."
           style="min-height:80px"></textarea>
@@ -1298,7 +1361,7 @@
       <div class="rec-photo-col">
         <div class="rec-form-label" style="margin-bottom:8px">📷 Photos</div>
         <div class="photo-zone" id="rec-photo-zone" style="height:80px">
-          <input type="file" accept="image/*" multiple capture="environment"
+          <input type="file" accept="image/*" multiple
             id="rec-photo-input" onchange="handleRecPhotos(this)">
           <div class="photo-zone-inner">
             <span class="material-symbols-outlined" style="font-size:26px">photo_camera</span>
@@ -1390,14 +1453,14 @@
 
 </div>
 
-<script src="js/reception.js"></script>
 </div>
 
 
-<div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div>
-<script src="js/ca-app.js"></script></div>
+<div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div></div>
 <script src="js/autocontroles.js"></script>
-<script src="js/app.js"></script>
+<script src="js/app.js?v=20261019a"></script>
+<script src="js/inventaire-plus.js?v=20261019a"></script>
+<script src="js/achats-plus.js?v=20261019a"></script>
 
 <!-- CENTRE D'ENVOI EMAIL ══════════════════════════════ -->
 <div class="send-overlay" id="send-overlay">
@@ -1519,6 +1582,15 @@ Veuillez trouver ci-joint les documents d'inventaire HACCP..."></textarea>
         <input class="addprod-input" id="ap-fourn" type="text" onblur="this.value=normalizeFournisseur(this.value)" placeholder="Ex : SYSCO, POMONA…" list="ap-fourn-list">
         <datalist id="ap-fourn-list"></datalist>
       </div>
+      <!-- Colisage et code-barres (inventaire rapide) -->
+      <div class="addprod-field">
+        <label class="addprod-label" for="ap-colisage">Unités par colis (carton, pack…)</label>
+        <input class="addprod-input" id="ap-colisage" type="number" inputmode="decimal" min="0" step="1" placeholder="Ex : 12 — vide si compté à l'unité">
+      </div>
+      <div class="addprod-field">
+        <label class="addprod-label" for="ap-ean">Code-barres (EAN)</label>
+        <input class="addprod-input" id="ap-ean" type="text" inputmode="numeric" placeholder="Facultatif — ou scanner dans l'inventaire rapide">
+      </div>
       <!-- Seuil stock minimum -->
       <div class="addprod-field full" style="border-top:.5px solid var(--border);padding-top:10px;margin-top:2px">
         <label class="addprod-label">Seuil stock minimum (alerte commande)</label>
@@ -1527,6 +1599,8 @@ Veuillez trouver ci-joint les documents d'inventaire HACCP..."></textarea>
           <span style="font-size:12px;color:var(--text2)" id="ap-seuil-unit"></span>
         </div>
       </div>
+      <!-- Historique des modifications du produit (journal serveur) -->
+      <div class="addprod-field full" id="ap-journal"></div>
       <!-- Code -->
       <div class="addprod-field full" id="ap-code-wrap" style="display:none">
         <div class="addprod-label">Code produit</div>

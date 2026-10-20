@@ -8,6 +8,17 @@
     return id;
   })();
 
+  // Décode la partie "payload" d'un JWT (base64url → JSON). atob() seul échoue
+  // dès que le jeton contient '-' ou '_' (fréquent), d'où le repli silencieux
+  // sur DEVICE_ID constaté avant le 18/10/2026.
+  function decodeJwtPayload(token) {
+    try {
+      var b = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (b.length % 4) b += '=';
+      return JSON.parse(decodeURIComponent(escape(atob(b))));
+    } catch(e) { return null; }
+  }
+
   // Identifiant utilisateur pour la traçabilité HACCP
   // Priorité: email authentifié > DEVICE_ID (fallback si non connecté)
   function getCurrentUserIdentifier() {
@@ -19,8 +30,8 @@
         if (session.user && session.user.email) return session.user.email;
         // Ou dans le JWT (access_token)
         if (session.access_token) {
-          var payload = JSON.parse(atob(session.access_token.split('.')[1]));
-          if (payload.email) return payload.email;
+          var payload = decodeJwtPayload(session.access_token);
+          if (payload && payload.email) return payload.email;
         }
       }
       // Fallback: lire depuis localStorage de session
@@ -28,8 +39,8 @@
       if (stored) {
         var s = JSON.parse(stored);
         if (s.access_token) {
-          var p = JSON.parse(atob(s.access_token.split('.')[1]));
-          if (p.email) return p.email;
+          var p = decodeJwtPayload(s.access_token);
+          if (p && p.email) return p.email;
         }
       }
     } catch(e) {}
@@ -52,7 +63,58 @@
     'huile_friture':  'haccp_huile_friture_v1',
     'nettoyage':      'haccp_nettoyage_v1',
     'anomalies':      'haccp_anomalies_v1',
+    // Ajouté le 18/10/2026 : le module Réception appelait syncToCloud('receptions')
+    // mais ce module n'existait pas ici → aucune réception n'a jamais été partagée.
+    'receptions':     'haccp-reception-v1',
+    // 18/10/2026 (2) : Cahier d'achats et registre des pièces comptables,
+    // jusqu'ici propres à chaque appareil.
+    'ca_invoices':    'ca_invoices',
+    'ca_suppliers':   'ca_suppliers',
+    'ca_codes':       'ca_codes',
+    'pieces':         'haccp_salleamanger_pieces_v1',
+    // 18/10/2026 (3) : ordre de comptage des étagères et CA mensuel (ratio matière)
+    'ordre_comptage': 'haccp_ordre_comptage_v1',
+    'ca_mensuel':     'haccp_ca_mensuel_v1',
+    // Adresses email / téléphones des fournisseurs (bons de commande)
+    'fournisseurs_contacts': 'haccp_fournisseurs_contacts_v1',
+    // 18/10/2026 (4) : achats — règles de ventilation, liens article→produit,
+    // articles achetés, réclamations, objectifs de ratio, doublons écartés
+    'ca_regles':       'ca_regles',
+    'ca_liens':        'ca_liens',
+    'ca_articles':     'ca_articles',
+    'ca_reclamations': 'ca_reclamations',
+    'ca_objectifs':    'ca_objectifs',
+    'doublons_ignores':'haccp_doublons_ignores_v1',
+    // Clôtures mensuelles + paramètres (adresse du cabinet comptable)
+    'ca_clotures':     'ca_clotures',
   };
+  // Modules dont les données existaient sur chaque appareil AVANT d'être
+  // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
+  // du serveur (sinon elle serait remplacée par celle d'un autre appareil).
+  const MODULES_A_FUSIONNER_1RE_SYNCHRO = ['receptions', 'ca_invoices', 'ca_suppliers', 'ca_codes', 'pieces'];
+
+  // ════════════════════════════════════════════════════════════════════
+  // SYNCHRONISATION MULTI-APPAREILS (refonte du 01/10/2026)
+  //
+  // Problèmes corrigés :
+  //  1. pullCloud() ignorait toute ligne dont updated_by == l'email de
+  //     l'utilisateur connecté. Comme tous les appareils (PC, tablette,
+  //     téléphone) sont connectés avec le MÊME compte, chaque appareil
+  //     ignorait les modifications faites par les autres → inventaires
+  //     différents sur chaque poste.
+  //  2. Le jeton de connexion (1 h) n'était renouvelé qu'au chargement de
+  //     la page : une tablette laissée ouverte perdait ses envois après 1 h.
+  //     Les envois refusés étaient en plus retirés de la file (perdus).
+  //  3. Un PATCH sans les droits renvoie « 200 / 0 ligne » : l'échec passait
+  //     inaperçu. On demande maintenant la ligne en retour pour vérifier.
+  //  4. L'inventaire était envoyé en bloc : deux appareils qui comptent en
+  //     même temps s'écrasaient. Il est maintenant fusionné produit par
+  //     produit côté serveur (fonction SQL inventaire_merge).
+  //  5. Les horodatages venaient de l'horloge de chaque appareil ; ils sont
+  //     maintenant posés par le serveur (trigger haccp_store_touch).
+  //  6. Rien ne resynchronisait au retour de veille (tablette/téléphone) :
+  //     on resynchronise au retour au premier plan + toutes les 30 s.
+  // ════════════════════════════════════════════════════════════════════
 
   let ws = null;
   let wsRef = 0;
@@ -61,17 +123,137 @@
   let syncEnabled = false;
   let syncQueue = {};
   let syncTimer = null;
+  let retryTimer = null;
+  let flushing = false;
+  let flushAgain = false;
+  let initRunning = false;
   let lastTs = {};
+  let notLoggedWarned = false;
+  let deferredInvApply = null;
+
+  const INV_KEY         = SYNC_MODULES.inventaire;
+  const INV_BASE_KEY    = INV_KEY + '_base';     // dernières quantités connues du serveur
+  const INV_PENDING_KEY = INV_KEY + '_pending';  // saisies locales pas encore envoyées
+  const INV_BACKUP_KEY  = INV_KEY + '_backup_avant_synchro';
+  const SYNC_VERSION_KEY = 'haccp_sync_version';
+  const SYNC_VERSION = '2';
+
+  // Première exécution de cette version : on repart du serveur comme référence
+  // (les anciens horodatages venaient de l'horloge de chaque appareil).
+  try {
+    if (localStorage.getItem(SYNC_VERSION_KEY) !== SYNC_VERSION) {
+      Object.values(SYNC_MODULES).forEach(function(k) { localStorage.removeItem(k + '_sync_ts'); });
+      localStorage.removeItem(INV_BASE_KEY);
+      localStorage.removeItem(INV_PENDING_KEY);
+      localStorage.setItem(SYNC_VERSION_KEY, SYNC_VERSION);
+    }
+  } catch(e) {}
+
+  function lsGet(k, def) { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : def; } catch(e) { return def; } }
+  function lsSet(k, v)   { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+  function normQ(v) {
+    if (v === undefined || v === null || v === '') return null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  }
+  function qtesDiffer(a, b) {
+    a = a || {}; b = b || {};
+    for (const k in a) if (normQ(a[k]) !== normQ(b[k])) return true;
+    for (const k in b) if (normQ(a[k]) !== normQ(b[k])) return true;
+    return false;
+  }
+
+  // ── File d'envoi persistante (18/10/2026) ──
+  // Avant : la file des modules (DLC, températures, réceptions…) ne vivait qu'en
+  // mémoire, et syncToCloud() ignorait toute saisie faite avant la connexion au
+  // serveur ou hors-ligne. Une saisie faite hors-ligne puis l'appli fermée
+  // n'était donc jamais envoyée. On mémorise maintenant la liste des modules à
+  // envoyer ; leur contenu est relu depuis localStorage au redémarrage.
+  const QUEUE_KEY = 'haccp_sync_pending_modules';
+  function persistQueue() { lsSet(QUEUE_KEY, Object.keys(syncQueue)); }
+  (function restoreQueue() {
+    const ids = lsGet(QUEUE_KEY, []);
+    if (!Array.isArray(ids)) return;
+    ids.forEach(function(id) {
+      if (!SYNC_MODULES[id] || id === 'inventaire') return;
+      const v = lsGet(SYNC_MODULES[id], undefined);
+      if (v !== undefined) syncQueue[id] = v;
+    });
+    // 1re synchro de ces modules sur cet appareil : on met sa version locale
+    // en file d'attente → elle sera FUSIONNÉE avec celle du serveur.
+    MODULES_A_FUSIONNER_1RE_SYNCHRO.forEach(function(id) {
+      const flag = 'haccp_merge_init_' + id;
+      if (localStorage.getItem(flag)) return;
+      const v = lsGet(SYNC_MODULES[id], undefined);
+      const nonVide = v && (Array.isArray(v) ? v.length : (Array.isArray(v.receptions) ? v.receptions.length : Object.keys(v).length));
+      if (nonVide && syncQueue[id] === undefined) syncQueue[id] = v;
+      try { localStorage.setItem(flag, '1'); } catch(e) {}
+    });
+    persistQueue();
+  })();
+
+  // Fusion d'une version distante avec une modification locale pas encore
+  // envoyée : on garde les deux au lieu d'écraser l'une par l'autre (cas de deux
+  // appareils qui saisissent en même temps, ou d'un appareil resté hors-ligne).
+  // Listes d'enregistrements : union par identifiant (la version locale gagne).
+  // Objets (seuils, allergènes…) : clés distantes + clés locales.
+  function recordKey(r) {
+    if (r && typeof r === 'object') {
+      if (r.id !== undefined && r.id !== null) return 'id:' + r.id;
+      if (r.code !== undefined && r.libelle !== undefined) return 'code:' + r.code; // plan comptable
+      if (r.date) return 'date:' + r.date;
+    }
+    return 'json:' + JSON.stringify(r);
+  }
+  function mergeRecords(local, remote) {
+    if (Array.isArray(local) && Array.isArray(remote)) {
+      const seen = new Set(local.map(recordKey));
+      const merged = local.slice();
+      remote.forEach(function(r) { if (!seen.has(recordKey(r))) merged.push(r); });
+      // Relevés de températures : l'ordre chronologique compte (dernier = plus récent)
+      if (merged.length && merged.every(function(x) { return x && x.date && x.id === undefined; })) {
+        merged.sort(function(a, b) { return String(a.date).localeCompare(String(b.date)); });
+      }
+      return merged;
+    }
+    if (local && remote && typeof local === 'object' && typeof remote === 'object') {
+      if (Array.isArray(local.receptions) && Array.isArray(remote.receptions)) {
+        const out = Object.assign({}, remote, local);
+        out.receptions = mergeRecords(local.receptions, remote.receptions)
+          .sort(function(a, b) { return (b.ts || b.id || 0) - (a.ts || a.id || 0); });
+        out.nextId = Math.max(local.nextId || 1, remote.nextId || 1);
+        return out;
+      }
+      return Object.assign({}, remote, local);
+    }
+    return local;
+  }
+
+  // ── Jeton de connexion : renouvelé avant expiration ──
+  let refreshPromise = null;
+  function readSession() { return lsGet('haccp_session', null); }
+  async function ensureFreshToken(force) {
+    const s = readSession();
+    if (!s || !s.refresh_token) return !!window._supabaseAuthToken;
+    if (!force && s.expires_at && Date.now() < s.expires_at - 5 * 60 * 1000) {
+      if (window._supabaseAuthToken !== s.access_token) window._supabaseAuthToken = s.access_token;
+      return true;
+    }
+    if (!refreshPromise) {
+      refreshPromise = (async function() {
+        try {
+          if (typeof refreshSession === 'function') await refreshSession(s.refresh_token);
+        } catch(e) {}
+        refreshPromise = null;
+      })();
+    }
+    await refreshPromise;
+    return !!window._supabaseAuthToken;
+  }
 
   // ── REST fetch helper ──
-  // IMPORTANT (corrigé le 19/09/2026) : utiliser le token de l'utilisateur connecté
-  // (window._supabaseAuthToken, posé par updateSupabaseAuth() dans app.js après
-  // connexion) plutôt que la clé anonyme fixe. Les règles RLS de haccp_store et
-  // haccp_products exigent auth.role()='authenticated' pour écrire (INSERT/UPDATE/
-  // DELETE) — avec la clé anonyme, ces écritures étaient silencieusement ignorées
-  // par Postgres (0 ligne modifiée, aucune erreur), donc rien n'était jamais
-  // réellement synchronisé entre appareils. La clé apikey reste toujours la clé
-  // anonyme (identifiant du projet, pas de rôle) ; seul le Authorization change.
+  // Authorization = jeton de l'utilisateur connecté (RLS : écriture réservée
+  // aux comptes connectés) ; apikey = clé anonyme (identifiant du projet).
   function supa(path, opts) {
     const authToken = window._supabaseAuthToken || SUPA_KEY;
     return fetch(SUPA_URL + path, {
@@ -86,6 +268,84 @@
     });
   }
 
+  function isEditingInventory() {
+    const a = document.activeElement;
+    if (!a || (a.tagName !== 'INPUT' && a.tagName !== 'TEXTAREA')) return false;
+    const p = document.getElementById('panel-inventaire');
+    return !p || p.contains(a);
+  }
+
+  // ── Inventaire : appliquer l'état du serveur + nos saisies non envoyées ──
+  function applyInventaireRemote(remoteData, updatedAt) {
+    const remoteQ = (remoteData && remoteData.qtes) || {};
+    const hadBase = localStorage.getItem(INV_BASE_KEY) !== null;
+    const local = lsGet(INV_KEY, null);
+    if (!hadBase && local && local.qtes && qtesDiffer(local.qtes, remoteQ)) {
+      // Première synchro de cet appareil : copie de sécurité de sa version locale
+      lsSet(INV_BACKUP_KEY, Object.assign({}, local, { backupAt: new Date().toISOString() }));
+      if (typeof refreshInvBackupButton === 'function') refreshInvBackupButton();
+    }
+    lsSet(INV_BASE_KEY, remoteQ);
+    if (updatedAt) { lastTs.inventaire = updatedAt; localStorage.setItem(INV_KEY + '_sync_ts', new Date(updatedAt).getTime()); }
+    const pending = lsGet(INV_PENDING_KEY, {});
+    const merged = Object.assign({}, remoteQ, pending);
+    if (local && local.qtes && !qtesDiffer(local.qtes, merged)) return false;
+    lsSet(INV_KEY, { savedAt: (remoteData && remoteData.savedAt) || updatedAt || new Date().toISOString(), qtes: merged });
+    if (isEditingInventory()) {
+      // Ne pas redessiner pendant une saisie : on applique dès que le champ est quitté
+      clearTimeout(deferredInvApply);
+      deferredInvApply = setTimeout(function retry() {
+        if (isEditingInventory()) { deferredInvApply = setTimeout(retry, 1500); return; }
+        applyModule('inventaire');
+      }, 1500);
+    } else {
+      applyModule('inventaire');
+    }
+    return true;
+  }
+
+  // Enregistre les quantités modifiées localement (différences avec le serveur)
+  function recordInventaireChanges(payload) {
+    if (!payload || !payload.qtes) return;
+    const base = lsGet(INV_BASE_KEY, null);
+    if (!base) return; // jamais synchronisé sur cet appareil : on attend le 1er chargement
+    const pending = lsGet(INV_PENDING_KEY, {});
+    for (const code in payload.qtes) {
+      const v = normQ(payload.qtes[code]);
+      if (v !== normQ(base[code])) pending[code] = v;
+      else delete pending[code];
+    }
+    lsSet(INV_PENDING_KEY, pending);
+  }
+
+  // ── Appliquer une ligne reçue du serveur (pull ou temps réel) ──
+  function applyRow(row) {
+    if (!row || !row.id) return false;
+    if (row.id === 'inventaire') return applyInventaireRemote(row.data, row.updated_at);
+    const lk = SYNC_MODULES[row.id];
+    if (!lk || !row.data || !Object.keys(row.data).length) return false;
+    const remoteTs = new Date(row.updated_at).getTime();
+    const localTs  = parseInt(localStorage.getItem(lk + '_sync_ts') || '0');
+    if (remoteTs <= localTs) return false;
+    if (syncQueue[row.id] !== undefined) {
+      // Modif locale en attente d'envoi ET version distante plus récente :
+      // on fusionne (avant : la version locale écrasait silencieusement l'autre).
+      const merged = mergeRecords(syncQueue[row.id], row.data);
+      syncQueue[row.id] = merged;
+      persistQueue();
+      localStorage.setItem(lk, JSON.stringify(merged));
+      localStorage.setItem(lk + '_sync_ts', remoteTs);
+      lastTs[row.id] = row.updated_at;
+      applyModule(row.id);
+      return true;
+    }
+    localStorage.setItem(lk, JSON.stringify(row.data));
+    localStorage.setItem(lk + '_sync_ts', remoteTs);
+    lastTs[row.id] = row.updated_at;
+    applyModule(row.id);
+    return true;
+  }
+
   // ── Charger depuis le cloud ──
   async function pullCloud() {
     try {
@@ -93,22 +353,9 @@
       if (!r.ok) return;
       const rows = await r.json();
       let n = 0;
-      for (const row of rows) {
-        if (row.updated_by === DEVICE_ID || row.updated_by === getCurrentUserIdentifier()) continue;
-        const lk = SYNC_MODULES[row.id];
-        if (!lk || !row.data || !Object.keys(row.data).length) continue;
-        const remoteTs = new Date(row.updated_at).getTime();
-        const localTs  = parseInt(localStorage.getItem(lk+'_sync_ts')||'0');
-        if (remoteTs > localTs) {
-          localStorage.setItem(lk, JSON.stringify(row.data));
-          localStorage.setItem(lk+'_sync_ts', remoteTs);
-          lastTs[row.id] = row.updated_at;
-          n++;
-          applyModule(row.id);
-        }
-      }
-      if (n) showSyncToast('🔄 '+n+' module(s) mis à jour');
-    } catch(e) { logSyncError('pull', e); }
+      for (const row of rows) if (applyRow(row)) n++;
+      if (n) showSyncToast('🔄 ' + n + ' module(s) mis à jour');
+    } catch(e) { if (typeof logSyncError === 'function') logSyncError('pull', e); }
   }
 
   // ── Appliquer un module reçu ──
@@ -120,9 +367,27 @@
           if (typeof render==='function') render();
           if (typeof updateStats==='function') updateStats();
           if (typeof buildBilan==='function') buildBilan();
+          // Comptage à plusieurs : avancement mis à jour en direct dans l'inventaire rapide
+          if (typeof quickRefreshProgress==='function') quickRefreshProgress();
+          if (typeof buildZoneTabs==='function') buildZoneTabs();
           break;
-        case 'dlc': if (typeof renderDLC==='function') renderDLC(); break;
-        case 'tracabilite': if (typeof renderTracabilite==='function') renderTracabilite(); break;
+        case 'dlc':
+          try{const r=localStorage.getItem(DLC_KEY);if(r)DLC_DATA=JSON.parse(r);}catch(e){}
+          if (typeof renderDLC==='function' && document.getElementById('dlc-list')) renderDLC();
+          if (typeof updateDlcTabDot==='function') updateDlcTabDot();
+          break;
+        case 'historique':
+          try{const r=localStorage.getItem(HISTO_KEY);if(r)HISTO_DATA=JSON.parse(r);}catch(e){}
+          break;
+        case 'commande':
+          try{const r=localStorage.getItem(CMD_KEY);if(r)CMD_DATA=JSON.parse(r);}catch(e){}
+          if (typeof renderCommande==='function') renderCommande();
+          break;
+        case 'tracabilite':
+        case 'prix_historique':
+          if (typeof loadNewModules==='function') loadNewModules();
+          if (id==='tracabilite' && typeof renderTracabilite==='function') renderTracabilite();
+          break;
         case 'recettes':
           if (typeof loadNewModules==='function') loadNewModules();
           if (typeof renderRecettes==='function') renderRecettes();
@@ -144,6 +409,34 @@
         case 'temperatures':
           if (typeof autocReload==='function') autocReload(id);
           break;
+        case 'ca_invoices':
+        case 'ca_suppliers':
+        case 'ca_codes':
+          if (window.CaApp && typeof window.CaApp.reloadFromStorage === 'function') window.CaApp.reloadFromStorage();
+          break;
+        case 'ca_regles':
+        case 'ca_liens':
+        case 'ca_articles':
+        case 'ca_reclamations':
+        case 'ca_objectifs':
+        case 'doublons_ignores':
+        case 'ca_clotures':
+          if (typeof apReload==='function') apReload(id);
+          break;
+        case 'ordre_comptage':
+        case 'ca_mensuel':
+        case 'fournisseurs_contacts':
+          if (typeof invPlusReload==='function') invPlusReload(id);
+          break;
+        case 'pieces':
+          if (typeof loadPieces==='function') loadPieces();
+          if (typeof renderPieces==='function') renderPieces();
+          break;
+        case 'receptions':
+          if (typeof recLoad==='function') recLoad();
+          if (typeof renderReceptions==='function') renderReceptions();
+          if (typeof recRenderCal==='function') recRenderCal();
+          break;
         default: break;
       }
     } catch(e) {}
@@ -151,32 +444,119 @@
 
   // ── Envoyer vers le cloud ──
   function syncToCloud(moduleId, data) {
+    if (moduleId === 'inventaire') {
+      // Toujours mémorisé (même hors-ligne / avant connexion) : envoyé dès que possible
+      recordInventaireChanges(data);
+    } else {
+      if (!SYNC_MODULES[moduleId]) { console.warn('[SYNC] module inconnu :', moduleId); return; }
+      // Mis en file même hors-ligne / avant connexion : envoyé dès que possible
+      syncQueue[moduleId] = data;
+      persistQueue();
+    }
     if (!syncEnabled) return;
-    syncQueue[moduleId] = data;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(flushQueue, 600);
   }
 
+  function scheduleRetry(ms) {
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(flushQueue, ms || 10000);
+  }
+
+  function warnNotLogged() {
+    updateSyncDot('red');
+    if (!notLoggedWarned) {
+      notLoggedWarned = true;
+      showSyncToast('⚠️ Non connecté : vos saisies restent sur cet appareil. Connectez-vous pour les partager.');
+    }
+  }
+
   async function flushQueue() {
-    const q = {...syncQueue}; syncQueue = {};
-    for (const [id, data] of Object.entries(q)) {
-      try {
-        const ts = new Date().toISOString();
-        const r = await supa('/rest/v1/haccp_store?id=eq.'+id, {
-          method: 'PATCH',
-          body: JSON.stringify({data, updated_by: getCurrentUserIdentifier(), updated_at: ts})
+    if (flushing) { flushAgain = true; return; }
+    flushing = true;
+    let failed = false;
+    try {
+      if (!syncEnabled) return;
+      const pending = lsGet(INV_PENDING_KEY, {});
+      const hasInv = Object.keys(pending).length > 0;
+      const hasOther = Object.keys(syncQueue).length > 0;
+      if (!hasInv && !hasOther) return;
+
+      if (!(await ensureFreshToken(false))) { warnNotLogged(); failed = true; return; }
+      notLoggedWarned = false;
+
+      // 1) Inventaire : fusion produit par produit côté serveur
+      if (hasInv) {
+        const sent = Object.assign({}, pending);
+        let r = await supa('/rest/v1/rpc/inventaire_merge', {
+          method: 'POST', headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ p_qtes: sent, p_by: getCurrentUserIdentifier() })
         });
-        if (!r.ok) {
-          // Écriture refusée (session expirée, token invalide...) — ne pas se taire :
-          // sans ce contrôle, un échec silencieux fait perdre la modification sans
-          // que personne ne s'en aperçoive (voir correctif du 19/09/2026).
-          console.warn('[SYNC] push refusé pour', id, '— HTTP', r.status, '— la modification n\'est PAS enregistrée sur le serveur.');
-          updateSyncDot('red');
-          continue;
+        if (r.status === 401 && await ensureFreshToken(true)) {
+          r = await supa('/rest/v1/rpc/inventaire_merge', {
+            method: 'POST', headers: { Prefer: 'return=representation' },
+            body: JSON.stringify({ p_qtes: sent, p_by: getCurrentUserIdentifier() })
+          });
         }
-        localStorage.setItem(SYNC_MODULES[id]+'_sync_ts', Date.now());
-        lastTs[id] = ts;
-      } catch(e) { console.warn('[SYNC] push:', id, e.message); updateSyncDot('red'); }
+        const rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+        if (rows && rows.length) {
+          const cur = lsGet(INV_PENDING_KEY, {});
+          for (const c in sent) if (c in cur && cur[c] === sent[c]) delete cur[c];
+          lsSet(INV_PENDING_KEY, cur);
+          applyInventaireRemote(rows[0].data, rows[0].updated_at);
+        } else {
+          console.warn('[SYNC] inventaire refusé — HTTP', r.status, '— saisies conservées, nouvel essai bientôt.');
+          if (r.status === 401 || r.status === 403 || (r.ok && rows && !rows.length)) warnNotLogged();
+          failed = true;
+        }
+      }
+
+      // 2) Autres modules : envoi du module complet
+      const q = Object.assign({}, syncQueue); syncQueue = {};
+      for (const [id, data] of Object.entries(q)) {
+        try {
+          const body = JSON.stringify({ data: data, updated_by: getCurrentUserIdentifier() });
+          const patch = function() {
+            return supa('/rest/v1/haccp_store?id=eq.' + encodeURIComponent(id), { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: body });
+          };
+          let r = await patch();
+          if (r.status === 401 && await ensureFreshToken(true)) r = await patch();
+          let rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+          if (r.ok && rows && !rows.length) {
+            // La ligne n'existe pas encore sur le serveur (ex. 'receptions') :
+            // on la crée (avant : PATCH sur 0 ligne → nouvel essai à l'infini).
+            r = await supa('/rest/v1/haccp_store?on_conflict=id', {
+              method: 'POST',
+              headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+              body: JSON.stringify({ id: id, data: data, updated_by: getCurrentUserIdentifier() })
+            });
+            rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+          }
+          if (!rows || !rows.length) {
+            console.warn('[SYNC] push refusé pour', id, '— HTTP', r.status, '— nouvel essai bientôt.');
+            if (syncQueue[id] === undefined) syncQueue[id] = data; // garder pour réessayer
+            if (r.status === 401 || r.status === 403) warnNotLogged();
+            failed = true;
+            continue;
+          }
+          const ts = rows[0].updated_at;
+          localStorage.setItem(SYNC_MODULES[id] + '_sync_ts', new Date(ts).getTime());
+          lastTs[id] = ts;
+        } catch(e) {
+          console.warn('[SYNC] push:', id, e.message);
+          if (syncQueue[id] === undefined) syncQueue[id] = data;
+          failed = true;
+        }
+      }
+    } catch(e) {
+      console.warn('[SYNC] flush:', e.message);
+      failed = true;
+    } finally {
+      flushing = false;
+      persistQueue();
+      if (failed) { updateSyncDot('red'); scheduleRetry(10000); }
+      else if (syncEnabled && ws && ws.readyState === 1) updateSyncDot('green');
+      if (flushAgain) { flushAgain = false; clearTimeout(syncTimer); syncTimer = setTimeout(flushQueue, 300); }
     }
   }
 
@@ -189,14 +569,17 @@
       ws.onopen = function() {
         console.log('[SYNC] WebSocket connecté ✓');
         wsRef++;
-        // S'abonner aux changements de haccp_store
         ws.send(JSON.stringify({
           topic: 'realtime:public:haccp_store',
           event: 'phx_join',
-          payload: {config: {broadcast:{self:false}, presence:{key:''}, postgres_changes:[{event:'UPDATE',schema:'public',table:'haccp_store'}]}},
+          payload: Object.assign(
+            {config: {broadcast:{self:false}, presence:{key:''}, postgres_changes:[{event:'*',schema:'public',table:'haccp_store'}]}},
+            // Jeton utilisateur : nécessaire si la lecture est un jour réservée aux comptes connectés
+            window._supabaseAuthToken ? {access_token: window._supabaseAuthToken} : {}
+          ),
           ref: String(wsRef)
         }));
-        // Ping toutes les 25s pour garder la connexion
+        updateSyncDot('green');
         clearInterval(wsPingTimer);
         wsPingTimer = setInterval(function() {
           if (ws && ws.readyState === 1) {
@@ -209,37 +592,26 @@
       ws.onmessage = function(e) {
         try {
           const msg = JSON.parse(e.data);
-          // Changement Postgres détecté
-          if (msg.event === 'UPDATE' || (msg.payload && msg.payload.data && msg.payload.data.type === 'UPDATE')) {
-            const record = msg.payload.record || (msg.payload.data && msg.payload.data.record);
-            if (!record) return;
-            if (record.updated_by === DEVICE_ID) return; // nos propres données
-            const lk = SYNC_MODULES[record.id];
-            if (!lk || !record.data) return;
-            const remoteTs = new Date(record.updated_at).getTime();
-            const localTs  = parseInt(localStorage.getItem(lk+'_sync_ts')||'0');
-            if (remoteTs > localTs) {
-              localStorage.setItem(lk, JSON.stringify(record.data));
-              localStorage.setItem(lk+'_sync_ts', remoteTs);
-              lastTs[record.id] = record.updated_at;
-              applyModule(record.id);
-              showSyncToast('⚡ '+record.id+' synchronisé');
-              console.log('[SYNC] ⚡ Changement reçu:', record.id);
-            }
+          const d = msg.payload && msg.payload.data;
+          const type = (d && d.type) || msg.event;
+          if (type !== 'UPDATE' && type !== 'INSERT') return;
+          const record = (d && d.record) || (msg.payload && msg.payload.record);
+          if (!record) return;
+          if (applyRow(record)) {
+            showSyncToast('⚡ ' + record.id + ' synchronisé');
+            console.log('[SYNC] ⚡ Changement reçu:', record.id);
           }
         } catch(e2) {}
       };
 
-      ws.onerror = function() {
-        updateSyncDot('orange');
-      };
+      ws.onerror = function() { updateSyncDot('orange'); };
 
       ws.onclose = function() {
         clearInterval(wsPingTimer);
         clearTimeout(wsReconnTimer);
-        // Dot orange pendant la reconnexion (pas d'alerte — reconnexion normale)
         updateSyncDot('orange');
-        wsReconnTimer = setTimeout(connectWS, 3000);
+        // Reconnexion + rattrapage de ce qui a pu être manqué pendant la coupure
+        wsReconnTimer = setTimeout(function() { connectWS(); pullCloud(); }, 3000);
       };
 
     } catch(e) {
@@ -251,37 +623,136 @@
 
   // ── Init ──
   async function initSync() {
+    if (initRunning) return;
+    initRunning = true;
     try {
-      // Test REST
+      await ensureFreshToken(false);
       const r = await supa('/rest/v1/haccp_store?select=id&limit=1');
       if (!r.ok) throw new Error('HTTP '+r.status);
       syncEnabled = true;
       updateSyncDot('green');
       console.log('[SYNC] REST OK ✓ — Device:', DEVICE_ID);
-      // Charger données
+      // 18/10/2026 : cette fonction n'était jamais appelée → le catalogue restait
+      // la liste figée dans le code ; produits ajoutés/modifiés/supprimés et
+      // prix mis à jour n'étaient jamais rechargés depuis Supabase.
+      await syncProductsFromCloud();
       await pullCloud();
-      // Connecter WebSocket temps réel
       connectWS();
+      flushQueue();
+      if (typeof recUploadPendingPhotos === 'function') recUploadPendingPhotos();
     } catch(e) {
       console.warn('[SYNC] Init échoué:', e.message);
       updateSyncDot('red');
       setTimeout(initSync, 8000);
+    } finally {
+      initRunning = false;
     }
   }
+
+  // ── Resynchroniser au retour au premier plan (veille tablette/téléphone) ──
+  async function resyncNow() {
+    if (!syncEnabled) { initSync(); return; }
+    await ensureFreshToken(false);
+    await pullCloud();
+    connectWS();
+    flushQueue();
+    if (typeof recUploadPendingPhotos === 'function') recUploadPendingPhotos();
+  }
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') resyncNow();
+  });
+  window.addEventListener('online', function() { setTimeout(resyncNow, 1000); });
+  setInterval(function() {
+    if (document.visibilityState === 'visible' && syncEnabled) { pullCloud(); flushQueue(); }
+  }, 30000);
+  // Renouveler le jeton en arrière-plan avant qu'il n'expire
+  setInterval(function() { ensureFreshToken(false); }, 60000);
+
+  function restoreInvBackup() {
+    const b = lsGet(INV_BACKUP_KEY, null);
+    const fb = document.getElementById('save-feedback');
+    if (!b || !b.qtes) { if (fb) { fb.className='voice-feedback err'; fb.textContent='Aucune copie de sécurité sur cet appareil.'; } return; }
+    const when = b.savedAt ? new Date(b.savedAt).toLocaleString('fr-FR') : '?';
+    if (!confirm('Remplacer l\'inventaire partagé par la version de cet appareil (enregistrée le ' + when + ') ?\nTous les appareils recevront cette version.')) return;
+    const pending = lsGet(INV_PENDING_KEY, {});
+    for (const c in b.qtes) pending[c] = normQ(b.qtes[c]);
+    lsSet(INV_PENDING_KEY, pending);
+    const base = lsGet(INV_BASE_KEY, {}) || {};
+    applyInventaireRemote({ qtes: base, savedAt: b.savedAt }, null);
+    flushQueue().then(function() {
+      const left = Object.keys(lsGet(INV_PENDING_KEY, {})).length;
+      if (fb) {
+        fb.className = left ? 'voice-feedback err' : 'voice-feedback ok';
+        fb.textContent = left ? '⚠️ Pas encore envoyé (connexion ?). Nouvel essai automatique.' : '✓ Version de cet appareil envoyée à tous les appareils.';
+      }
+      if (!left) { localStorage.removeItem(INV_BACKUP_KEY); refreshInvBackupButton(); }
+    });
+  }
+
+  function refreshInvBackupButton() {
+    const btn = document.getElementById('inv-backup-btn');
+    if (!btn) return;
+    const b = lsGet(INV_BACKUP_KEY, null);
+    btn.style.display = (b && b.qtes) ? '' : 'none';
+    if (b && b.savedAt) btn.textContent = '♻️ Récupérer l\'inventaire de cet appareil (avant synchro, ' + new Date(b.savedAt).toLocaleDateString('fr-FR') + ')';
+  }
+  window.addEventListener('load', function() { setTimeout(refreshInvBackupButton, 500); });
+
+
+  // ── Diagnostic visible : état de la synchro de cet appareil ──
+  const APP_SYNC_LABEL = 'Synchro v11 (19/10)';
+  function syncStatusText() {
+    const raw = localStorage.getItem('haccp_session');
+    let email = null;
+    try { const p = raw ? decodeJwtPayload(JSON.parse(raw).access_token) : null; email = p && p.email; } catch(e) {}
+    const pending = Object.keys(lsGet(INV_PENDING_KEY, {})).length + Object.keys(syncQueue).length;
+    const last = lastTs.inventaire ? new Date(lastTs.inventaire).toLocaleTimeString('fr-FR') : '—';
+    return [
+      'Version : ' + APP_SYNC_LABEL,
+      'Compte : ' + (email && window._supabaseAuthToken ? email : '❌ NON CONNECTÉ (les saisies ne sont pas partagées)'),
+      'Serveur : ' + (syncEnabled ? '✓ joignable' : '❌ injoignable'),
+      'Temps réel : ' + (ws && ws.readyState === 1 ? '✓ actif' : '… reconnexion'),
+      'Saisies en attente d\'envoi : ' + pending,
+      'Dernière mise à jour inventaire : ' + last
+    ].join('\n');
+  }
+  async function syncNowButton() {
+    const fb = document.getElementById('save-feedback');
+    if (fb) { fb.className = 'voice-feedback'; fb.style.whiteSpace = 'pre-line'; fb.textContent = '🔄 Synchronisation…'; }
+    try { await resyncNow(); await flushQueue(); } catch(e) {}
+    if (fb) {
+      const pending = Object.keys(lsGet(INV_PENDING_KEY, {})).length;
+      fb.className = (window._supabaseAuthToken && syncEnabled && !pending) ? 'voice-feedback ok' : 'voice-feedback err';
+      fb.style.whiteSpace = 'pre-line';
+      fb.textContent = syncStatusText();
+    }
+    refreshInvBackupButton();
+  }
+  window.addEventListener('load', function() {
+    const v = document.getElementById('app-sync-version');
+    if (v) v.textContent = APP_SYNC_LABEL;
+  });
 
   // ── UI ──
 
   // Charger, mettre à jour ET ajouter les produits depuis Supabase
   async function syncProductsFromCloud() {
     try {
-      const r = await supa('/rest/v1/haccp_products?select=code,zone,cat,produit,unite,prix,fournisseur,status&order=code');
+      const r = await supa('/rest/v1/haccp_products?select=code,zone,cat,produit,unite,prix,fournisseur,status,colisage,ean,archived&order=code');
       if (!r.ok) return;
       const rows = await r.json();
       if (!rows || !rows.length) return;
       let updated = 0, added = 0;
-      rows.forEach(row => {
+      // Produits archivés (18/10/2026) : retirés de l'inventaire, conservés à part (restaurables)
+      window.ARCHIVES = rows.filter(x => x.archived).map(x => ({ code: x.code, zone: x.zone, cat: x.cat, produit: x.produit, unite: x.unite || '', prix: parseFloat(x.prix) || 0, fournisseur: x.fournisseur || '', status: x.status || '', archived: true }));
+      const archivedCodes = new Set(window.ARCHIVES.map(x => x.code));
+      for (let i = DATA.length - 1; i >= 0; i--) if (archivedCodes.has(DATA[i].code)) { DATA.splice(i, 1); updated++; }
+      rows.filter(x => !x.archived).forEach(row => {
         const item = DATA.find(d => d.code === row.code);
         if (item) {
+          // Colisage et code-barres (18/10/2026)
+          item.colisage = row.colisage != null ? parseFloat(row.colisage) : null;
+          item.ean = row.ean || null;
           // Mettre à jour prix, nom, zone, fournisseur
           if (Math.abs(item.prix - parseFloat(row.prix)) > 0.001) { item.prix = parseFloat(row.prix); updated++; }
           if (item.produit !== row.produit) { item.produit = row.produit; updated++; }
@@ -299,16 +770,30 @@
             prix: parseFloat(row.prix) || 0,
             qte: null,
             fournisseur: row.fournisseur || '',
-            status: row.status || 'new'
+            status: row.status || 'new',
+            colisage: row.colisage != null ? parseFloat(row.colisage) : null,
+            ean: row.ean || null
           });
           added++;
         }
       });
-      if (updated > 0 || added > 0) {
-        console.log('[SYNC] ' + updated + ' MAJ + ' + added + ' nouveaux produits depuis Supabase');
-        if (added > 0) {
+      // Produits supprimés sur un autre appareil : absents du serveur → retirés ici.
+      // (Garde-fou : uniquement si le serveur a bien renvoyé un catalogue complet.)
+      let removed = 0;
+      if (rows.length >= 100) {
+        const onServer = new Set(rows.map(r => r.code));
+        for (let i = DATA.length - 1; i >= 0; i--) {
+          if (!onServer.has(DATA[i].code)) { DATA.splice(i, 1); removed++; }
+        }
+      }
+      if (updated > 0 || added > 0 || removed > 0) {
+        console.log('[SYNC] ' + updated + ' MAJ + ' + added + ' nouveaux, ' + removed + ' retirés depuis Supabase');
+        // Ré-appliquer les quantités enregistrées (y compris celles des produits ajoutés)
+        if (added > 0 && typeof loadAutoSave === 'function') loadAutoSave();
+        if (added > 0 || removed > 0) {
           if (typeof buildZoneTabs==='function') buildZoneTabs();
-          if (typeof buildFilters==='function') buildFilters();
+          // buildFilters() ajoute les options sans vider la liste (doublons) → version « update »
+          if (typeof buildFilters_update==='function') buildFilters_update();
         }
         if (typeof render === 'function') render();
         if (typeof updateStats === 'function') updateStats();
@@ -319,26 +804,57 @@
   }
 
   // Envoyer un produit modifié vers Supabase
+  // Renvoie true si le produit est bien enregistré sur le serveur.
+  // Met à jour la ligne existante, ou la crée si elle n'existe pas encore.
+  // (Le catalogue n'est conservé QUE sur le serveur : une modification non
+  // envoyée est perdue au prochain chargement.)
   async function pushProductToCloud(item) {
-    if (!syncEnabled) return;
     try {
-      const r = await supa('/rest/v1/haccp_products?code=eq.' + item.code, {
+      if (!(await ensureFreshToken(false))) { warnNotLogged(); return false; }
+      const fields = {
+        produit: item.produit,
+        zone: item.zone,
+        cat: item.cat,
+        unite: item.unite,
+        prix: item.prix,
+        fournisseur: item.fournisseur || '',
+        status: item.status || '',
+        colisage: item.colisage > 0 ? item.colisage : null,
+        ean: item.ean || null,
+        archived: !!item.archived
+      };
+      let r = await supa('/rest/v1/haccp_products?code=eq.' + encodeURIComponent(item.code), {
         method: 'PATCH',
-        body: JSON.stringify({
-          produit: item.produit,
-          zone: item.zone,
-          cat: item.cat,
-          unite: item.unite,
-          prix: item.prix,
-          fournisseur: item.fournisseur || '',
-          status: item.status || ''
-        })
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify(fields)
       });
-      if (!r.ok) {
+      let rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+      if (r.ok && rows && !rows.length) {
+        r = await supa('/rest/v1/haccp_products', {
+          method: 'POST',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify(Object.assign({ code: item.code }, fields))
+        });
+        rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+      }
+      if (!rows || !rows.length) {
         console.warn('[SYNC] pushProduct refusé pour', item.code, '— HTTP', r.status, '— la modification n\'est PAS enregistrée sur le serveur.');
         updateSyncDot('red');
+        return false;
       }
-    } catch(e) { console.warn('[SYNC] pushProduct:', e.message); updateSyncDot('red'); }
+      return true;
+    } catch(e) { console.warn('[SYNC] pushProduct:', e.message); updateSyncDot('red'); return false; }
+  }
+
+  async function deleteProductFromCloud(code) {
+    try {
+      if (!(await ensureFreshToken(false))) { warnNotLogged(); return false; }
+      const r = await supa('/rest/v1/haccp_products?code=eq.' + encodeURIComponent(code), {
+        method: 'DELETE', headers: { Prefer: 'return=representation' }
+      });
+      const rows = r.ok ? await r.json().catch(function() { return null; }) : null;
+      return !!(r.ok && rows);
+    } catch(e) { console.warn('[SYNC] deleteProduct:', e.message); return false; }
   }
 
   function updateSyncDot(color) {
@@ -358,8 +874,7 @@
     t._timer = setTimeout(()=>t.style.opacity='0', 2500);
   }
 
-  window.addEventListener('load', function() { 
-  initRecettesPDF();
+  window.addEventListener('load', function() {
   // Afficher l'écran d'accueil immédiatement
   var hs = document.getElementById('home-screen');
   if (hs) hs.style.display = 'block';

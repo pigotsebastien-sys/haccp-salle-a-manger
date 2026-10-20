@@ -1,10 +1,17 @@
 // Service Worker — HACCP LSM — Mode hors-ligne + mise à jour automatique
 // Version incrémentée à chaque déploiement pour forcer le rafraîchissement
 
-const CACHE_VERSION = 'haccp-lsm-v8';
+const CACHE_VERSION = 'haccp-lsm-v21';
 const APP_SHELL = [
   './',
   './index.html',
+  './style.css',
+  './js/core-sync.js',
+  './js/app.js',
+  './js/inventaire-plus.js',
+  './js/achats-plus.js',
+  './js/favicon.js',
+  './js/sw-register.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -47,38 +54,31 @@ self.addEventListener('activate', function(e) {
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
 
-  // Supabase → réseau direct, fallback JSON vide hors-ligne
-  if (url.includes('supabase.co')) {
+  // Supabase → pas d'interception : l'appli gère elle-même l'absence de réseau.
+  // (Avant le 18/10/2026 : hors-ligne, le SW répondait « 200 OK [] » à TOUTES
+  // les requêtes Supabase, y compris les envois et le renouvellement de session,
+  // ce qui faisait croire à l'appli que le serveur était joignable.)
+  if (url.includes('supabase.co')) return;
+
+  // App (HTML/JS/CSS du site) → Network-First : chaque appareil reçoit
+  // immédiatement la dernière version du code ; le cache sert seulement hors-ligne.
+  // (Avant : Cache-First → tablettes/téléphones gardaient l'ancien code.)
+  if (e.request.method === 'GET' && url.startsWith(self.location.origin)) {
     e.respondWith(
-      fetch(e.request).catch(function() {
-        return new Response(JSON.stringify([]), {
-          headers: { 'Content-Type': 'application/json' }
-        });
+      fetch(e.request, { cache: 'no-cache' }).then(function(response) {
+        if (response && response.status === 200) {
+          var toCache = response.clone();
+          caches.open(CACHE_VERSION).then(function(cache) { cache.put(e.request, toCache); });
+        }
+        return response;
+      }).catch(function() {
+        return caches.match(e.request, { ignoreSearch: true });
       })
     );
     return;
   }
 
-  // App shell → Cache-First avec revalidation en arrière-plan
-  if (e.request.method === 'GET') {
-    e.respondWith(
-      caches.match(e.request).then(function(cached) {
-        var networkFetch = fetch(e.request).then(function(response) {
-          if (response && response.status === 200) {
-            var toCache = response.clone();
-            caches.open(CACHE_VERSION).then(function(cache) {
-              cache.put(e.request, toCache);
-            });
-          }
-          return response;
-        }).catch(function() { return null; });
-        return cached || networkFetch;
-      })
-    );
-    return;
-  }
-
-  e.respondWith(fetch(e.request));
+  // Autres origines (CDN SheetJS / Tesseract…) : comportement normal du navigateur
 });
 
 // ── Message depuis l'app ──

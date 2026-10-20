@@ -46,9 +46,14 @@ const CROSS_GROUP_COLORS=[
 ];
 const RESTAURANT_NAME='La Salle à Manger - Grenoble';
 const ACCOUNT_CODES=[
-  {code:'601100',label:'Nourriture'},
-  {code:'607100',label:'Boissons'},
-  {code:'602200',label:"Produits d'entretien - Fournitures consommables"},
+  // Plan du cabinet comptable (factures annotées d'octobre 2026)
+  {code:'601000',label:'Denrées alimentaires (nourriture)'},
+  {code:'607000',label:'Boissons / marchandises'},
+  {code:'602230',label:'Fournitures et emballages jetables'},
+  {code:'602220',label:'Sacs poubelle, bobines dévidage'},
+  {code:'602290',label:"Produits d'entretien et hygiène"},
+  {code:'602200',label:"Fournitures d'entretien (lavettes…)"},
+  {code:'635200',label:'TVA non récupérable'},
   {code:'606300',label:'Achats vaisselle - petit matériel (< 500 €)'},
   {code:'606100',label:'Energie et Fluides'},
   {code:'651100',label:'Abonnement logiciel professionnel (caisse)'},
@@ -423,7 +428,6 @@ const DATA=[
 {code:'N084',zone:'ECONOMAT',cat:'Economat',produit:'SERVIETTE 39X39 DINNER GAUFRE BLANC X50',unite:'SHT',prix:4.04,qte:null,fournisseur:'TRANSGOURMET',status:'new'}
 
 
-
 ,
 {code:'F014',zone:'BOISSONS',cat:'Boissons',produit:'COGNAC LE PALIN 70CL',unite:'PCE',prix:11.05,qte:1.2,fournisseur:'France Boissons',status:''},
 {code:'F015',zone:'BOISSONS',cat:'Boissons',produit:'COTE DU RHONE MARGERANS',unite:'75CL',prix:3.91,qte:null,fournisseur:'Micand',status:''},
@@ -585,15 +589,11 @@ const DATA=[
 {code:'N120',zone:'FRIGO 1',cat:'BOF',produit:'CAMEMBERT NU 22% LFR 240GX30 B&E',unite:'PU',prix:1.839,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N121',zone:'FRIGO 1',cat:'BOF',produit:'JAMBON CRU PAYS S/OS (19CX26TR)X6',unite:'BOT',prix:5.61,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N122',zone:'FRIGO 1',cat:'BOF',produit:'JAMBON SUP DD TORCHON (40GX20TR)X6',unite:'BOT',prix:6.273,qte:null,fournisseur:'POMONA',status:'new'},
-{code:'N123',zone:'CONGELATEUR',cat:'Surgeles',produit:'MIX4 PAIN LOSANGE PRECUIT 55GX25X4',unite:'PU',prix:0.45,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N124',zone:'CONGELATEUR',cat:'Surgeles',produit:'NAVETTE NATURE CT 15GX100',unite:'PU',prix:0.243,qte:null,fournisseur:'POMONA',status:'new'},
 {code:'N125',zone:'BOISSONS',cat:'Boissons',produit:'EAU GAZEUSE PERRIER BTE 33CL VC',unite:'BTE',prix:0.97,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N126',zone:'FRAIS BCP',cat:'Frais',produit:'ABRICOT FRANCE CI',unite:'Kg',prix:3.8,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
 {code:'N127',zone:'FRAIS BCP',cat:'Frais',produit:'MELON CAL9 FRANCE',unite:'Pce',prix:2.6,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-{code:'N128',zone:'FRAIS BCP',cat:'Frais',produit:'RAISIN ITALIA CIA CI',unite:'Kg',prix:2.96,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
 {code:'N129',zone:'FRAIS BCP',cat:'Frais',produit:'CAROTTE FRANCE X10',unite:'Kg',prix:0.89,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-{code:'N130',zone:'FRAIS BCP',cat:'Frais',produit:'PRUNE JAUNE ESP CI',unite:'Kg',prix:2.6,qte:null,fournisseur:'UNION PRIMEURS',status:'new'}
-,
 {code:'N131',zone:'FRIGO 1',cat:'BOF',produit:'TR. JAMBON PARIS CHX DD VPF X25 BQ1KG X9',unite:'BQ',prix:7.824,qte:null,fournisseur:'SYSCO',status:'new'},
 {code:'N132',zone:'FRIGO 1',cat:'BOF',produit:'VEGETOP UHT DEBIC 1L X6',unite:'L',prix:3.4,qte:null,fournisseur:'SYSCO',status:'new'},
 {code:'N133',zone:'CONGELATEUR',cat:'Surgeles',produit:'QUINOA BLC ST2.5KG X4',unite:'Kg',prix:6.750,qte:null,fournisseur:'SYSCO',status:'updated'},
@@ -605,8 +605,6 @@ const DATA=[
 {code:'N139',zone:'BOISSONS',cat:'Boissons',produit:'COCA COLA BTE 33CL VC',unite:'BTE',prix:1.033,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N140',zone:'BOISSONS',cat:'Boissons',produit:'LIMONADE SUD BTE 25CL VC',unite:'BTE',prix:0.49,qte:null,fournisseur:'PROMOCASH',status:'new'},
 {code:'N141',zone:'FRAIS BCP',cat:'Frais',produit:'NECTARINE JAUNE ESPAGNE CI',unite:'Kg',prix:2.96,qte:null,fournisseur:'UNION PRIMEURS',status:'new'},
-{code:'N142',zone:'FRAIS BCP',cat:'Frais',produit:'COURGETTE CAT1 ESP',unite:'Kg',prix:2.400,qte:null,fournisseur:'UNION PRIMEURS',status:'updated'}
-,
 {code:'N143',zone:'ECONOMAT',cat:'Economat',produit:'HUILE OLIVE SPECIAL CUISINE BI5L',unite:'L',prix:4.600,qte:null,fournisseur:'SYSCO',status:'new'}
 ,
 {code:'N144',zone:'ECONOMAT',cat:'Economat',produit:'SUCRE POUDRE 1KG',unite:'Kg',prix:0.900,qte:null,fournisseur:'SYSCO',status:'new'}
@@ -628,11 +626,32 @@ const hc=z=>(ZONES[z]||{hclass:'h-autre'}).hclass;
 const hl=z=>(ZONES[z]||{htext:'Divers'}).htext;
 const mont=d=>(d.qte===null||d.qte===undefined)?null:d.prix*d.qte;
 
+// Argument JS sûr dans un attribut onclick (nombre ou texte, guillemets échappés)
+function jsArg(v){return esc(JSON.stringify(v));}
+// Date du jour au format AAAA-MM-JJ en heure LOCALE (toISOString() donne la date
+// UTC : entre minuit et 2 h, les enregistrements HACCP étaient datés de la veille).
+function localISODate(d){
+  d=d||new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+// En-têtes pour appeler les fonctions Edge Supabase (scan IA) avec la session
+// de l'utilisateur — prérequis pour pouvoir activer la vérification JWT côté serveur.
+function edgeHeaders(){
+  const h={'Content-Type':'application/json',apikey:SUPA_KEY};
+  if(window._supabaseAuthToken)h.Authorization='Bearer '+window._supabaseAuthToken;
+  return h;
+}
+// Message lisible à partir d'une réponse d'erreur d'une fonction Edge
+async function edgeErrorMessage(resp){
+  try{const j=await resp.json();return j.message||j.error||('Erreur '+resp.status);}
+  catch(e){return 'Erreur serveur '+resp.status;}
+}
+
 function buildZoneTabs(){
   const wrap=document.getElementById('zone-tabs');
   wrap.innerHTML=['TOUT',...Object.keys(ZONES)].map(z=>{
-    const info=ZONES[z];const cnt=z==='TOUT'?DATA.length:DATA.filter(d=>d.zone===z).length;
-    return`<button class="zone-chip${z===activeZone?' active':''}" onclick="setZone('${z}')"><span class="dot" style="background:${info?info.color:'#888'}"></span>${z==='TOUT'?'Toutes':(info?info.label:z)} (${cnt})</button>`;
+    const info=ZONES[z];const zItems=z==='TOUT'?DATA:DATA.filter(d=>d.zone===z);const cnt=zItems.length;const fait=zItems.filter(d=>d.qte!=null).length;
+    return`<button class="zone-chip${z===activeZone?' active':''}" onclick="setZone('${z}')"><span class="dot" style="background:${info?info.color:'#888'}"></span>${z==='TOUT'?'Toutes':(info?info.label:z)} (${fait}/${cnt})</button>`;
   }).join('');
 }
 function buildFilters(){
@@ -661,7 +680,13 @@ function getFiltered(){
   });
 
   // Tri
-  if(sort==='alpha'){
+  if(sort==='default'){
+    // « Tri : par zone » ne triait rien : les zones apparaissaient mélangées
+    const zOrder=Object.keys(ZONES);
+    const zi=z=>{const i=zOrder.indexOf(z);return i<0?zOrder.length:i;};
+    // Ordre des étagères (inventaire rapide) s'il a été défini, sinon alphabétique
+    items=[...items].sort(typeof ordreComptage==='function'?ordreComptage:(a,b)=>zi(a.zone)-zi(b.zone)||a.produit.localeCompare(b.produit,'fr',{sensitivity:'base'}));
+  } else if(sort==='alpha'){
     items=[...items].sort((a,b)=>a.produit.localeCompare(b.produit,'fr',{sensitivity:'base'}));
   } else if(sort==='prix_desc'){
     items=[...items].sort((a,b)=>(b.prix||0)-(a.prix||0));
@@ -681,14 +706,12 @@ function getFiltered(){
 }
 function updateDlcTabDot(){
   try {
-    var today = new Date();
-    var warn = new Date(); warn.setDate(warn.getDate()+7);
-    var warnStr = warn.toISOString().slice(0,10);
-    var todayStr = today.toISOString().slice(0,10);
+    // 18/10/2026 : les DLC sont stockées dans le champ "date" (et non "dlc") —
+    // l'alerte de l'onglet et de l'accueil restait donc toujours à ✓.
     var urgent = 0;
-    if(typeof DLC_DATA !== 'undefined') {
-      Object.values(DLC_DATA).forEach(function(d) {
-        if(d.dlc && d.dlc <= warnStr) urgent++;
+    if(typeof DLC_DATA !== 'undefined' && Array.isArray(DLC_DATA)) {
+      DLC_DATA.forEach(function(d) {
+        if(d && d.date && dlcDaysLeft(d.date) <= 7) urgent++;
       });
     }
     var dot = document.getElementById('dlc-tab-dot');
@@ -730,6 +753,7 @@ function render(){
   let lastZone=null;
   // Groupes avec unités hétérogènes
   const mixedUnitsGroups = getCrossGroupMixedUnits();
+  const sortMode=(document.getElementById('filt-sort')||{}).value||'default';
 
   tbody.innerHTML=filtered.map(d=>{
     const m=mont(d);
@@ -744,12 +768,12 @@ function render(){
       lastZone=d.zone;
       const zoneLabel=ZONES[d.zone]?.label||d.zone||'Autre';
       const zoneColor=ZONES[d.zone]?.color||'#888';
-      zoneHeader=`<tr class="zone-sticky-header" data-zone="${d.zone}">
-        <td colspan="5" style="background:${zoneColor}18;color:${zoneColor};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;position:sticky;top:0;z-index:2;border-bottom:.5px solid ${zoneColor}44">
-          ${zoneLabel}
-        </td>
-      </tr>`;
+      // 18/10/2026 : était un <tr><td> inséré dans une grille de <div> → le
+      // navigateur supprimait les balises, l'en-tête n'apparaissait jamais.
+      zoneHeader=`<div class="zone-sticky-header" data-zone="${esc(d.zone)}" style="background:${zoneColor}18;color:${zoneColor};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:.5px solid ${zoneColor}44">${esc(zoneLabel)}</div>`;
     }
+    // Les en-têtes de zone n'ont de sens que lorsque la liste est triée par zone
+    if(sortMode!=='default')zoneHeader='';
     const hasGroup=gid!==undefined;
     const gc=hasGroup?CROSS_GROUP_COLORS[gid%CROSS_GROUP_COLORS.length]:null;
     const rowBg=hasGroup?`background:${gc.bg};`:'';
@@ -761,18 +785,18 @@ function render(){
 
     // Séparateur visuel entre groupes
     let separator='';
-    if(hasGroup && gid!==lastGroupId && lastGroupId!==null){
+    if(sortMode==='cross' && hasGroup && gid!==lastGroupId && lastGroupId!==null){
       separator=`<div style="grid-column:1/-1;height:2px;background:${gc.border};opacity:.3"></div>`;
     }
     lastGroupId=hasGroup?gid:null;
 
-    return`<div class="product-row" id="row-${d.code}" style="${rowBg}${borderLeft}">
-      <div class="cell"><span class="code-pill">${d.code}</span></div>
-      <div class="cell" style="cursor:pointer" onclick="openEditProduct('${d.code}')" title="Modifier ce produit">
-        <div class="product-name" style="display:flex;align-items:center;gap:4px">${d.produit}<span style="font-size:10px;color:var(--text3);flex-shrink:0">✏️</span></div>
-        <div class="product-meta"><span class="haccp-pill ${hc(d.zone)}">${hl(d.zone)}</span>${badge}${crossBadge}${seuilBadge}<span class="fourn-text">${d.fournisseur||''}</span></div></div>
-      <div class="cell cell-prix">${d.prix?d.prix.toFixed(2)+' €':'—'}<br><span style="font-size:10px;color:var(--text3)">${d.unite||''}</span></div>
-      <div class="cell"><input class="qte-input" type="number" inputmode="decimal" min="0" step="0.01" value="${d.qte!==null&&d.qte!==undefined?d.qte:''}" placeholder="0" data-code="${d.code}" oninput="updInput(this)"></div>
+    return`${zoneHeader}${separator}<div class="product-row" id="row-${esc(d.code)}" style="${rowBg}${borderLeft}">
+      <div class="cell"><span class="code-pill">${esc(d.code)}</span></div>
+      <div class="cell" style="cursor:pointer" onclick="openEditProduct(this.dataset.code)" data-code="${esc(d.code)}" title="Modifier ce produit">
+        <div class="product-name" style="display:flex;align-items:center;gap:4px">${esc(d.produit)}<span style="font-size:10px;color:var(--text3);flex-shrink:0">✏️</span></div>
+        <div class="product-meta"><span class="haccp-pill ${hc(d.zone)}">${hl(d.zone)}</span>${badge}${crossBadge}${seuilBadge}<span class="fourn-text">${esc(d.fournisseur||'')}</span></div></div>
+      <div class="cell cell-prix">${d.prix?d.prix.toFixed(2)+' €':'—'}<br><span style="font-size:10px;color:var(--text3)">${esc(d.unite||'')}</span></div>
+      <div class="cell"><input class="qte-input" type="number" inputmode="decimal" min="0" step="0.01" value="${d.qte!==null&&d.qte!==undefined?d.qte:''}" placeholder="0" data-code="${esc(d.code)}" oninput="updInput(this)" onfocus="this.dataset.prev=this.value" onchange="if(typeof ecartCheckInput==='function')ecartCheckInput(this)"></div>
       <div class="cell cell-montant${m===null?' montant-zero':''}" id="m-${d.code}">${m!==null?m.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'—'}</div>
     </div>`;
   }).join('');
@@ -782,6 +806,8 @@ function render(){
   document.getElementById('footer-count').textContent=filtered.length+' référence'+(filtered.length>1?'s':'');
 }
 function updInput(inp){upd(inp.dataset.code,inp.value);}
+
+// Inventaire rapide : voir js/inventaire-plus.js
 let bilanTimer=null;
 function scheduleBilanRebuild(){
   // Rebuild le bilan seulement si l'onglet bilan est actif (ou après 1s sinon)
@@ -994,7 +1020,7 @@ function buildBilan(){
     const fp=pct(v.total,gt);
     h+=`<div style="padding:8px 12px;border-bottom:${i<top5.length-1?'.5px solid var(--border)':'none'}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:12px;font-weight:500">${f}</span>
+        <span style="font-size:12px;font-weight:500">${esc(f)}</span>
         <span style="font-size:12px;font-weight:600">${fmt(v.total)}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -1007,15 +1033,6 @@ function buildBilan(){
 
   document.getElementById('bilan-content').innerHTML=h;
 }
-function buildInvoiceList(){
-  // Update tab label dynamically
-  const tbl=document.getElementById('tab-factures-btn');
-  if(tbl)tbl.textContent='Factures ('+INVOICES.length+')';
-  const gt=INVOICES.reduce((s,i)=>s+i.total,0);
-  document.getElementById('inv-list').innerHTML=
-    `<div style="padding:12px 14px;background:var(--info-bg);border-radius:var(--radius-lg);display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div><div style="font-size:14px;font-weight:600;color:var(--info-text)">Total 10 factures</div><div style="font-size:11px;color:var(--info-text);opacity:.8">Juin 2026</div></div><div style="font-size:16px;font-weight:700;color:var(--info-text)">${gt.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div></div>`+
-    INVOICES.map(inv=>`<div class="inv-card"><div class="inv-card-header"><div><div class="inv-card-title">${inv.fournisseur}</div><div style="font-size:11px;color:var(--text2)">${inv.date} · N° ${inv.id}</div></div><div class="inv-card-total">${inv.total.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div></div>${inv.items.map(it=>`<div class="inv-item"><span class="inv-item-name">${it.p}</span><span class="inv-item-price">${it.q} ${it.u} × ${it.px.toFixed(2)} €</span></div>`).join('')}</div>`).join('');
-}
 function switchTab(name,btn){
   // Afficher le bouton retour accueil dès qu'on est dans un module
   var hf = document.getElementById('btn-home-float');
@@ -1023,14 +1040,22 @@ function switchTab(name,btn){
   if(name==='reception-mp'){
     document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
     document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
-    if(btn) if(btn) btn.classList.add('active');
+    if(btn) btn.classList.add('active');
     var p=document.getElementById('panel-reception-mp');
-    if(p){p.classList.add('active');initReceptionModule();renderReceptionsMP();}
+    // initReceptionModule()/renderReceptionsMP() n'existaient pas (ReferenceError)
+    if(p){p.classList.add('active');recLoad();renderReceptions();recRenderCal();}
     return;
   }
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-btn,.tab-more-item').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  btn.classList.add('active');document.getElementById('panel-'+name).classList.add('active');
+  // 18/10/2026 : les tuiles de l'accueil appellent switchTab(name, null) →
+  // « btn.classList » plantait et le module ne s'ouvrait pas.
+  if(!btn)btn=document.querySelector('.tab-btn[data-tab="'+name+'"]');
+  if(btn)btn.classList.add('active');
+  var hs=document.getElementById('home-screen');if(hs)hs.style.display='none';
+  const panel=document.getElementById('panel-'+name);
+  if(!panel)return;
+  panel.classList.add('active');
   if(name==='pieces'){try{const r=localStorage.getItem(PIECES_KEY);PIECES=r?JSON.parse(r):[];}catch(e){PIECES=[];} renderPieces(); detectCameraContext();}
   if(name==='bilan'){clearTimeout(bilanTimer);buildBilan();}
   if(name==='dashboard')buildDashboard();
@@ -1304,48 +1329,44 @@ function parseCmd(raw, allAlternatives){
   // 1. Annuler
   if(/^annul/.test(t)) return {cmd:'undo'};
 
-  // 2. Navigation onglets
-  for(const [key,fn] of Object.entries(VOICE_NAV)){
-    if(t===normalizeText(key)||t.startsWith(normalizeText(key)+' ')||
-       t.endsWith(' '+normalizeText(key))||t.includes(normalizeText(key))){
-      return {cmd:'nav',fn,label:key};
-    }
-  }
+  // 18/10/2026 : ordre revu. Avant, la navigation était testée en premier avec
+  // un simple « contient » : « dlc beurre 15 janvier » ouvrait l'onglet DLC sans
+  // rien enregistrer, « frigo 1 trois degrés » changeait de zone au lieu de
+  // saisir la température, « envoyer bilan » ouvrait le bilan, et tout produit
+  // contenant « prix », « stock », « tout »… déclenchait une navigation.
 
-  // 3. Commandes globales
-  for(const [key,fn] of Object.entries(VOICE_CMDS)){
-    if(t.includes(normalizeText(key))){
-      const result=fn();
-      if(result==='undo') return {cmd:'undo'};
-      return {cmd:'action',label:result||key};
-    }
-  }
-
-  // 4. Traçabilité rapide "entrée colin 3" / "sortie beurre 2"
-  for(const [prefix,types] of Object.entries(TRAC_PREFIXES)){
-    const pn=normalizeText(prefix);
-    if(t.startsWith(pn+' ')||t===pn){
-      const rest=t.slice(pn.length).trim();
-      if(!rest) return {cmd:'trac-open',type:types[0]};
-      // Parser quantité + produit dans le reste
-      const qtyParsed=parseQtyAndProduct(rest, allAlternatives);
-      if(qtyParsed) return {cmd:'trac',type:types[0],...qtyParsed};
-      // Juste le produit sans quantité
-      const prod=findProd(rest,allAlternatives);
-      if(prod) return {cmd:'trac-ask-qty',type:types[0],product:prod};
-    }
-  }
-
-  // 5. DLC rapide "dlc beurre 15 janvier 2026"
+  // 2. DLC rapide "dlc beurre 15 janvier 2026"
   if(t.startsWith('dlc ')||t.startsWith('date limite ')||t.startsWith('peremption ')){
     const rest=t.replace(/^(dlc|date limite|peremption)\s+/,'');
     const dlcResult=parseDLCVoice(rest,allAlternatives);
     if(dlcResult) return {cmd:'dlc',...dlcResult};
   }
 
-  // 6. Température "frigo 1 trois degrés" / "congélateur moins vingt"
-  const tempResult=parseTempVoice(t);
-  if(tempResult) return {cmd:'temp',...tempResult};
+  // 3. Température "frigo 1 trois degrés" / "congélateur moins vingt"
+  const tempResult0=parseTempVoice(t);
+  if(tempResult0) return {cmd:'temp',...tempResult0};
+
+  // 4. Traçabilité rapide "entrée colin 3" / "sortie beurre 2"
+  const tracCmd=parseTracVoice(t,allAlternatives);
+  if(tracCmd) return tracCmd;
+
+  // 5. Commandes globales (phrase exacte ou début de phrase, la plus longue d'abord)
+  const cmdKeys=Object.keys(VOICE_CMDS).sort((a,b)=>b.length-a.length);
+  for(const key of cmdKeys){
+    const kn=normalizeText(key);
+    if(t===kn||t.startsWith(kn+' ')){
+      const result=VOICE_CMDS[key]();
+      if(result==='undo') return {cmd:'undo'};
+      return {cmd:'action',label:result||key};
+    }
+  }
+
+  // 6. Navigation onglets ("recettes", "ouvre les recettes", "aller au dashboard")
+  const navT=t.replace(/^(?:(?:aller|va|vas|ouvre|ouvrir|affiche|afficher|voir|montre|montrer)\s+)?(?:(?:a|au|aux|sur|les|la|le|l')\s+)*/,'').trim();
+  const navKeys=Object.keys(VOICE_NAV).sort((a,b)=>b.length-a.length);
+  for(const key of navKeys){
+    if(navT===normalizeText(key)) return {cmd:'nav',fn:VOICE_NAV[key],label:key};
+  }
 
   // 7. Recherche "chercher beurre" / "recherche colin"
   const searchMatch=t.match(/^(?:cherch(?:er?)?|recherch(?:er?)?|trouv(?:er?)?)\s+(.+)$/);
@@ -1356,6 +1377,22 @@ function parseCmd(raw, allAlternatives){
   if(qtyResult) return {cmd:'set',...qtyResult};
 
   return {cmd:'err',msg:`Non compris : "${raw}". Dites un produit et une quantité, ou une commande (ex: "dashboard", "entrée beurre 3", "frigo 1").`};
+}
+
+// ── Traçabilité rapide "entrée colin 3" / "sortie beurre 2" ──
+function parseTracVoice(t, allAlternatives){
+  for(const [prefix,types] of Object.entries(TRAC_PREFIXES)){
+    const pn=normalizeText(prefix);
+    if(t.startsWith(pn+' ')||t===pn){
+      const rest=t.slice(pn.length).trim();
+      if(!rest) return {cmd:'trac-open',type:types[0]};
+      const qtyParsed=parseQtyAndProduct(rest, allAlternatives);
+      if(qtyParsed) return {cmd:'trac',type:types[0],...qtyParsed};
+      const prod=findProd(rest,allAlternatives);
+      if(prod) return {cmd:'trac-ask-qty',type:types[0],product:prod};
+    }
+  }
+  return null;
 }
 
 // ── Extraire quantité + produit (factorisation) ──
@@ -1416,6 +1453,11 @@ function parseDLCVoice(text, allAlternatives){
   const yearM=text.match(/\b(202\d)\b/);
   if(yearM) year=parseInt(yearM[1]);
   if(!day||!month) return null;
+  // Sans année dite : une date déjà passée désigne l'année suivante (ex. en décembre, « 5 janvier »)
+  if(!yearM){
+    const cand=new Date(year,month-1,day);const today=new Date();today.setHours(0,0,0,0);
+    if(cand<today&&(today-cand)>60*86400000)year++;
+  }
   const dateStr=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
   // Extraire produit (enlever les nombres et mois)
   let prodText=text.replace(/\b\d+\b/g,' ').replace(new RegExp(Object.keys(MOIS).join('|'),'g'),' ').replace(/\s+/g,' ').trim();
@@ -1428,7 +1470,8 @@ function parseTempVoice(text){
   for(const[zoneText,zoneId] of Object.entries(TEMP_VOICE_ZONES)){
     const zn=normalizeText(zoneText);
     if(!text.includes(zn)) continue;
-    const rest=text.replace(zn,'').trim();
+    // « degrés », « °C »… empêchaient la lecture des nombres en lettres
+    const rest=text.replace(zn,'').replace(/\b(degres?|degre|celsius)\b|°c?/g,' ').replace(/\s+/g,' ').trim();
     // Chercher le nombre (peut être négatif "moins vingt")
     let val=null;
     const neg=rest.includes('moins')||rest.includes('-');
@@ -1527,7 +1570,7 @@ function sendCmd(raw, allAlternatives){
     const service=new Date().getHours()<14?'matin':'soir';
     if(typeof setTempVal==='function') setTempVal(parsed.zoneId, service, 'temp', String(parsed.val));
     fb.className='voice-feedback ok';
-    fb.innerHTML=`🌡 <b>${parsed.zoneLabel}</b> (${service}) → <b>${parsed.val}°C</b>`;
+    fb.innerHTML=`🌡 <b>${esc(parsed.zoneLabel)}</b> (${service}) → <b>${parsed.val}°C</b>`;
     if(inp)inp.value='';
     if(typeof openAutocTemp==='function') openAutocTemp();
     return;
@@ -1540,14 +1583,14 @@ function sendCmd(raw, allAlternatives){
     if(!document.getElementById('panel-inventaire')?.classList.contains('active'))
       switchTabByName('inventaire');
     fb.className='voice-feedback ok';
-    fb.innerHTML=`🔍 Recherche : <b>${parsed.query}</b>`;
+    fb.innerHTML=`🔍 Recherche : <b>${esc(parsed.query)}</b>`;
     if(inp)inp.value='';return;
   }
 
   // ERREUR
   if(parsed.cmd==='err'){
     fb.className='voice-feedback err';
-    fb.innerHTML='❌ '+parsed.msg;
+    fb.textContent='❌ '+parsed.msg;
     return;
   }
 
@@ -1606,8 +1649,8 @@ function buildPrintPage(){
   DATA.forEach(d=>{(byZone[d.zone]=byZone[d.zone]||[]).push(d);});
 
   let html=`<div class="print-header">
-    <h1>🍽 Inventaire HACCP — La Salle à Manger</h1>
-    <p>Grenoble · Juin 2026</p>
+    <h1>🍽 Inventaire — La Salle à Manger · Grenoble</h1>
+    <p>Grenoble · ${now.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</p>
     <div class="print-meta">
       <span>Édité le ${dateStr} à ${timeStr}</span>
       <span>${DATA.length} références</span>
@@ -1626,9 +1669,9 @@ function buildPrintPage(){
       const mStr=m!==null?m.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
       const empty=(d.qte===null||d.qte===undefined)?' class="empty-qty"':'';
       return`<tr${empty}>
-        <td>${d.code}</td>
-        <td>${d.produit}</td>
-        <td>${d.unite||''}</td>
+        <td>${esc(d.code)}</td>
+        <td>${esc(d.produit)}</td>
+        <td>${esc(d.unite||'')}</td>
         <td class="num">${d.prix?d.prix.toFixed(2):''}</td>
         <td class="num">${qStr}</td>
         <td class="num">${mStr}</td>
@@ -1683,7 +1726,7 @@ function buildPrintPage(){
     <div class="print-sig"><div class="line"></div>Date / Visa</div>
   </div>`;
 
-  html+=`<div class="print-footer-note">Document généré automatiquement — Inventaire HACCP La Salle à Manger, Grenoble.</div>`;
+  html+=`<div class="print-footer-note">Document généré automatiquement — Inventaire La Salle à Manger, Grenoble.</div>`;
 
   document.getElementById('print-page').innerHTML=html;
 }
@@ -1771,14 +1814,35 @@ function loadAllData(){
   Object.entries(ALLERGEN_PRESETS).forEach(([code,algs])=>{
     if(!ALLERGEN_DATA[code]){ALLERGEN_DATA[code]=algs;changed=true;}
   });
-  if(changed){try{localStorage.setItem(ALLERGENS_KEY,JSON.stringify(ALLERGEN_DATA));syncToCloud('allergenes',ALLERGEN_DATA);}catch(e){}}
+  // Pré-remplissage local uniquement : ne pas pousser vers le serveur au démarrage
+  // (un appareil neuf écrasait sinon les allergènes partagés avant même la 1re synchro).
+  if(changed){try{localStorage.setItem(ALLERGENS_KEY,JSON.stringify(ALLERGEN_DATA));}catch(e){}}
+}
+// Enregistre un module localement et ne l'envoie au serveur QUE s'il a changé.
+// Avant le 18/10/2026, chaque saisie (une DLC, un allergène…) renvoyait les SIX
+// modules de cet appareil, écrasant sur le serveur les saisies faites entre-temps
+// sur les autres appareils (relevés de températures, historique…).
+// Renvoie false si l'enregistrement local a échoué (mémoire du navigateur pleine).
+function saveModule(key,moduleId,data){
+  try{
+    const s=JSON.stringify(data);
+    if(localStorage.getItem(key)===s)return true;
+    localStorage.setItem(key,s);
+    syncToCloud(moduleId,data);
+    return true;
+  }catch(e){
+    console.error('[SAVE] '+moduleId,e);
+    alert('⚠️ Enregistrement impossible sur cet appareil (mémoire du navigateur pleine ?).\nLa dernière saisie ('+moduleId+') risque d\'être perdue.');
+    return false;
+  }
 }
 function saveAllData(){
-  try{localStorage.setItem(DLC_KEY,JSON.stringify(DLC_DATA));syncToCloud('dlc',DLC_DATA);}catch(e){}
-  try{localStorage.setItem(HISTO_KEY,JSON.stringify(HISTO_DATA));syncToCloud('historique',HISTO_DATA);}catch(e){}
-  try{localStorage.setItem(SEUILS_KEY,JSON.stringify(SEUILS_DATA));syncToCloud('seuils',SEUILS_DATA);}catch(e){}
-  try{localStorage.setItem(ALLERGENS_KEY,JSON.stringify(ALLERGEN_DATA));syncToCloud('allergenes',ALLERGEN_DATA);}catch(e){}
-  try{localStorage.setItem(CMD_KEY,JSON.stringify(CMD_DATA));syncToCloud('commande',CMD_DATA);}catch(e){}
+  saveModule(DLC_KEY,'dlc',DLC_DATA);
+  saveModule(HISTO_KEY,'historique',HISTO_DATA);
+  saveModule(SEUILS_KEY,'seuils',SEUILS_DATA);
+  saveModule(ALLERGENS_KEY,'allergenes',ALLERGEN_DATA);
+  saveModule(CMD_KEY,'commande',CMD_DATA);
+  updateDlcTabDot();
 }
 
 let autoSaveTimer=null;
@@ -1871,7 +1935,7 @@ function closeSave(){
 function exportInventoryJSON(){
   const now=new Date();
   const payload={
-    app:'Inventaire HACCP - La Salle à Manger - Grenoble',
+    app:'Inventaire - La Salle à Manger - Grenoble',
     exportedAt:now.toISOString(),
     totalHT:DATA.reduce((s,d)=>s+(mont(d)||0),0),
     items:DATA.map(d=>({code:d.code,produit:d.produit,zone:d.zone,qte:(d.qte===undefined?null:d.qte)}))
@@ -1888,6 +1952,52 @@ function exportInventoryJSON(){
   const fb=document.getElementById('save-feedback');
   fb.className='voice-feedback ok';
   fb.textContent='✓ Fichier de sauvegarde exporté : '+a.download;
+}
+
+// ── Sauvegardes complètes (18/10/2026) ──
+function _downloadJSON(obj,name){
+  const url=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+// Toutes les données présentes sur cet appareil (tous les modules + catalogue)
+function exportFullBackup(){
+  const modules={};
+  if(typeof SYNC_MODULES!=='undefined')Object.entries(SYNC_MODULES).forEach(([id,key])=>{
+    try{const r=localStorage.getItem(key);if(r)modules[id]=JSON.parse(r);}catch(e){}
+  });
+  _downloadJSON({app:'Inventaire - La Salle à Manger - Grenoble',type:'sauvegarde-complete',exportedAt:new Date().toISOString(),
+    produits:DATA.map(d=>({code:d.code,zone:d.zone,cat:d.cat,produit:d.produit,unite:d.unite,prix:d.prix,fournisseur:d.fournisseur,status:d.status,qte:d.qte??null})),
+    modules},'sauvegarde_complete_'+localISODate()+'.json');
+  const fb=document.getElementById('save-feedback');
+  if(fb){fb.className='voice-feedback ok';fb.textContent='✓ Sauvegarde complète téléchargée (catalogue + tous les modules de cet appareil).';}
+}
+// Copies faites automatiquement chaque nuit par Supabase (conservées jusqu'à 24 mois, voir supabase/2026-10-19_sauvegardes.sql)
+async function showServerBackups(){
+  const box=document.getElementById('server-backups');
+  if(box.style.display==='block'){box.style.display='none';return;}
+  box.style.display='block';box.innerHTML='<div class="voice-hint">Chargement…</div>';
+  try{
+    await ensureFreshToken(false);
+    const r=await supa('/rest/v1/rpc/haccp_list_backups',{method:'POST',headers:{Prefer:'return=representation'},body:'{}'});
+    if(!r.ok)throw new Error(r.status===401||r.status===403?'connectez-vous avec un compte autorisé':'erreur '+r.status);
+    const rows=await r.json();
+    box.innerHTML=rows.length?'<div style="border:.5px solid var(--border);border-radius:var(--radius);overflow:hidden">'+rows.map(b=>
+      `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-bottom:.5px solid var(--border);font-size:13px">
+        <span>${new Date(b.taken_at).toLocaleString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})} <small style="color:var(--text3)">${esc(b.kind)} · ${b.taille_ko} Ko</small></span>
+        <button class="dlc-btn-sm" onclick="downloadServerBackup(${Number(b.id)})">⬇️ Télécharger</button></div>`).join('')+'</div>'
+      :'<div class="voice-hint">Aucune sauvegarde pour l\'instant (la première est faite la nuit prochaine).</div>';
+  }catch(e){box.innerHTML='<div class="voice-feedback err">❌ '+esc(e.message)+'</div>';}
+}
+async function downloadServerBackup(id){
+  try{
+    await ensureFreshToken(false);
+    const r=await supa('/rest/v1/rpc/haccp_get_backup',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({p_id:id})});
+    if(!r.ok)throw new Error('erreur '+r.status);
+    const data=await r.json();
+    if(!data)throw new Error('sauvegarde introuvable');
+    _downloadJSON(Object.assign({app:'Inventaire - La Salle à Manger - Grenoble',type:'sauvegarde-serveur'},data),'sauvegarde_serveur_'+String(data.taken_at).slice(0,10)+'.json');
+  }catch(e){alert('Téléchargement impossible : '+e.message);}
 }
 
 function importInventoryJSON(input){
@@ -1969,15 +2079,13 @@ function importInventoryJSON(input){
 }
 
 // ── ENREGISTREMENT SUR DISQUE ────────────────────────────────
-// Clé localStorage pour retenir le handle de fichier entre sessions
-const DISK_HANDLE_KEY='haccp_disk_filehandle_v1';
 let __diskFileHandle=null; // FileSystemFileHandle (API moderne)
 
 function buildSavePayload(){
   const qtes={};
   DATA.forEach(d=>{ qtes[d.code]=(d.qte!==null&&d.qte!==undefined)?d.qte:null; });
   return JSON.stringify({
-    app:'Inventaire HACCP - La Salle à Manger - Grenoble',
+    app:'Inventaire - La Salle à Manger - Grenoble',
     exportedAt:new Date().toISOString(),
     version:2,
     qtes,
@@ -2199,22 +2307,23 @@ function pieceFilename(meta){
 // ── SUGGESTION AUTOMATIQUE D'IMPUTATION ─────────────────────
 // Mots-clés (fournisseurs, libellés) associés à chaque code comptable.
 // Ordre = priorité : les libellés de service les plus spécifiques sont
-// testés avant le repli générique "alimentaire" (601100).
+// testés avant le repli générique "alimentaire" (601000).
 const ACCOUNT_KEYWORDS=[
   {code:'622600',words:['AUDIT','HACCP','APAVE','BUREAU VERITAS','SOCOTEC','CONTROLE SANITAIRE','LABORATOIRE','ANALYSE MICROBIO','PRELEVEMENT']},
   {code:'626300',words:['ORANGE','SFR','BOUYGUES TELECOM','FREE MOBILE','TELEPHONIE','FORFAIT MOBILE','FIBRE OPTIQUE','TELECOM','ABONNEMENT MOBILE','OPERATEUR']},
   {code:'606100',words:['EDF','ENGIE','TOTALENERGIES','ENERGIE','ELECTRICITE','GAZ NATUREL','FACTURE GAZ','FLUIDES','EAU CONSOMMATION','VEOLIA']},
   {code:'651100',words:['LOGICIEL','CAISSE ENREGISTREUSE','ABONNEMENT LOGICIEL','LICENCE LOGICIEL','SAAS','ZELTY','LIGHTSPEED','TILLO','SUMUP','LOGICIEL CAISSE']},
   {code:'615600',words:['MAINTENANCE','REPARATION','DEPANNAGE','SAV','TECHNICIEN','INTERVENTION TECHNIQUE','CLIMATISATION','CHAUDIERE','FRIGORISTE','CONTRAT ENTRETIEN MATERIEL']},
-  {code:'602200',words:['PRODUITS ENTRETIEN','DESINFECTANT','DETERGENT','SOPALIN','ESSUIE TOUT','PAPIER TOILETTE','SAC POUBELLE','ECOLABEL','GANTS','LESSIVE','NETTOYANT']},
-  {code:'606300',words:['VAISSELLE','COUVERT','ASSIETTE','VERRERIE','PLATEAU SERVICE','USTENSILE','PETIT MATERIEL','CASSEROLE','MARMITE','BATTERIE CUISINE']},
-  {code:'607100',words:['FRANCE BOISSONS','MICAND','BRASSERIE','CAVE A VIN','OENOLOGIE','BIERE','VIN ','SODA','EAU MINERALE','SPIRITUEUX']},
-  {code:'601100',words:['SYSCO','POMONA','GINEYS','TRANSGOURMET','EPISAVEUR','EPISSAVEUR','FRAICA','UNION PRIMEURS','DUCEUX','METRO','BRAKE','PROMOCASH','BOUCHERIE','POISSONNERIE','PRIMEUR','CREMERIE','BOULANGERIE','ALIMENTAIRE']},
+  {code:'602220',words:['SAC POUBELLE','SACS POUBELLE','BOBINE DEVIDAGE']},
+  {code:'602290',words:['PRODUITS ENTRETIEN','DESINFECTANT','DETERGENT','DEGRAISSANT','TORK','SOPALIN','ESSUIE TOUT','PAPIER TOILETTE','ECOLABEL','LESSIVE','NETTOYANT']},
+  {code:'602230',words:['EMBALLAGE','JETABLE','GOBELET','PAILLE','LUNCH BOX','BARQUETTE','FILM ETIRABLE','VERRINE','GODET']},
+  {code:'606300',words:['VAISSELLE','COUVERT','VERRERIE','PLATEAU SERVICE','USTENSILE','PETIT MATERIEL','CASSEROLE','MARMITE','BATTERIE CUISINE']},
+  {code:'607000',words:['FRANCE BOISSONS','MICAND','BRASSERIE','CAVE A VIN','OENOLOGIE','BIERE','VIN ','SODA','EAU MINERALE','SPIRITUEUX']},
+  {code:'601000',words:['SYSCO','POMONA','GINEYS','TRANSGOURMET','EPISAVEUR','EPISSAVEUR','FRAICA','UNION PRIMEURS','DUCEUX','METRO','BRAKE','PROMOCASH','BOUCHERIE','POISSONNERIE','PRIMEUR','CREMERIE','BOULANGERIE','ALIMENTAIRE']},
 ];
 
 // Fournisseurs connus, utilisés pour repérer un nom dans le texte OCR.
 const KNOWN_SUPPLIERS=['SYSCO','POMONA','GINEYS','TRANSGOURMET','EPISAVEUR','FRAICA','UNION PRIMEURS','DUCEUX','MICAND','FRANCE BOISSONS','PROMOCASH','CARREFOUR','EDF','ENGIE','ORANGE','SFR','BOUYGUES','FREE','VEOLIA','APAVE','SOCOTEC'];
-
 
 
 function suggestAccountCodeDetailed(text){
@@ -2230,10 +2339,6 @@ function suggestAccountCodeDetailed(text){
   return null;
 }
 
-function suggestAccountCode(text){
-  const r=suggestAccountCodeDetailed(text);
-  return r?r.code:null;
-}
 
 function extractAmountFromText(text){
   if(!text)return null;
@@ -2485,7 +2590,8 @@ function loadPieces(){
   }catch(e){PIECES=[];}
 }
 function savePieces(){
-  try{localStorage.setItem(PIECES_KEY,JSON.stringify(PIECES));}catch(e){}
+  // Registre partagé entre appareils (avant : propre à chaque navigateur)
+  saveModule(PIECES_KEY,'pieces',PIECES);
 }
 
 function addToRegistre(){
@@ -2525,12 +2631,12 @@ function renderPieces(){
     const montantStr=(p.montant!==null&&p.montant!==undefined)?p.montant.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €':'—';
     return`<div class="piece-row">
       <div class="piece-main">
-        <div class="piece-title">${p.code} — ${p.label}</div>
-        <div class="piece-sub">${dateStr}${p.fournisseur?' · '+p.fournisseur:''}</div>
+        <div class="piece-title">${esc(p.code)} — ${esc(p.label)}</div>
+        <div class="piece-sub">${dateStr}${p.fournisseur?' · '+esc(p.fournisseur):''}</div>
       </div>
       <div class="piece-right">
         <span>${montantStr}</span>
-        <button class="piece-del" onclick="removePiece('${p.id}')" title="Supprimer">🗑</button>
+        <button class="piece-del" onclick="removePiece(${jsArg(p.id)})" title="Supprimer">🗑</button>
       </div>
     </div>`;
   }).join('')+'</div>';
@@ -2918,7 +3024,7 @@ function _genCode(){
 function _fillFournisseurList(){
   const dl=document.getElementById('ap-fourn-list');
   const fourns=[...new Set(DATA.map(d=>d.fournisseur).filter(Boolean))].sort();
-  dl.innerHTML=fourns.map(f=>`<option value="${f}">`).join('');
+  dl.innerHTML=fourns.map(f=>`<option value="${esc(f)}">`).join('');
 }
 
 function openAddProduct(){
@@ -2929,11 +3035,12 @@ function openAddProduct(){
   document.getElementById('ap-edit-actions').style.display='none';
   document.getElementById('addprod-feedback').className='addprod-feedback';
   // Réinitialiser les champs
-  ['ap-nom','ap-prix','ap-unite','ap-qte','ap-fourn','ap-cat'].forEach(id=>{document.getElementById(id).value='';});
+  ['ap-nom','ap-prix','ap-unite','ap-qte','ap-fourn','ap-cat','ap-colisage','ap-ean'].forEach(id=>{document.getElementById(id).value='';});
   document.getElementById('ap-zone').value='';
   document.getElementById('ap-seuil').value='';
   document.getElementById('ap-seuil-unit').textContent='';
   document.getElementById('ap-code-wrap').style.display='none';
+  const _apj=document.getElementById('ap-journal');if(_apj)_apj.innerHTML='';
   _fillFournisseurList();
   document.getElementById('addprod-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('ap-nom').focus(),200);
@@ -2955,8 +3062,15 @@ function openEditProduct(code){
   document.getElementById('ap-unite').value=item.unite||'';
   document.getElementById('ap-qte').value=item.qte!=null?item.qte:'';
   document.getElementById('ap-fourn').value=item.fournisseur||'';
+  document.getElementById('ap-colisage').value=item.colisage>0?item.colisage:'';
+  document.getElementById('ap-ean').value=item.ean||'';
+  // Seuil mini : n'était pas rechargé → enregistrer la fiche effaçait le seuil existant
+  const _s=SEUILS_DATA[code];
+  document.getElementById('ap-seuil').value=(_s&&_s.min!=null)?_s.min:'';
+  document.getElementById('ap-seuil-unit').textContent=item.unite||'';
   document.getElementById('ap-code-wrap').style.display='block';
   document.getElementById('ap-code-preview').textContent='Code : '+code+(item.status==='custom'?' (produit ajouté)':'');
+  if(typeof renderProductJournal==='function')renderProductJournal(code);
   _fillFournisseurList();
   document.getElementById('addprod-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('ap-nom').focus(),200);
@@ -2972,20 +3086,23 @@ async function analyzeReceptionPhoto(input) {
   if (status) status.innerHTML = '<span style="color:var(--info-text)">⏳ Compression…</span>';
 
   try {
-    // Compression maximale : 300px, qualité 30%
+    // Compression : 1200 px / qualité 70 % (avant : 300 px / 30 %, trop flou pour
+    // lire de façon fiable une DLC ou un numéro de lot)
     var b64 = await new Promise(function(resolve, reject) {
       var reader = new FileReader();
       reader.onload = function(e) {
         var img = new Image();
         img.onload = function() {
-          var MAX = 300;
+          var MAX = 1200;
           var w = img.width, h = img.height;
-          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-          else { w = Math.round(w * MAX / h); h = MAX; }
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else { w = Math.round(w * MAX / h); h = MAX; }
+          }
           var c = document.createElement('canvas');
           c.width = w; c.height = h;
           c.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve(c.toDataURL('image/jpeg', 0.3).split(',')[1]);
+          resolve(c.toDataURL('image/jpeg', 0.7).split(',')[1]);
         };
         img.onerror = reject;
         img.src = e.target.result;
@@ -2997,17 +3114,21 @@ async function analyzeReceptionPhoto(input) {
     if (preview) { preview.src = 'data:image/jpeg;base64,' + b64; preview.style.display = 'block'; }
     if (status) status.innerHTML = '<span style="color:var(--info-text)">⏳ Analyse IA…</span>';
 
-    var response = await fetch('https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-etiquette', {
+    var response = await fetch(SUPA_URL + '/functions/v1/scan-etiquette', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: edgeHeaders(),
       body: JSON.stringify({ image: b64, mimeType: 'image/jpeg' })
     });
 
-    if (!response.ok) throw new Error('Erreur ' + response.status);
+    if (!response.ok) throw new Error(await edgeErrorMessage(response));
     var info = await response.json();
-    if (info.error) throw new Error(info.error);
+    if (info.error) throw new Error(info.message || info.error);
 
     var filled = 0;
+    if (info.date_fabrication) {
+      var ef = document.getElementById('rec-date-fab');
+      if (ef && /^\d{4}-\d{2}-\d{2}$/.test(info.date_fabrication)) { ef.value = info.date_fabrication; filled++; }
+    }
     if (info.produit) { var e1=document.getElementById('rec-produit'); if(e1){e1.value=info.produit;filled++;} }
     if (info.fournisseur) { var e2=document.getElementById('rec-fourn'); if(e2){e2.value=info.fournisseur;filled++;} }
     if (info.dlc) {
@@ -3038,7 +3159,7 @@ async function analyzeReceptionPhoto(input) {
 
   } catch(e) {
     console.error('[SCAN]', e);
-    if(status) status.innerHTML='<span style="color:var(--pink-text)">⚠️ '+(e.message||'Erreur')+'</span>';
+    if(status) status.innerHTML='<span style="color:var(--pink-text)">⚠️ '+esc(e.message||'Erreur')+'</span>';
   }
   if(input) input.value='';
 }
@@ -3058,15 +3179,33 @@ async function analyzeReceptionPhoto(input) {
 var recState = { receptions: [], nextId: 1 };
 
 function recLoad() {
-  try { var r=localStorage.getItem('haccp-reception-v1'); if(r) recState=JSON.parse(r); }
-  catch(e) {}
-}
-function recSave() {
-  try { 
-    localStorage.setItem('haccp-reception-v1', JSON.stringify(recState));
-    if(typeof syncToCloud==='function') syncToCloud('receptions', recState);
+  try {
+    var r=localStorage.getItem('haccp-reception-v1');
+    if(r){ var s=JSON.parse(r); if(s && Array.isArray(s.receptions)) recState=s; }
   }
   catch(e) {}
+}
+// Renvoie false si l'enregistrement a échoué. Avant le 18/10/2026 l'erreur était
+// avalée : avec des photos en pleine résolution, la mémoire du navigateur (~5 Mo)
+// saturait et la réception n'était PAS enregistrée, sans aucun message.
+function recSave() {
+  try {
+    localStorage.setItem('haccp-reception-v1', JSON.stringify(recState));
+  } catch(e) {
+    console.error('[RECEPTION] enregistrement local impossible', e);
+    alert('⚠️ Réception NON enregistrée : la mémoire de ce navigateur est pleine (photos trop nombreuses ?).\nExportez le CSV puis supprimez des photos anciennes, ou enregistrez sans photo.');
+    return false;
+  }
+  if(typeof syncToCloud==='function') syncToCloud('receptions', recState);
+  return true;
+}
+
+function recResetDateHeure() {
+  var now = new Date();
+  var dateEl  = document.getElementById('rec-date');
+  var heureEl = document.getElementById('rec-heure');
+  if(dateEl)  dateEl.value  = localISODate(now);
+  if(heureEl) heureEl.value = now.toTimeString().slice(0,5);
 }
 
 // Initialisation
@@ -3074,11 +3213,7 @@ document.addEventListener('DOMContentLoaded', function() {
   recLoad();
   renderReceptions();
   recRenderCal();
-  var now = new Date();
-  var dateEl  = document.getElementById('rec-date');
-  var heureEl = document.getElementById('rec-heure');
-  if(dateEl)  dateEl.value  = now.toISOString().slice(0,10);
-  if(heureEl) heureEl.value = now.toTimeString().slice(0,5);
+  recResetDateHeure();
 });
 
 
@@ -3138,15 +3273,35 @@ async function saveReception() {
   if(!fournEl?.value.trim()) { alert('Veuillez saisir le fournisseur'); return; }
   if(!prodEl?.value.trim())  { alert('Veuillez saisir le produit'); return; }
 
+  // Non-conformité (température, DLC, emballage, réserve ou refus) :
+  // l'action corrective / la réserve doit être décrite (exigence HACCP)
+  var _tt = document.getElementById('rec-type-temp')?.value;
+  var _t = parseFloat(tempEl?.value);
+  var _nc = [];
+  if (_tt && _tt !== 'na' && !isNaN(_t) && _t > parseFloat(_tt)) _nc.push('température');
+  if (dlcEl?.value === 'ko') _nc.push('DLC');
+  if (embEl?.value && embEl.value !== 'ok') _nc.push('emballages');
+  if (decEl?.value && decEl.value !== 'ok') _nc.push(decEl.value === 'refuse' ? 'refus' : 'réserve');
+  if (_nc.length && !obsEl?.value.trim()) {
+    alert('⚠️ Non-conformité (' + _nc.join(', ') + ').\nDécrivez l\'action corrective / la réserve dans « Observations » avant d\'enregistrer.');
+    obsEl?.focus();
+    return;
+  }
+
+  var typeTempEl = document.getElementById('rec-type-temp');
   var rec = {
     id:       Date.now(),
-    date:     dateEl?.value || new Date().toISOString().slice(0,10),
+    date:     dateEl?.value || localISODate(),
     heure:    heureEl?.value || '',
     fourn:    normalizeFournisseur(fournEl?.value) || '',
     produit:  prodEl?.value.trim() || '',
     qte:      qteEl?.value || '',
     unite:    uniteEl?.value || 'kg',
     temp:     tempEl?.value || '',
+    // Seuil attendu (4 / 8 / -18 / na) : nécessaire pour juger la conformité dans
+    // l'historique (avant : toujours comparé à 4 °C, même pour l'ambiant)
+    typeTemp: typeTempEl?.value || '4',
+    by:       (typeof getCurrentUserIdentifier==='function') ? getCurrentUserIdentifier() : '',
     dlc:      dlcEl?.value || 'ok',
     emb:      embEl?.value || 'ok',
     decision: decEl?.value || 'ok',
@@ -3165,8 +3320,15 @@ async function saveReception() {
 
   // Sauvegarder
   recState.receptions.unshift(rec);
-  recSave();
+  if(!recSave()) {
+    // Réessayer sans les photos plutôt que de perdre l'enregistrement HACCP
+    if(rec.photos.length && confirm('Enregistrer la réception SANS les photos ?')) {
+      rec.photos = [];
+      if(!recSave()) { recState.receptions.shift(); return; }
+    } else { recState.receptions.shift(); return; }
+  }
   renderReceptions();
+  recRenderCal();
 
   // Reset
   if(prodEl)    prodEl.value  = '';
@@ -3181,6 +3343,11 @@ async function saveReception() {
   window.recPendingPhotos = [];
   var prev = document.getElementById('rec-photo-previews');
   if(prev) prev.innerHTML = '';
+  var cnt = document.getElementById('rec-photo-count');
+  if(cnt) cnt.textContent = '';
+  var box = document.getElementById('rec-alert-box');
+  if(box) box.innerHTML = '';
+  recResetDateHeure();
 
   // Feedback visuel
   var btn = document.querySelector('.rec-btn-save');
@@ -3193,6 +3360,8 @@ async function saveReception() {
 
   // Déclencher un événement custom pour intégration externe
   document.dispatchEvent(new CustomEvent('receptionSaved', { detail: rec }));
+  // Envoi des photos vers l'espace de stockage privé (dès que possible)
+  recUploadPendingPhotos();
 }
 
 
@@ -3207,21 +3376,25 @@ function renderReceptions() {
   tbody.innerHTML = recs.map(function(r) {
     var decCls = r.decision==='ok'?'color:#1B4332;font-weight:700': r.decision==='reserve'?'color:#D97706;font-weight:700':'color:#991B1B;font-weight:700';
     var tempNum = parseFloat(r.temp);
-    var tempLimit = parseFloat(r['type-temp']||'4');
+    // Anciennes réceptions sans seuil mémorisé : comparaison à 4 °C comme avant
+    var tempLimit = parseFloat(r.typeTemp || r['type-temp'] || '4');
     var tempOk = isNaN(tempNum) || isNaN(tempLimit) || tempNum <= tempLimit;
     var tempCls = tempOk ? '' : 'color:#991B1B;font-weight:700';
-    var photos = r.photos?.length ? '<span style="cursor:pointer;color:#2D6A4F;font-weight:600" onclick="openLightbox(recState.receptions.find(function(x){return x.id==='+r.id+'}).photos[0])">📷 '+r.photos.length+'</span>' : '—';
+    var photos = r.photos?.length ? r.photos.map(function(p, i) {
+      var enAttente = typeof p === 'string';
+      return '<span style="cursor:pointer;color:#2D6A4F;font-weight:600;margin-right:4px" title="' + (enAttente ? 'Photo pas encore envoyée sur le serveur' : 'Photo enregistrée') + '" onclick="recOpenPhoto(' + jsArg(r.id) + ',' + i + ')">📷' + (r.photos.length > 1 ? (i + 1) : '') + (enAttente ? '⏳' : '') + '</span>';
+    }).join('') : '—';
     return '<tr>'+
-      '<td>'+r.date+'</td>'+
-      '<td>'+r.heure+'</td>'+
-      '<td style="font-weight:600">'+r.fourn+'</td>'+
-      '<td>'+r.produit+(r.qte?' — <b>'+r.qte+' '+(r.unite||'')+'</b>':'')+'</td>'+
-      '<td style="font-family:monospace;font-weight:600;'+tempCls+'">'+r.temp+(r.temp?'°C':'—')+'</td>'+
+      '<td>'+esc(r.date)+'</td>'+
+      '<td>'+esc(r.heure)+'</td>'+
+      '<td style="font-weight:600">'+esc(r.fourn)+'</td>'+
+      '<td>'+esc(r.produit)+(r.qte?' — <b>'+esc(r.qte)+' '+esc(r.unite||'')+'</b>':'')+'</td>'+
+      '<td style="font-family:monospace;font-weight:600;'+tempCls+'">'+esc(r.temp)+(r.temp?'°C':'—')+'</td>'+
       '<td>'+(r.dlc==='ok'?'✅':'❌')+'</td>'+
       '<td>'+(r.emb==='ok'?'✅':r.emb==='partiel'?'⚠️':'❌')+'</td>'+
       '<td style="'+decCls+'">'+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</td>'+
       '<td>'+photos+'</td>'+
-      '<td>'+r.op+'</td>'+
+      '<td>'+esc(r.op)+'</td>'+
     '</tr>';
   }).join('');
 }
@@ -3232,20 +3405,36 @@ function handleRecPhotos(input) {
   var files = Array.from(input.files || []);
   var prev  = document.getElementById('rec-photo-previews');
   if(!prev) return;
+  // 18/10/2026 : photos réduites (1024 px, JPEG 60 %, ~100 Ko) au lieu de la
+  // pleine résolution (3-7 Mo chacune) qui saturait la mémoire du navigateur.
+  var MAX_PHOTOS = 3;
+  window.recPendingPhotos = window.recPendingPhotos || [];
   files.forEach(function(file) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var dataURL = e.target.result;
-      window.recPendingPhotos = window.recPendingPhotos || [];
+    if (window.recPendingPhotos.length >= MAX_PHOTOS) return;
+    if (!file.type || file.type.indexOf('image/') !== 0) return;
+    var url = URL.createObjectURL(file);
+    var im = new Image();
+    im.onload = function() {
+      var MAX = 1024, w = im.width, h = im.height;
+      if (w > MAX || h > MAX) { var s = MAX / Math.max(w, h); w = Math.round(w * s); h = Math.round(h * s); }
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      c.getContext('2d').drawImage(im, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      var dataURL = c.toDataURL('image/jpeg', 0.6);
+      if (window.recPendingPhotos.length >= MAX_PHOTOS) return;
       window.recPendingPhotos.push({ dataURL: dataURL, name: file.name });
       var img = document.createElement('img');
       img.src = dataURL;
       img.className = 'photo-preview';
       img.onclick = function() { openLightbox(dataURL); };
       prev.appendChild(img);
+      var cnt = document.getElementById('rec-photo-count');
+      if (cnt) cnt.textContent = window.recPendingPhotos.length + ' / ' + MAX_PHOTOS + ' photo(s)';
     };
-    reader.readAsDataURL(file);
+    im.onerror = function() { URL.revokeObjectURL(url); };
+    im.src = url;
   });
+  if (input) input.value = '';
 }
 
 
@@ -3259,6 +3448,75 @@ function openLightbox(url) {
 function closeLightbox() {
   var lb = document.getElementById('lightbox');
   if(lb) lb.style.display = 'none';
+}
+
+// ── Photos de réception dans Supabase Storage (18/10/2026) ──
+// Une photo est d'abord gardée sur l'appareil (texte « data:… »), puis envoyée
+// dans l'espace privé « receptions-photos » dès que la connexion le permet ;
+// la réception ne garde alors que le chemin du fichier ({path}). Les données
+// partagées restent ainsi légères, et les photos survivent au vidage du navigateur.
+var REC_BUCKET = 'receptions-photos';
+var _recPhotoUrlCache = {};
+var _recUploading = false;
+
+function _dataUrlToBlob(dataURL) {
+  var parts = dataURL.split(','), mime = (parts[0].match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+  var bin = atob(parts[1]), arr = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+async function recUploadPendingPhotos() {
+  if (_recUploading || !navigator.onLine) return;
+  if (typeof ensureFreshToken !== 'function' || !(await ensureFreshToken(false))) return;
+  _recUploading = true;
+  var changed = false;
+  try {
+    for (var r of (recState.receptions || [])) {
+      if (!Array.isArray(r.photos)) continue;
+      for (var i = 0; i < r.photos.length; i++) {
+        var p = r.photos[i];
+        if (typeof p !== 'string' || p.indexOf('data:') !== 0) continue;
+        var path = r.id + '/' + i + '-' + Date.now() + '.jpg';
+        var resp = await fetch(SUPA_URL + '/storage/v1/object/' + REC_BUCKET + '/' + path, {
+          method: 'POST',
+          headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + window._supabaseAuthToken, 'Content-Type': 'image/jpeg', 'x-upsert': 'true' },
+          body: _dataUrlToBlob(p)
+        });
+        if (!resp.ok) { console.warn('[PHOTOS] envoi refusé', resp.status); _recUploading = false; return; }
+        _recPhotoUrlCache[path] = p;
+        r.photos[i] = { path: path };
+        changed = true;
+      }
+    }
+  } catch (e) {
+    console.warn('[PHOTOS] envoi impossible :', e.message);
+  } finally {
+    _recUploading = false;
+    if (changed) { recSave(); renderReceptions(); }
+  }
+}
+
+// Renvoie une adresse affichable pour une photo (locale ou stockée sur le serveur)
+async function recPhotoUrl(p) {
+  if (typeof p === 'string') return p;
+  if (!p || !p.path) return '';
+  if (_recPhotoUrlCache[p.path]) return _recPhotoUrlCache[p.path];
+  if (typeof ensureFreshToken === 'function') await ensureFreshToken(false);
+  var resp = await fetch(SUPA_URL + '/storage/v1/object/authenticated/' + REC_BUCKET + '/' + p.path, {
+    headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + (window._supabaseAuthToken || SUPA_KEY) }
+  });
+  if (!resp.ok) throw new Error('photo indisponible (' + resp.status + ')');
+  var url = URL.createObjectURL(await resp.blob());
+  _recPhotoUrlCache[p.path] = url;
+  return url;
+}
+
+async function recOpenPhoto(recId, idx) {
+  var r = (recState.receptions || []).find(function(x) { return String(x.id) === String(recId); });
+  if (!r || !r.photos || !r.photos[idx]) return;
+  try { openLightbox(await recPhotoUrl(r.photos[idx])); }
+  catch (e) { alert('⚠️ ' + e.message + ' — connectez-vous pour voir les photos.'); }
 }
 
 
@@ -3305,8 +3563,8 @@ function recSelectDay(dateStr) {
   if(!dayRecs.length) { list.innerHTML = '<p style="color:#9B9892;font-size:13px">Aucune réception ce jour</p>'; return; }
   list.innerHTML = dayRecs.map(function(r){
     return '<div style="padding:8px;border-radius:8px;background:#F7F5F0;margin-bottom:6px;font-size:13px">'+
-      '<b>'+r.fourn+'</b> — '+r.produit+(r.qte?' ('+r.qte+' '+r.unite+')':'')+'<br>'+
-      '<span style="color:#5C5954">'+r.temp+(r.temp?'°C · ':'')+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</span>'+
+      '<b>'+esc(r.fourn)+'</b> — '+esc(r.produit)+(r.qte?' ('+esc(r.qte)+' '+esc(r.unite)+')':'')+'<br>'+
+      '<span style="color:#5C5954">'+esc(r.temp)+(r.temp?'°C · ':'')+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</span>'+
     '</div>';
   }).join('');
   panel.style.display = 'block';
@@ -3339,40 +3597,33 @@ function exportReceptions() {
 }
 
 
-
 // ---------------------------------------------------------------------------
 // Données de référence
 // ---------------------------------------------------------------------------
+// Plan comptable du cabinet (relevé sur les factures annotées d'octobre 2026).
+// La TVA n'est pas récupérée : elle est passée en charge sur le compte 635200,
+// d'où un taux 0 % sur chaque ligne et une ligne 635200 par facture.
 const DEFAULT_CODES = [
-  { code:"601100", libelle:"Nourriture (denrées alimentaires)", taux:5.5, compteTva:"445660" },
-  { code:"601200", libelle:"Boissons", taux:20, compteTva:"445660" },
-  { code:"601400", libelle:"Cafétéria (café, thé, consommables)", taux:5.5, compteTva:"445660" },
-  { code:"602100", libelle:"Emballages et fournitures liées aux produits", taux:20, compteTva:"445660" },
-  { code:"606300", libelle:"Produits d’entretien", taux:20, compteTva:"445660" },
-  { code:"606400", libelle:"Fournitures administratives", taux:20, compteTva:"445660" },
-  { code:"606800", libelle:"Autres achats (exploitation courante)", taux:20, compteTva:"445660" },
-  { code:"607000", libelle:"Achats de marchandises (revente en l’état)", taux:10, compteTva:"445660" },
-  { code:"611000", libelle:"Sous-traitance générale", taux:20, compteTva:"445660" },
-  { code:"615000", libelle:"Entretien et réparations", taux:20, compteTva:"445660" },
-  { code:"622600", libelle:"Honoraires (comptable, conseil)", taux:20, compteTva:"445660" },
-  { code:"626000", libelle:"Frais postaux et télécommunications", taux:20, compteTva:"445660" },
+  { code:"601000", libelle:"Denrées alimentaires (nourriture, frais de livraison)", taux:0, compteTva:"635200" },
+  { code:"607000", libelle:"Boissons / marchandises", taux:0, compteTva:"635200" },
+  { code:"602230", libelle:"Fournitures et emballages jetables", taux:0, compteTva:"635200" },
+  { code:"602220", libelle:"Sacs poubelle, bobines dévidage", taux:0, compteTva:"635200" },
+  { code:"602290", libelle:"Produits d’entretien et hygiène", taux:0, compteTva:"635200" },
+  { code:"602200", libelle:"Fournitures d’entretien (lavettes…)", taux:0, compteTva:"635200" },
+  { code:"635200", libelle:"TVA non récupérable", taux:0, compteTva:"" },
+  { code:"606400", libelle:"Fournitures administratives", taux:0, compteTva:"635200" },
+  { code:"615000", libelle:"Entretien et réparations", taux:0, compteTva:"635200" },
+  { code:"622600", libelle:"Honoraires (comptable, conseil)", taux:0, compteTva:"635200" },
+  { code:"626000", libelle:"Frais postaux et télécommunications", taux:0, compteTva:"635200" },
 ];
 const DEFAULT_SUPPLIERS = [
-  { id:"sup-primeur", nom:"Union Primeurs (FUNI01)", code:"601100" },
-  { id:"sup-sysco", nom:"Sysco", code:"601100" },
-  { id:"sup-pomona", nom:"Pomona", code:"601100" },
-  { id:"sup-boulanger", nom:"Boulangerie Le Pain et le Vin", code:"601100" },
+  { id:"sup-sysco", nom:"Sysco", code:"601000" },
+  { id:"sup-gineys", nom:"Gineys", code:"601000" },
+  { id:"sup-transgourmet", nom:"Transgourmet", code:"601000" },
+  { id:"sup-primeur", nom:"Union Primeurs (FUNI01)", code:"601000" },
+  { id:"sup-pomona", nom:"Pomona", code:"601000" },
 ];
-const SEED_INVOICES = [
-  { id:"seed-1", date:"2026-08-17", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:65.28, taux:0, code:"601100" },
-  { id:"seed-2", date:"2026-08-24", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:73.87, taux:0, code:"601100" },
-  { id:"seed-3", date:"2026-08-26", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:57.93, taux:0, code:"601100" },
-  { id:"seed-4", date:"2026-08-31", fournisseur:"Union Primeurs (FUNI01)", bl:"", ht:42.26, taux:0, code:"601100" },
-  { id:"seed-5", date:"2026-08-19", fournisseur:"Sysco", bl:"", ht:205.30, taux:0, code:"601100" },
-  { id:"seed-6", date:"2026-08-24", fournisseur:"Sysco", bl:"", ht:195.85, taux:0, code:"601100" },
-  { id:"seed-7", date:"2026-08-26", fournisseur:"Sysco", bl:"", ht:238.70, taux:0, code:"601100" },
-  { id:"seed-8", date:"2026-08-19", fournisseur:"Pomona", bl:"", ht:228.46, taux:0, code:"601100" },
-];
+const SEED_INVOICES = [];
 const TAUX_OPTIONS = [0, 5.5, 10, 20];
 const PIE_COLORS = ["#7f1d2e","#b5763f","#5b7a5e","#8a8478","#a3623f","#4a6670","#9c8a5a","#6f4a5b"];
 
@@ -3392,7 +3643,7 @@ function monthLabel(key){
 }
 function computeLine(inv){
   const ht=Number(inv.ht)||0, taux=Number(inv.taux)||0;
-  const tva=Math.round(ht*(taux/100)*100)/100;
+  const tva=Math.round(ht*(taux/100)*100)/100||0; // ||0 : évite « -0,00 € » sur les avoirs
   const ttc=Math.round((ht+tva)*100)/100;
   return {ht,tva,ttc};
 }
@@ -3407,22 +3658,34 @@ const CaApp = {
   scan: { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] },
   toastMsg: null, toastTimer: null,
 
-  init(){
+  loadFromStorage(){
     try { this.invoices = JSON.parse(localStorage.getItem("ca_invoices")) || SEED_INVOICES.slice(); }
     catch(e){ this.invoices = SEED_INVOICES.slice(); }
     try { this.suppliers = JSON.parse(localStorage.getItem("ca_suppliers")) || DEFAULT_SUPPLIERS.slice(); }
     catch(e){ this.suppliers = DEFAULT_SUPPLIERS.slice(); }
     try { this.codes = JSON.parse(localStorage.getItem("ca_codes")) || DEFAULT_CODES.slice(); }
     catch(e){ this.codes = DEFAULT_CODES.slice(); }
-    this.apiKey = localStorage.getItem("ca_api_key") || "";
+  },
+  init(){
+    this.loadFromStorage();
+    // Ancienne clé API saisie dans le navigateur : inutile, on l'efface
+    try { localStorage.removeItem("ca_api_key"); } catch(e) {}
+    this.apiKey = "";
     const months = Array.from(new Set(this.invoices.map(i=>monthKey(i.date)))).sort();
     this.selectedMonth = months.length ? months[months.length-1] : "";
-    this.saveAll();
+    // (plus d'enregistrement à l'ouverture : les valeurs par défaut d'un appareil
+    // neuf ne doivent pas être envoyées au serveur avant une vraie saisie)
     this.render();
   },
-  saveInvoices(){ localStorage.setItem("ca_invoices", JSON.stringify(this.invoices)); },
-  saveSuppliers(){ localStorage.setItem("ca_suppliers", JSON.stringify(this.suppliers)); },
-  saveCodes(){ localStorage.setItem("ca_codes", JSON.stringify(this.codes)); },
+  // Données reçues d'un autre appareil (synchro)
+  reloadFromStorage(){
+    this.loadFromStorage();
+    if (this._initialized && !this.editingInvoiceId && !(this.scan && this.scan.common)) this.render();
+  },
+  // Enregistrement local + envoi au serveur (Cahier d'achats partagé entre appareils)
+  saveInvoices(){ saveModule("ca_invoices", "ca_invoices", this.invoices); },
+  saveSuppliers(){ saveModule("ca_suppliers", "ca_suppliers", this.suppliers); },
+  saveCodes(){ saveModule("ca_codes", "ca_codes", this.codes); },
   saveAll(){ this.saveInvoices(); this.saveSuppliers(); this.saveCodes(); },
 
   toast(msg, type){
@@ -3447,7 +3710,8 @@ const CaApp = {
   totals(list){
     let ht=0,tva=0,ttc=0;
     list.forEach(i=>{ const c=computeLine(i); ht+=c.ht; tva+=c.tva; ttc+=c.ttc; });
-    return {ht,tva,ttc,count:list.length};
+    // Une facture ventilée sur plusieurs comptes = plusieurs lignes, même factureId
+    return {ht,tva,ttc,count:new Set(list.map(i=>i.factureId||i.id)).size};
   },
   byCode(list){
     const map={};
@@ -3463,7 +3727,22 @@ const CaApp = {
   setTab(t){ this.tab=t; this.render(); },
   setMonth(v){ this.selectedMonth=v; this.render(); },
   setLedgerFilter(v){ this.ledgerCodeFilter=v; this.render(); },
-  setEntryMode(m){ this.entryMode=m; this.resetScan(); this.render(); },
+  setEntryMode(m){ this.entryMode=m; this.resetScan(); if(m==='manual') this.startManual(); this.render(); },
+  // Rafraîchit le contrôle TTC pendant la saisie (sans tout redessiner)
+  scanLiveCheck(){
+    this.syncScanLinesFromDom();
+    const el = document.getElementById("scan-ttc-check"); if(!el) return;
+    el.outerHTML = this.scanCheckHtml();
+  },
+  scanCheckHtml(){
+    const tot = this.scan.lines.reduce((s,l)=>s+computeLine(l).ttc,0);
+    const ecart = this.scanEcartTTC();
+    let msg, cls;
+    if(ecart===null){ msg = `Total ventilé : <strong>${eur(tot)}</strong> — saisissez le TTC de la facture pour le contrôle`; cls="banner"; }
+    else if(Math.abs(ecart)<=0.02){ msg = `✅ Total ventilé ${eur(tot)} = TTC de la facture`; cls="banner ap-ok"; }
+    else { msg = `⚠️ Total ventilé ${eur(tot)} ≠ TTC ${eur(tot-ecart)} : écart de <strong>${eur(ecart)}</strong>`; cls="banner ap-ko"; }
+    return `<div id="scan-ttc-check" class="${cls}" style="margin:14px 0;">${msg}</div>`;
+  },
 
   // ---- Factures ----
   addInvoiceFromForm(prefix){
@@ -3477,7 +3756,7 @@ const CaApp = {
     if(!date){ errEl.textContent="La date est obligatoire."; return; }
     if(!fournisseur){ errEl.textContent="Le fournisseur est obligatoire."; return; }
     if(!code){ errEl.textContent="Le code de ventilation est obligatoire."; return; }
-    if(!Number.isFinite(ht) || ht<=0){ errEl.textContent="Le montant HT doit être un nombre supérieur à 0."; return; }
+    if(!Number.isFinite(ht) || ht===0){ errEl.textContent="Le montant HT doit être un nombre non nul (négatif pour un avoir)."; return; }
     if(this.editingInvoiceId){
       this.invoices = this.invoices.map(i=> i.id===this.editingInvoiceId ? {...i,date,fournisseur,bl,ht,taux,code} : i);
       this.editingInvoiceId = null;
@@ -3574,12 +3853,65 @@ const CaApp = {
     this.scan = { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] };
   },
   onScanFile(input){
-    const file = input.files && input.files[0];
+    const files = Array.from(input.files || []);
     input.value = "";
-    if(!file) return;
+    if(!files.length) return;
+    if(files.length>1){ this.analyzeBatch(files); return; }
+    const file = files[0];
     this.resetScan();
+    this.scan.file = file;
     if(file.type.startsWith("image/")) this.scan.previewUrl = URL.createObjectURL(file);
     this.analyzeInvoiceFile(file);
+  },
+  // Import par lot : chaque fichier est analysé à la suite, puis vérifié et validé un par un
+  freshScan(){ return { previewUrl:"", loading:false, error:"", note:"", common:null, lines:[] }; },
+  async analyzeBatch(files){
+    this.resetScan();
+    this.batch = { running:true, current:null, items: files.map(f=>({ id:uid(), name:f.name, file:f, status:"en attente", scan:null })) };
+    for(const it of this.batch.items){
+      if(!this.batch) return; // lot abandonné
+      it.status = "analyse…";
+      this.scan = this.freshScan(); this.scan.file = it.file;
+      if(it.file.type.startsWith("image/")) this.scan.previewUrl = URL.createObjectURL(it.file);
+      await this.analyzeInvoiceFile(it.file);
+      it.scan = this.scan;
+      it.status = this.scan.error ? "erreur" : "à vérifier";
+    }
+    if(!this.batch) return;
+    this.batch.running = false;
+    this.scan = this.freshScan();
+    this.toast(`${this.batch.items.length} factures analysées : vérifiez-les une par une.`);
+    this.render();
+  },
+  batchOpen(id){
+    const it = this.batch && this.batch.items.find(x=>x.id===id);
+    if(!it || !it.scan || !it.scan.common) return;
+    this.batch.current = id; this.scan = it.scan; this.render();
+    window.scrollTo(0, (document.getElementById("panel-factures-ca")||document.body).offsetTop);
+  },
+  batchSkip(id){
+    const it = this.batch && this.batch.items.find(x=>x.id===id); if(!it) return;
+    it.status = "ignorée"; if(this.batch.current===id){ this.batch.current=null; this.scan=this.freshScan(); }
+    this.render();
+  },
+  batchClose(){
+    if(this.batch && this.batch.items.some(x=>x.status==="à vérifier") && !confirm("Des factures du lot n'ont pas été enregistrées. Fermer le lot quand même ?")) return;
+    this.batch = null; this.resetScan(); this.render();
+  },
+  batchHtml(){
+    const b = this.batch; if(!b) return "";
+    const ok = b.items.filter(x=>x.status==="enregistrée").length;
+    return `<div class="card" style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:14px;font-weight:600;">📚 Lot de ${b.items.length} factures — ${ok} enregistrée${ok>1?'s':''}${b.running?' · analyse en cours…':''}</div>
+        <div style="display:flex;gap:8px;">${!b.running && ok && typeof apBatchPrix==='function'?`<button class="btn btn-ghost" onclick="apBatchPrix()">💰 Comparer les prix du lot</button>`:''}<button class="btn btn-ghost" onclick="CaApp.batchClose()">Fermer le lot</button></div>
+      </div>
+      <table class="ap-table"><tr><th>Fichier</th><th>Fournisseur / date</th><th class="num">TTC</th><th>État</th><th></th></tr>
+      ${b.items.map(it=>{ const c=it.scan&&it.scan.common; return `<tr${b.current===it.id?' style="background:#faf6ee"':''}>
+        <td>${esc(it.name)}</td><td>${c?esc(c.fournisseur||'?')+' · '+esc(c.date||''):'—'}</td><td class="num">${c&&c.ttc!==""?eur(Number(c.ttc)):'—'}</td>
+        <td>${it.status==="enregistrée"?'✅ enregistrée':it.status==="erreur"?'⚠️ '+esc(it.scan&&it.scan.error||'erreur'):esc(it.status)}</td>
+        <td style="text-align:right;white-space:nowrap;">${it.status==="à vérifier"?`<button class="btn btn-primary" style="padding:4px 10px" onclick="CaApp.batchOpen('${it.id}')">Vérifier</button> <button class="btn-icon" title="Ignorer" onclick="CaApp.batchSkip('${it.id}')">✕</button>`:''}</td></tr>`; }).join("")}
+      </table></div>`;
   },
   fileToBase64(file){
     return new Promise((resolve,reject)=>{
@@ -3633,23 +3965,33 @@ const CaApp = {
         base64 = await this.fileToBase64(resized);
         contentBlock = { type:"image", source:{ type:"base64", media_type:"image/jpeg", data:base64 } };
       }
-      const codesListText = this.codes.map(c=>`${c.code} = ${c.libelle}`).join("\n");
+      // Comptes de charges seulement : la TVA (635200) est ajoutée par l'appli à partir du total TVA
+      const codesListText = this.codes.filter(c=>c.code!=="635200").map(c=>`${c.code} = ${c.libelle}`).join("\n");
       const systemPrompt = "Tu es un assistant comptable qui ventile les factures fournisseurs d'un restaurant selon le plan de ventilation suivant (code = libellé) :\n"+codesListText+
-        "\n\nAnalyse la facture fournie (photo ou PDF) et découpe son montant en une ou plusieurs lignes de ventilation, une ligne par catégorie de produits réellement présente sur la facture. Pour chaque ligne, choisis le code EXACTEMENT parmi la liste ci-dessus, sans en inventer un nouveau. Si un seul type de produit est présent, renvoie une seule ligne. Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balises markdown, au format exact :\n"+
-        '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_bl":"...","lignes":[{"code":"...","montant_ht":0.00,"taux_tva":0}]}\n'+
-        "Les taux de TVA possibles sont 0, 5.5, 10 ou 20. Si une information est illisible ou absente, mets null.";
+        "\n\nAnalyse la facture fournie (photo ou PDF). Réponds UNIQUEMENT avec un objet JSON valide, sans texte ni balises markdown, au format exact :\n"+
+        '{"date":"AAAA-MM-JJ","fournisseur":"...","numero_facture":"...","avoir":false,"facture_origine":null,"total_ht":0.00,"total_tva":0.00,"total_ttc":0.00,"lignes":[{"code":"...","montant_ht":0.00}],"articles":[{"designation":"...","reference":"...","quantite":0,"unite":"...","prix_unitaire_ht":0.00,"montant_ht":0.00,"code":"..."}]}\n'+
+        "Règles :\n"+
+        "- articles = CHAQUE ligne facturée (y compris frais de livraison, de port ou les lignes « fa » / « se »), avec son prix unitaire HT net après remise, son unité de facturation (KG, L, PCE, BT, ST, CT…) et son montant HT de ligne. La somme des montant_ht des articles doit être égale au total HT imprimé.\n"+
+        "- code de chaque article : choisi EXACTEMENT dans la liste ci-dessus. Denrées alimentaires et frais de livraison = 601000 ; boissons = 607000 ; emballages, vaisselle jetable, gobelets, pailles, lunch box, film = 602230 ; sacs poubelle, bobines = 602220 ; produits d'entretien et d'hygiène = 602290.\n"+
+        "- lignes = la somme des articles par code (HT, hors TVA).\n"+
+        "- total_ht, total_tva, total_ttc = les totaux imprimés en bas de la facture.\n"+
+        "- Pour un AVOIR : avoir=true, facture_origine = numéro de la facture d'origine s'il est indiqué, et tous les montants en NÉGATIF.\n"+
+        "- Relis chaque chiffre (0/O, 1/I, 5/S, 8/B ; virgule décimale française). Si une information est illisible, mets null.";
 
-      const resp = await fetch("https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-facture", {
+      // 18/10/2026 : le plan de ventilation (systemPrompt) était construit mais
+      // jamais envoyé → l'IA utilisait son prompt par défaut, sans codes, et
+      // chaque ligne retombait sur le code « Autres achats ». L'image envoyée est
+      // aussi celle redimensionnée (JPEG), d'où media_type image/jpeg.
+      const resp = await fetch(SUPA_URL + "/functions/v1/scan-facture", {
         method:"POST",
-        headers:{"content-type":"application/json"},
-        body: JSON.stringify({ base64: base64, media_type: isPdf ? "application/pdf" : (file.type || "image/jpeg") })
+        headers: edgeHeaders(),
+        body: JSON.stringify({ base64: base64, media_type: isPdf ? "application/pdf" : "image/jpeg", systemPrompt: systemPrompt })
       });
       if(!resp.ok){
-        const errBody = await resp.text().catch(()=> "");
-        throw new Error("Le service d’analyse a répondu une erreur ("+resp.status+"). "+(errBody? "Vérifiez votre clé API." : ""));
+        throw new Error(await edgeErrorMessage(resp));
       }
       const data = await resp.json();
-      if(data.error) throw new Error('Erreur analyse : ' + data.error);
+      if(data.error) throw new Error('Erreur analyse : ' + (data.message || data.error));
       // Edge Function renvoie JSON direct {date, fournisseur, lignes}
       // Compatibilite ancien format {content:[{type:"text",...}]}
       let parsed = data;
@@ -3665,26 +4007,40 @@ const CaApp = {
       const {supplier, isNew} = this.matchOrCreateSupplier(parsed.fournisseur);
       const fallbackCode = this.codes.find(c=>/autre/i.test(c.libelle)) || this.codes[0];
       const rawLines = Array.isArray(parsed.lignes) ? parsed.lignes : [];
+      const codeOk = c => (this.codes.find(x=>x.code===c) ? c : (fallbackCode?fallbackCode.code:this.codes[0].code));
       let lines = rawLines.map(l=>{
-        const codeMatch = this.codes.find(c=>c.code===l.code);
         const ht = Number(l.montant_ht);
-        const rawTaux = Number(l.taux_tva);
-        const base = Number.isFinite(rawTaux)?rawTaux:0;
-        const taux = TAUX_OPTIONS.reduce((best,t)=> Math.abs(t-base)<Math.abs(best-base)?t:best, TAUX_OPTIONS[0]);
-        return { id:uid(), code: codeMatch? codeMatch.code : (fallbackCode?fallbackCode.code:this.codes[0].code), ht: (Number.isFinite(ht)&&ht>0)?ht:"", taux };
+        return { id:uid(), code: codeOk(l.code), ht: (Number.isFinite(ht)&&ht!==0)?Math.round(ht*100)/100:"", taux:0 };
       });
+      // Articles lus sur la facture : servent à la ventilation (règles apprises) et aux prix de l'inventaire
+      const articles = (Array.isArray(parsed.articles)?parsed.articles:[]).map(a=>({designation:String(a.designation||'').trim(),reference:String(a.reference||'').trim(),quantite:Number(a.quantite),prix_ht:Number(a.prix_unitaire_ht),montant_ht:Number(a.montant_ht),unite:String(a.unite||'').trim(),code:codeOk(a.code)})).filter(a=>a.designation);
+      const totHT = Number(parsed.total_ht), totTVA = Number(parsed.total_tva), totTTC = Number(parsed.total_ttc);
+      // Ventilation recalculée article par article (règles du cabinet) quand les articles retombent sur le total HT
+      let ventilParArticles = false;
+      if(typeof apVentiler==='function'){
+        const v = apVentiler(articles, Number.isFinite(totHT)?totHT:null);
+        if(v){ lines = v.map(x=>({id:uid(), code:x.code, ht:x.ht, taux:0})); ventilParArticles = true; }
+      }
       if(lines.length===0) lines=[{id:uid(), code: supplier?supplier.code:(fallbackCode?fallbackCode.code:this.codes[0].code), ht:"", taux:0}];
+      // TVA non récupérable : une ligne 635200
+      if(Number.isFinite(totTVA) && totTVA!==0 && this.codes.some(c=>c.code==="635200")) lines.push({id:uid(), code:"635200", ht:Math.round(totTVA*100)/100, taux:0});
 
-      this.scan.common = { date: dateOk?parsed.date:new Date().toISOString().slice(0,10), fournisseur: supplier?supplier.nom:"", bl: parsed.numero_bl||"" };
+      this.scan.common = { date: dateOk?parsed.date:localISODate(), fournisseur: supplier?supplier.nom:"", bl: parsed.numero_facture||parsed.numero_bl||parsed.bl||"",
+        ttc: Number.isFinite(totTTC)&&totTTC!==0 ? Math.round(totTTC*100)/100 : "", avoirDe: parsed.avoir ? String(parsed.facture_origine||"") : "" };
       this.scan.lines = lines;
+      this.scan.articles = articles.filter(a=>isFinite(a.prix_ht)&&a.prix_ht>0);
+      this.scan.allArticles = articles;
 
       const notes=[];
       if(!dateOk) notes.push("date non reconnue (à corriger)");
       if(lines.some(l=>l.ht==="")) notes.push("un ou plusieurs montants non reconnus (à saisir)");
-      if(lines.length>1) notes.push(`facture ventilée automatiquement sur ${lines.length} codes, à vérifier`);
+      if(!this.scan.common.ttc) notes.push("total TTC non lu : saisissez-le pour contrôler la ventilation");
+      if(parsed.avoir) notes.push("AVOIR détecté (montants négatifs)");
+      if(lines.length>1) notes.push(`ventilée sur ${lines.length} comptes${ventilParArticles?' article par article (règles du cabinet)':''}, à vérifier`);
       if(isNew && supplier) notes.push(`nouveau fournisseur « ${supplier.nom} » ajouté automatiquement`);
+      const partielle = !dateOk || lines.some(l=>l.ht==="") || !this.scan.common.ttc;
       this.scan.note = notes.length? notes.join(" · ") : "Facture analysée. Vérifiez les champs avant d’enregistrer.";
-      this.toast(notes.length? "Extraction partielle : vérifiez les champs." : "Facture analysée et ventilée.", notes.length?"error":"success");
+      this.toast(partielle? "Extraction partielle : vérifiez les champs." : "Facture analysée et ventilée.", partielle?"error":"success");
     } catch(e){
       this.scan.error = e.message || "Échec de l’analyse de la facture.";
       this.scan.loading = false;
@@ -3712,6 +4068,7 @@ const CaApp = {
     this.render();
   },
   syncScanLinesFromDom(){
+    this.syncScanCommonFromDom();
     this.scan.lines = this.scan.lines.map(l=>{
       const codeEl = document.getElementById("scan-line-code-"+l.id);
       const htEl = document.getElementById("scan-line-ht-"+l.id);
@@ -3724,28 +4081,79 @@ const CaApp = {
       };
     });
   },
+  // Lit les champs communs (date, fournisseur, n°, TTC, avoir) dans l'état
+  syncScanCommonFromDom(){
+    if(!this.scan.common) return;
+    const v = id => { const el=document.getElementById(id); return el ? el.value : undefined; };
+    const c = this.scan.common;
+    if(v("scan-common-date")!==undefined) c.date = v("scan-common-date");
+    if(v("scan-common-fournisseur")!==undefined) c.fournisseur = v("scan-common-fournisseur");
+    if(v("scan-common-bl")!==undefined) c.bl = v("scan-common-bl").trim();
+    if(v("scan-common-ttc")!==undefined) c.ttc = v("scan-common-ttc");
+    if(v("scan-common-avoir")!==undefined) c.avoirDe = v("scan-common-avoir").trim();
+  },
+  // Contrôle : total ventilé (charges + TVA 635200 + TVA calculée) = TTC de la facture
+  scanEcartTTC(){
+    const c = this.scan.common; if(!c) return null;
+    const ttc = Number(String(c.ttc).replace(",","."));
+    if(c.ttc==="" || c.ttc==null || !Number.isFinite(ttc)) return null;
+    const tot = this.scan.lines.reduce((s,l)=>s+computeLine(l).ttc,0);
+    return Math.round((tot-ttc)*100)/100;
+  },
   submitScan(){
     this.syncScanLinesFromDom();
-    const date = document.getElementById("scan-common-date").value;
-    const fournisseur = document.getElementById("scan-common-fournisseur").value;
-    const bl = document.getElementById("scan-common-bl").value.trim();
+    this.syncScanCommonFromDom();
+    const {date, fournisseur, bl, avoirDe} = this.scan.common;
     const errEl = document.getElementById("scan-error");
     if(!date){ errEl.textContent="La date est obligatoire."; return; }
     if(!fournisseur){ errEl.textContent="Le fournisseur est obligatoire."; return; }
+    this.scan.lines = this.scan.lines.filter(l=>!(l.ht===""&&this.scan.lines.length>1&&l.code==="635200"));
     if(this.scan.lines.length===0){ errEl.textContent="Ajoutez au moins une ligne de ventilation."; return; }
     for(const l of this.scan.lines){
       const htNum = Number(l.ht);
       if(!l.code){ errEl.textContent="Chaque ligne doit avoir un code."; return; }
-      if(!Number.isFinite(htNum) || htNum<=0){ errEl.textContent="Chaque ligne doit avoir un montant HT valide."; return; }
+      // Montants négatifs acceptés : avoirs
+      if(l.ht==="" || !Number.isFinite(htNum) || htNum===0){ errEl.textContent="Chaque ligne doit avoir un montant HT (négatif pour un avoir)."; return; }
     }
+    const ecart = this.scanEcartTTC();
+    if(ecart===null){ errEl.textContent="Saisissez le total TTC imprimé sur la facture : il sert à contrôler la ventilation."; return; }
+    if(Math.abs(ecart)>0.02){ errEl.textContent=`La ventilation ne tombe pas juste : écart de ${eur(ecart)} avec le TTC de la facture. Vérifiez les montants (TVA comptée deux fois ? ligne oubliée ?).`; return; }
+    if(bl && this.invoices.some(i=>i.bl===bl && i.fournisseur===fournisseur) && !confirm(`La facture n° ${bl} de ${fournisseur} est déjà enregistrée. L'enregistrer quand même ?`)) return;
     errEl.textContent = "";
     const factureId = uid();
-    const records = this.scan.lines.map(l=>({ id:uid(), factureId, date, fournisseur, bl, ht:Number(l.ht), taux:Number(l.taux)||0, code:l.code }));
+    const ttcFacture = Math.round(Number(String(this.scan.common.ttc).replace(",","."))*100)/100;
+    const records = this.scan.lines.map(l=>{ const r={ id:uid(), factureId, date, fournisseur, bl, ht:Math.round(Number(l.ht)*100)/100, taux:Number(l.taux)||0, code:l.code, ttcFacture }; if(avoirDe) r.avoirDe=avoirDe; return r; });
     this.invoices.push(...records);
     this.saveInvoices();
-    this.toast(records.length>1 ? `Facture ventilée sur ${records.length} codes et enregistrée.` : "Facture enregistrée.");
+    this.toast(records.length>1 ? `Facture ventilée sur ${records.length} comptes et enregistrée.` : "Facture enregistrée.");
+    // Articles : historique d'achats par fournisseur + comparaison des prix avec l'inventaire
+    const articles = this.scan.articles || [];
+    if(typeof apApresEnregistrement==='function') apApresEnregistrement({factureId, date, fournisseur, bl, avoirDe, articles: this.scan.allArticles||articles, file: this.scan.file||null});
+    const manuel = this.entryMode==='manual';
+    // Lot : on passe directement à la facture suivante (prix comparés à la fin du lot)
+    if(this.batch && this.batch.current){
+      const it = this.batch.items.find(x=>x.id===this.batch.current);
+      if(it){ it.status = "enregistrée"; it.factureId = factureId; }
+      this.batch.current = null;
+      if(this.scan.previewUrl) URL.revokeObjectURL(this.scan.previewUrl);
+      this.scan = this.freshScan();
+      const next = this.batch.items.find(x=>x.status==="à vérifier");
+      if(next){ this.batchOpen(next.id); return; }
+      this.toast("Lot terminé : toutes les factures sont traitées.");
+      this.render(); return;
+    }
+    if(articles.length && typeof invoiceArticlesToPrix==='function') invoiceArticlesToPrix();
     this.resetScan();
+    if(manuel) this.startManual();
     this.render();
+  },
+  // Saisie manuelle = même grille de ventilation que le scan (plusieurs comptes + TVA 635200 + contrôle TTC)
+  startManual(){
+    const sup = this.suppliers[0];
+    this.scan = { previewUrl:"", loading:false, error:"", note:"", manual:true,
+      common:{ date:localISODate(), fournisseur: sup?sup.nom:"", bl:"", ttc:"", avoirDe:"" },
+      lines:[{id:uid(), code: sup?sup.code:(this.codes[0]?this.codes[0].code:""), ht:"", taux:0}].concat(this.codes.some(c=>c.code==="635200")?[{id:uid(), code:"635200", ht:"", taux:0}]:[]),
+      articles:[] };
   },
 
   // ---- Export Excel ----
@@ -3790,13 +4198,13 @@ const CaApp = {
   // Rendu
   // ---------------------------------------------------------------------------
   invoiceFormHtml(prefix, initial){
-    const v = initial || { date:new Date().toISOString().slice(0,10), fournisseur:this.suppliers[0]?this.suppliers[0].nom:"", bl:"", ht:"", taux:this.codes[0]?this.codes[0].taux:0, code:this.suppliers[0]?this.suppliers[0].code:(this.codes[0]?this.codes[0].code:"") };
+    const v = initial || { date:localISODate(), fournisseur:this.suppliers[0]?this.suppliers[0].nom:"", bl:"", ht:"", taux:this.codes[0]?this.codes[0].taux:0, code:this.suppliers[0]?this.suppliers[0].code:(this.codes[0]?this.codes[0].code:"") };
     return `
       <div class="row">
         <label class="field"><span class="label">Date de facture</span>
           <input type="date" id="${prefix}-date" value="${esc(v.date)}"></label>
         <label class="field"><span class="label">Fournisseur</span>
-          <select id="${prefix}-fournisseur" onchange="App.onSupplierPick('${prefix}')">
+          <select id="${prefix}-fournisseur" onchange="CaApp.onSupplierPick('${prefix}')">
             ${this.suppliers.map(s=>`<option value="${esc(s.nom)}" ${s.nom===v.fournisseur?'selected':''}>${esc(s.nom)}</option>`).join("")}
           </select></label>
         <label class="field"><span class="label">N° BL / facture</span><span class="hint">facultatif</span>
@@ -3810,14 +4218,14 @@ const CaApp = {
             ${TAUX_OPTIONS.map(t=>`<option value="${t}" ${t===v.taux?'selected':''}>${t}%</option>`).join("")}
           </select></label>
         <label class="field"><span class="label">Code de ventilation</span>
-          <select id="${prefix}-code" onchange="App.onCodePick('${prefix}')">
+          <select id="${prefix}-code" onchange="CaApp.onCodePick('${prefix}')">
             ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===v.code?'selected':''}>${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
           </select></label>
       </div>
       <div id="${prefix}-error" class="error-text" style="margin-bottom:10px;"></div>
       <div style="display:flex; gap:10px;">
-        <button class="btn btn-primary" onclick="App.addInvoiceFromForm('${prefix}')">✓ ${initial?'Mettre à jour':'Enregistrer la facture'}</button>
-        ${initial?`<button class="btn btn-ghost" onclick="App.cancelEdit()">Annuler</button>`:''}
+        <button class="btn btn-primary" onclick="CaApp.addInvoiceFromForm('${prefix}')">✓ ${initial?'Mettre à jour':'Enregistrer la facture'}</button>
+        ${initial?`<button class="btn btn-ghost" onclick="CaApp.cancelEdit()">Annuler</button>`:''}
       </div>`;
   },
 
@@ -3864,37 +4272,35 @@ const CaApp = {
         <button class="btn ${this.entryMode==='manual'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('manual')">✎ Saisie manuelle</button>
         <button class="btn ${this.entryMode==='scan'?'btn-primary':'btn-ghost'}" onclick="CaApp.setEntryMode('scan')">📷 Scanner une facture</button>
       </div>`;
-    if(this.entryMode==='manual'){
-      html += `<div class="card"><div style="font-size:14px;font-weight:600;margin-bottom:16px;">Nouvelle facture</div>${this.invoiceFormHtml('manual', null)}</div>`;
-    } else {
-      html += this.renderScanPanel();
-    }
+    if(this.entryMode==='manual' && !this.scan.common) this.startManual();
+    html += this.renderScanPanel();
     html += `</div>`;
     return html;
   },
 
   renderScanPanel(){
     const s = this.scan;
-    let apiKeyBox = `
-      <div class="card" style="margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Clé API Anthropic</div>
-        <div style="font-size:12px;color:#8a8478;margin-bottom:10px;">Nécessaire pour la lecture automatique des factures depuis ce fichier ouvert hors de Claude. Obtenez une clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>. Elle est stockée uniquement dans ce navigateur.</div>
-        <div style="display:flex;gap:8px;">
-          <input type="password" id="api-key-input" placeholder="sk-ant-..." value="${esc(this.apiKey)}" style="flex:1;">
-          <button class="btn btn-ghost" onclick="App.saveApiKey()">Enregistrer</button>
-        </div>
-      </div>`;
+    // 18/10/2026 : l'encart « Clé API Anthropic » a été retiré — la clé est
+    // gérée côté serveur (fonction Edge scan-facture) et celle saisie ici
+    // n'était jamais utilisée (elle restait seulement stockée dans le navigateur).
+    let apiKeyBox = "";
 
     let body = "";
+    const batchList = (!s.manual && this.batch) ? this.batchHtml() : "";
+    if(this.batch && this.batch.running && !s.manual){
+      return batchList + `<div class="card" style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 0;color:#8a8478;">
+        <div class="spin" style="font-size:22px;">⏳</div><div style="font-size:13px;">Analyse des factures du lot, une par une…</div></div>`;
+    }
+    if(this.batch && !s.manual && !s.common && !s.loading) return batchList;
     if(!s.common && !s.loading){
       body = `<div class="card">
         <div style="font-size:14px;font-weight:600;margin-bottom:6px;">Scanner une facture</div>
-        <div style="font-size:12.5px;color:#8a8478;margin-bottom:16px;">Prenez une photo ou importez un fichier (image ou PDF). Les montants seront extraits et ventilés automatiquement — vous pourrez les vérifier avant d’enregistrer.</div>
+        <div style="font-size:12.5px;color:#8a8478;margin-bottom:16px;">Prenez une photo ou importez un ou plusieurs fichiers (images ou PDF). Les montants sont extraits et ventilés automatiquement — vous les vérifiez avant d’enregistrer. Avec plusieurs fichiers, ils sont analysés à la suite puis vérifiés un par un.</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <label class="btn btn-primary" style="cursor:pointer;">📷 Prendre une photo
-            <input type="file" accept="image/*" capture="environment" onchange="App.onScanFile(this)" style="display:none;"></label>
-          <label class="btn btn-ghost" style="cursor:pointer;">⬆ Importer un fichier
-            <input type="file" accept="image/*,application/pdf" onchange="App.onScanFile(this)" style="display:none;"></label>
+            <input type="file" accept="image/*" capture="environment" onchange="CaApp.onScanFile(this)" style="display:none;"></label>
+          <label class="btn btn-ghost" style="cursor:pointer;">⬆ Importer un ou plusieurs fichiers
+            <input type="file" accept="image/*,application/pdf" multiple onchange="CaApp.onScanFile(this)" style="display:none;"></label>
         </div>
         ${s.error?`<div class="error-text" style="margin-top:16px;">⚠ ${esc(s.error)}</div>`:''}
       </div>`;
@@ -3904,14 +4310,17 @@ const CaApp = {
         <div style="font-size:13px;">Analyse de la facture en cours…</div>
       </div>`;
     } else if(s.common){
-      const totals = s.lines.reduce((acc,l)=>{ const c=computeLine(l); return {ht:acc.ht+c.ht, tva:acc.tva+c.tva, ttc:acc.ttc+c.ttc}; }, {ht:0,tva:0,ttc:0});
       const supplierOptionsHave = this.suppliers.some(sp=>sp.nom===s.common.fournisseur);
+      const live = `oninput="CaApp.scanLiveCheck()"`;
       body = `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div style="font-size:14px;font-weight:600;">Vérifiez la facture scannée</div>
-          <button class="btn btn-ghost" onclick="App.resetScan(); App.render();">↻ Scanner une autre facture</button>
+          <div style="font-size:14px;font-weight:600;">${s.manual?'Nouvelle facture (ou avoir)':'Vérifiez la facture scannée'}</div>
+          ${s.manual?`<button class="btn btn-ghost" onclick="CaApp.setEntryMode('manual')">↻ Effacer</button>`
+            : this.batch?`<button class="btn btn-ghost" onclick="CaApp.batch.current=null; CaApp.scan=CaApp.freshScan(); CaApp.render();">← Retour au lot</button>`
+            :`<button class="btn btn-ghost" onclick="CaApp.resetScan(); CaApp.render();">↻ Scanner une autre facture</button>`}
         </div>
         ${s.note?`<div class="banner" style="margin-bottom:16px;">${esc(s.note)}</div>`:''}
+        ${(s.articles&&s.articles.length)?`<div class="banner" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>💰 ${s.articles.length} prix d'articles lus sur la facture</span><button class="btn btn-primary" onclick="invoiceArticlesToPrix()">Comparer avec l'inventaire</button></div>`:''}
         <div class="row" style="align-items:flex-start;">
           ${s.previewUrl?`<img src="${s.previewUrl}" alt="Aperçu" style="width:200px;max-height:280px;object-fit:contain;border:1px solid #ece5d5;border-radius:8px;background:#faf6ee;">`:''}
           <div style="flex:1 1 380px;">
@@ -3923,42 +4332,45 @@ const CaApp = {
                   ${!supplierOptionsHave?`<option value="${esc(s.common.fournisseur)}" selected>${esc(s.common.fournisseur||'Sélectionner…')}</option>`:''}
                   ${this.suppliers.map(sp=>`<option value="${esc(sp.nom)}" ${sp.nom===s.common.fournisseur?'selected':''}>${esc(sp.nom)}</option>`).join("")}
                 </select></label>
-              <label class="field"><span class="label">N° BL / facture</span><span class="hint">facultatif</span>
+              <label class="field"><span class="label">N° facture</span>
                 <input type="text" id="scan-common-bl" value="${esc(s.common.bl)}"></label>
             </div>
-            <div style="font-size:12.5px;font-weight:600;color:#5b5346;margin-bottom:8px;">Ventilation détectée par code comptable</div>
+            <div class="row">
+              <label class="field"><span class="label">Total TTC de la facture (€)</span><span class="hint">contrôle</span>
+                <input type="number" step="0.01" id="scan-common-ttc" value="${esc(s.common.ttc)}" placeholder="0.00" ${live}></label>
+              <label class="field"><span class="label">Avoir sur la facture n°</span><span class="hint">si avoir</span>
+                <input type="text" id="scan-common-avoir" value="${esc(s.common.avoirDe||'')}" placeholder="ex : 03781077"></label>
+            </div>
+            ${typeof apArticlesHtml==='function'?apArticlesHtml(s):''}
+            <div style="font-size:12.5px;font-weight:600;color:#5b5346;margin-bottom:8px;">Ventilation par compte (HT ; TVA non récupérable sur 635200 ; avoir = montants négatifs)</div>
             <div id="scan-lines">
               ${s.lines.map(l=>{
                 const c = computeLine(l);
                 return `<div class="line-row">
-                  <select id="scan-line-code-${l.id}" onchange="App.scanCodeChange('${l.id}', this.value)">
+                  <select id="scan-line-code-${l.id}" onchange="CaApp.scanCodeChange('${l.id}', this.value)">
                     ${this.codes.map(c2=>`<option value="${esc(c2.code)}" ${c2.code===l.code?'selected':''}>${esc(c2.code)} — ${esc(c2.libelle)}</option>`).join("")}
                   </select>
-                  <input type="number" step="0.01" min="0" id="scan-line-ht-${l.id}" value="${esc(l.ht)}" placeholder="HT">
-                  <select class="taux" id="scan-line-taux-${l.id}">
+                  <input type="number" step="0.01" id="scan-line-ht-${l.id}" value="${esc(l.ht)}" placeholder="HT" ${live}>
+                  <select class="taux" id="scan-line-taux-${l.id}" onchange="CaApp.scanLiveCheck()">
                     ${TAUX_OPTIONS.map(t=>`<option value="${t}" ${t===l.taux?'selected':''}>${t}%</option>`).join("")}
                   </select>
                   <span class="muted" style="font-size:12.5px;min-width:90px;text-align:right;">TTC ${eur(c.ttc)}</span>
-                  <button class="btn-icon" onclick="App.scanRemoveLine('${l.id}')">🗑</button>
+                  <button class="btn-icon" onclick="CaApp.scanRemoveLine('${l.id}')">🗑</button>
                 </div>`;
               }).join("")}
             </div>
-            <button class="btn btn-ghost" style="margin-top:4px;" onclick="App.scanAddLine()">+ Ajouter une ligne</button>
-            <div class="banner" style="display:flex;gap:24px;margin:14px 0;">
-              <div>Total HT : <strong>${eur(totals.ht)}</strong></div>
-              <div>Total TVA : <strong>${eur(totals.tva)}</strong></div>
-              <div>Total TTC : <strong>${eur(totals.ttc)}</strong></div>
-            </div>
+            <button class="btn btn-ghost" style="margin-top:4px;" onclick="CaApp.scanAddLine()">+ Ajouter une ligne</button>
+            ${this.scanCheckHtml()}
             <div id="scan-error" class="error-text" style="margin-bottom:10px;"></div>
             <div style="display:flex;gap:10px;">
-              <button class="btn btn-primary" onclick="App.submitScan()">✓ Enregistrer la ventilation</button>
-              <button class="btn btn-ghost" onclick="App.resetScan(); App.render();">Annuler</button>
+              <button class="btn btn-primary" onclick="CaApp.submitScan()">✓ Enregistrer la ventilation</button>
+              <button class="btn btn-ghost" onclick="${this.batch&&!s.manual?"CaApp.batch.current=null; CaApp.scan=CaApp.freshScan(); CaApp.render();":s.manual?"CaApp.setEntryMode('manual')":"CaApp.resetScan(); CaApp.render();"}">Annuler</button>
             </div>
           </div>
         </div>
       </div>`;
     }
-    return apiKeyBox + body;
+    return batchList + apiKeyBox + body;
   },
 
   renderRegistre(){
@@ -3972,7 +4384,7 @@ const CaApp = {
 
     let html = `<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">
       <span style="font-size:13px;color:#8a8478;">Filtrer par code :</span>
-      <select style="width:auto;" onchange="App.setLedgerFilter(this.value)">
+      <select style="width:auto;" onchange="CaApp.setLedgerFilter(this.value)">
         <option value="">Tous les codes</option>
         ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===this.ledgerCodeFilter?'selected':''}>${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
       </select>
@@ -3990,14 +4402,14 @@ const CaApp = {
               const c = computeLine(inv);
               return `<tr>
                 <td>${esc(inv.date)}</td>
-                <td class="muted">${esc(inv.bl)||'—'}</td>
+                <td class="muted">${esc(inv.bl)||'—'}${inv.avoirDe||Number(inv.ht)<0?` <span class="ap-badge">AVOIR${inv.avoirDe?' / '+esc(inv.avoirDe):''}</span>`:''}${typeof apFichierHtml==='function'?apFichierHtml(inv):''}</td>
                 <td>${esc(inv.code)}</td>
                 <td class="num">${eur(c.ht)}</td>
                 <td class="num muted">${eur(c.tva)}</td>
                 <td class="num" style="font-weight:600;">${eur(c.ttc)}</td>
                 <td style="text-align:right;white-space:nowrap;">
-                  <button class="btn-icon" onclick="App.editInvoice('${inv.id}')">✎</button>
-                  <button class="btn-icon" onclick="App.deleteInvoice('${inv.id}')">🗑</button>
+                  <button class="btn-icon" onclick="CaApp.editInvoice('${inv.id}')">✎</button>
+                  <button class="btn-icon" onclick="CaApp.deleteInvoice('${inv.id}')">🗑</button>
                 </td>
               </tr>`;
             }).join("")}
@@ -4018,11 +4430,11 @@ const CaApp = {
               const total = this.invoices.filter(i=>i.fournisseur===s.nom).reduce((sum,i)=>sum+computeLine(i).ht,0);
               return `<tr>
                 <td>${esc(s.nom)}</td>
-                <td><select style="font-size:12.5px;padding:5px 8px;" onchange="App.updateSupplierCode('${s.id}', this.value)">
+                <td><select style="font-size:12.5px;padding:5px 8px;" onchange="CaApp.updateSupplierCode('${s.id}', this.value)">
                   ${this.codes.map(c=>`<option value="${esc(c.code)}" ${c.code===s.code?'selected':''}>${esc(c.code)}</option>`).join("")}
                 </select></td>
                 <td class="num">${eur(total)}</td>
-                <td style="text-align:right;"><button class="btn-icon" onclick="App.deleteSupplier('${s.id}')">🗑</button></td>
+                <td style="text-align:right;"><button class="btn-icon" onclick="CaApp.deleteSupplier('${s.id}')">🗑</button></td>
               </tr>`;
             }).join("")}
           </tbody>
@@ -4035,7 +4447,7 @@ const CaApp = {
           <select id="new-sup-code"><option value="">Code par défaut…</option>
             ${this.codes.map(c=>`<option value="${esc(c.code)}">${esc(c.code)} — ${esc(c.libelle)}</option>`).join("")}
           </select>
-          <button class="btn btn-primary" onclick="App.addSupplier()">+ Ajouter</button>
+          <button class="btn btn-primary" onclick="CaApp.addSupplier()">+ Ajouter</button>
         </div>
       </div>
     </div>`;
@@ -4052,7 +4464,7 @@ const CaApp = {
               <td>${esc(c.libelle)}</td>
               <td>${c.taux}%</td>
               <td class="muted">${esc(c.compteTva||'—')}</td>
-              <td style="text-align:right;"><button class="btn-icon" onclick="App.deleteCode('${c.code}')">🗑</button></td>
+              <td style="text-align:right;"><button class="btn-icon" onclick="CaApp.deleteCode('${c.code}')">🗑</button></td>
             </tr>`).join("")}
           </tbody>
         </table>
@@ -4060,11 +4472,11 @@ const CaApp = {
       <div class="card" style="flex:1 1 280px;">
         <div style="font-size:13px;font-weight:600;margin-bottom:12px;">Ajouter un code de ventilation</div>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <input type="text" id="new-code-code" placeholder="Code (ex : 601100)">
+          <input type="text" id="new-code-code" placeholder="Code (ex : 601000)">
           <input type="text" id="new-code-libelle" placeholder="Libellé du compte">
           <select id="new-code-taux">${TAUX_OPTIONS.map(t=>`<option value="${t}">${t}%</option>`).join("")}</select>
           <input type="text" id="new-code-compteTva" placeholder="Compte TVA déductible (ex : 445660)" value="445660">
-          <button class="btn btn-primary" onclick="App.addCode()">+ Ajouter au plan</button>
+          <button class="btn btn-primary" onclick="CaApp.addCode()">+ Ajouter au plan</button>
         </div>
       </div>
     </div>`;
@@ -4074,7 +4486,7 @@ const CaApp = {
     const monthSelectHtml = (this.tab==='dashboard'||this.tab==='registre') ? `
       <div style="margin-bottom:18px;display:flex;gap:10px;align-items:center;">
         <span style="font-size:13px;color:#8a8478;font-weight:500;">Période :</span>
-        <select style="width:auto;" onchange="App.setMonth(this.value)">
+        <select style="width:auto;" onchange="CaApp.setMonth(this.value)">
           <option value="">Toutes les périodes</option>
           ${this.months().map(m=>`<option value="${m}" ${m===this.selectedMonth?'selected':''}>${monthLabel(m)}</option>`).join("")}
         </select>
@@ -4086,23 +4498,37 @@ const CaApp = {
     else if(this.tab==='registre') tabContent = this.renderRegistre();
     else if(this.tab==='fournisseurs') tabContent = this.renderFournisseurs();
     else if(this.tab==='plan') tabContent = this.renderPlan();
+    else if(this.tab==='regles' && typeof apRenderRegles==='function') tabContent = apRenderRegles();
+    else if(this.tab==='prix' && typeof apRenderComparateur==='function') tabContent = apRenderComparateur();
+    else if(this.tab==='reclam' && typeof apRenderReclamations==='function') tabContent = apRenderReclamations();
+    else if(this.tab==='cloture' && typeof apRenderCloture==='function') tabContent = apRenderCloture();
+    else if(this.tab==='annee' && typeof apRenderAnnee==='function') tabContent = apRenderAnnee();
+    if(this.tab==='dashboard' && typeof apDashboardExtra==='function') tabContent = apDashboardExtra() + tabContent;
 
     const tabs = [
       {id:'dashboard', label:'Tableau de bord'},
       {id:'saisie', label:'Saisie facture'},
       {id:'registre', label:'Registre'},
+      {id:'cloture', label:'Clôture du mois'},
+      {id:'annee', label:'Bilan annuel'},
+      {id:'reclam', label:'Réclamations'},
+      {id:'prix', label:'Prix fournisseurs'},
       {id:'fournisseurs', label:'Fournisseurs'},
-      {id:'plan', label:'Plan de ventilation'},
+      {id:'regles', label:'Règles de ventilation'},
+      {id:'plan', label:'Plan comptable'},
     ];
 
     document.getElementById("app").innerHTML = `
       <div class="shell">
         <div class="header">
           <div><h1>Cahier d’achats</h1><p>Ventilation et suivi des factures fournisseurs</p></div>
-          <button class="btn btn-ghost" onclick="App.exportExcel()">⬇ Exporter en Excel</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="apExportComptable()" title="Fichier pour le cabinet comptable : factures par compte, écritures du journal d'achats, totaux">📒 Export comptable</button>
+            <button class="btn btn-ghost" onclick="CaApp.exportExcel()">⬇ Exporter en Excel</button>
+          </div>
         </div>
         <div class="tabs">
-          ${tabs.map(t=>`<button class="tab-btn ${this.tab===t.id?'active':''}" onclick="App.setTab('${t.id}')">${t.label}</button>`).join("")}
+          ${tabs.map(t=>`<button class="tab-btn ${this.tab===t.id?'active':''}" onclick="CaApp.setTab('${t.id}')">${t.label}</button>`).join("")}
         </div>
         <div class="content">
           ${monthSelectHtml}
@@ -4117,11 +4543,11 @@ const CaApp = {
   renderEditModal(){
     const inv = this.invoices.find(i=>i.id===this.editingInvoiceId);
     if(!inv) return "";
-    return `<div class="modal-overlay" onclick="if(event.target===this){App.cancelEdit();}">
+    return `<div class="modal-overlay" onclick="if(event.target===this){CaApp.cancelEdit();}">
       <div class="modal">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div style="font-size:14px;font-weight:600;">Modifier la facture</div>
-          <button class="btn-icon" onclick="App.cancelEdit()">✕</button>
+          <button class="btn-icon" onclick="CaApp.cancelEdit()">✕</button>
         </div>
         ${this.invoiceFormHtml('manual', inv)}
       </div>
@@ -4135,16 +4561,9 @@ window.CaApp = CaApp;
 // ══ NAVIGATION TUILES ══
 
 
-
-
-
-
-
-
 // Doublon mort de updateSyncDot (voir la définition ligne ~1644) retiré le 18/09/2026
 
 // Démarrer sur l'écran d'accueil
-
 
 
 // ══ NAVIGATION TUILES ══
@@ -4351,6 +4770,54 @@ function openAccount() {
   if (p1) p1.value = '';
   if (p2) p2.value = '';
   if (msg) { msg.className = 'account-msg'; msg.textContent = ''; }
+  var tm = document.getElementById('team-msg');
+  if (tm) { tm.className = 'account-msg'; tm.textContent = ''; }
+  teamRefresh();
+}
+
+// ── Accès de l'équipe (administrateur) — 18/10/2026 ──
+async function _rpc(name, args) {
+  await ensureFreshToken(false);
+  const r = await supa('/rest/v1/rpc/' + name, { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(args || {}) });
+  const txt = await r.text();
+  let data = null; try { data = txt ? JSON.parse(txt) : null; } catch(e) {}
+  if (!r.ok) throw new Error((data && (data.message || data.hint)) || ('erreur ' + r.status));
+  return data;
+}
+async function teamRefresh() {
+  const sec = document.getElementById('team-section');
+  if (!sec) return;
+  try {
+    if (!(await _rpc('haccp_is_admin'))) { sec.style.display = 'none'; return; }
+    sec.style.display = '';
+    const users = await _rpc('haccp_list_users') || [];
+    document.getElementById('team-list').innerHTML = users.map(u =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 0;border-bottom:.5px solid var(--border);font-size:13px">
+        <span>${esc(u.email)}${u.is_admin ? ' <small style="color:var(--info-text)">(administrateur)</small>' : ''}<br>
+        <small style="color:var(--text3)">${u.compte_cree ? '✅ compte créé' : '⏳ compte pas encore créé'}</small></span>
+        ${u.is_admin ? '' : `<button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="teamRemove(${jsArg(u.email)})">Retirer</button>`}
+      </div>`).join('');
+  } catch (e) { sec.style.display = 'none'; }
+}
+async function teamAdd() {
+  const inp = document.getElementById('team-email'), msg = document.getElementById('team-msg');
+  const email = (inp.value || '').trim().toLowerCase();
+  if (!email) return;
+  try {
+    await _rpc('haccp_add_user', { p_email: email });
+    inp.value = '';
+    msg.className = 'account-msg ok'; msg.textContent = '✅ ' + email + ' peut maintenant créer son compte et se connecter.';
+    teamRefresh();
+  } catch (e) { msg.className = 'account-msg err'; msg.textContent = '❌ ' + e.message; }
+}
+async function teamRemove(email) {
+  if (!confirm('Retirer l\'accès de ' + email + ' ?\nIl ne pourra plus voir ni modifier les données.')) return;
+  const msg = document.getElementById('team-msg');
+  try {
+    await _rpc('haccp_remove_user', { p_email: email });
+    msg.className = 'account-msg ok'; msg.textContent = 'Accès retiré pour ' + email + '.';
+    teamRefresh();
+  } catch (e) { msg.className = 'account-msg err'; msg.textContent = '❌ ' + e.message; }
 }
 
 function closeAccount() {
@@ -4461,17 +4928,6 @@ function updateSupabaseAuth(token) {
   window._supabaseAuthToken = token;
 }
 
-function getAuthHeaders() {
-  var headers = {
-    'apikey': SUPA_ANON_KEY,
-    'Content-Type': 'application/json'
-  };
-  if (window._supabaseAuthToken) {
-    headers['Authorization'] = 'Bearer ' + window._supabaseAuthToken;
-  }
-  return headers;
-}
-
 function checkExistingSession() {
   try {
     var stored = localStorage.getItem('haccp_session');
@@ -4517,12 +4973,17 @@ async function refreshSession(refreshToken) {
       document.getElementById('login-screen').style.display = 'flex';
     }
   } catch(e) {
-    document.getElementById('login-screen').style.display = 'flex';
+    // Erreur réseau (appareil hors-ligne / sortie de veille) : on garde la session
+    // et on réessaiera ; n'afficher l'écran de connexion que si le serveur refuse.
+    console.warn('[AUTH] Renouvellement impossible (réseau) — nouvel essai plus tard.');
   }
 }
 
-// ══ INSCRIPTION AVEC RESTRICTION DOMAINE ══
-const ALLOWED_EMAIL_DOMAINS = ['lasalleamanger.fr', 'sp-conseil.fr', 'gmail.com'];
+// ══ INSCRIPTION ══
+// Depuis le 18/10/2026 la restriction est appliquée par Supabase : seules les
+// adresses de la table haccp_allowed_users peuvent créer un compte et accéder
+// aux données (l'ancienne vérification de domaine, faite seulement dans le
+// navigateur, laissait passer toute adresse @gmail.com).
 
 function showSignup() {
   document.getElementById('signup-form').style.display = 'block';
@@ -4535,11 +4996,6 @@ function hideSignup() {
   document.getElementById('signup-password').value = '';
 }
 
-function isEmailAllowed(email) {
-  var domain = email.split('@')[1];
-  return ALLOWED_EMAIL_DOMAINS.indexOf(domain) >= 0;
-}
-
 async function doSignup() {
   var email = document.getElementById('signup-email').value.trim().toLowerCase();
   var password = document.getElementById('signup-password').value;
@@ -4548,12 +5004,6 @@ async function doSignup() {
   // Validation email
   if (!email || !email.includes('@')) {
     showLoginError('Veuillez saisir une adresse email valide.');
-    return;
-  }
-  
-  // Restriction domaine
-  if (!isEmailAllowed(email)) {
-    showLoginError('Inscription réservée aux adresses @lasalleamanger.fr ou @gmail.com.');
     return;
   }
   
@@ -4583,7 +5033,10 @@ async function doSignup() {
     var data = await resp.json();
     
     if (!resp.ok || data.error) {
-      showLoginError(data.msg || data.error_description || 'Erreur lors de la création du compte.');
+      var m = data.msg || data.error_description || data.message || '';
+      // Refus du serveur pour une adresse non autorisée (renvoyé comme « Database error saving new user »)
+      if (/database error|réservée/i.test(m)) m = 'Cette adresse n\'est pas autorisée. Demandez à l\'administrateur de l\'ajouter, puis recommencez.';
+      showLoginError(m || 'Erreur lors de la création du compte.');
       btn.disabled = false;
       btn.textContent = 'Créer mon compte';
       return;
@@ -4594,7 +5047,7 @@ async function doSignup() {
     document.getElementById('login-error').style.background = '#eaf3de';
     document.getElementById('login-error').style.color = '#27500a';
     document.getElementById('login-error').textContent = 
-      '✅ Compte créé ! Vérifiez votre email pour confirmer votre adresse, puis attendez la validation de l\'administrateur.';
+      '✅ Compte créé ! Vérifiez votre email pour confirmer votre adresse, puis connectez-vous.';
     
     btn.disabled = false;
     btn.textContent = 'Créer mon compte';
@@ -4732,7 +5185,6 @@ var _isOnline = navigator.onLine;
 var _pendingSync = false;
 
 function updateOnlineStatus() {
-  var wasOffline = !_isOnline;
   _isOnline = navigator.onLine;
   var banner = document.getElementById('offline-banner');
 
@@ -4747,11 +5199,8 @@ function updateOnlineStatus() {
     if (banner) banner.classList.remove('show');
     if (_pendingSync) {
       _pendingSync = false;
-      // Sync automatique dès la reconnexion
-      setTimeout(function() {
-        if (typeof initSync === 'function') initSync();
-        showSyncToast('🔄 Reconnecté — synchronisation en cours…');
-      }, 1000);
+      // La resynchronisation elle-même est lancée par core-sync.js (événement 'online')
+      showSyncToast('🔄 Reconnecté — synchronisation en cours…');
     }
   }
 }
@@ -4765,26 +5214,11 @@ document.addEventListener('DOMContentLoaded', function() {
   updateOnlineStatus();
 });
 
-// Intercepter syncToCloud pour gérer le mode hors-ligne
-var _originalSyncToCloud = null;
-function patchSyncToCloud() {
-  if (typeof syncToCloud !== 'function' || _originalSyncToCloud) return;
-  _originalSyncToCloud = syncToCloud;
-  syncToCloud = function(module, data) {
-    if (!_isOnline) {
-      // Hors-ligne : sauvegarder localement uniquement (déjà fait avant l'appel)
-      _pendingSync = true;
-      console.log('[OFFLINE] Sync différée pour:', module);
-      return;
-    }
-    return _originalSyncToCloud(module, data);
-  };
-}
-
-// Patcher après le chargement complet
-window.addEventListener('load', function() {
-  setTimeout(patchSyncToCloud, 2000);
-});
+// 18/10/2026 : supprimé l'interception de syncToCloud() hors-ligne. Elle jetait
+// purement et simplement les saisies faites sans réseau (y compris les quantités
+// d'inventaire), qui étaient ensuite écrasées par la version du serveur à la
+// reconnexion — contrairement à ce qu'annonce le bandeau « hors-ligne ».
+// core-sync.js met désormais tout en file d'attente et l'envoie au retour du réseau.
 
 
 // ══ MODULE MERCURIALE ══
@@ -4969,15 +5403,15 @@ async function mercScanPDF(file) {
     mediaType = 'image/jpeg';
   }
 
-  var resp = await fetch('https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-mercuriale', {
+  var resp = await fetch(SUPA_URL + '/functions/v1/scan-mercuriale', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: edgeHeaders(),
     body: JSON.stringify({ base64: base64, media_type: mediaType })
   });
 
-  if (!resp.ok) throw new Error('Erreur serveur ' + resp.status);
+  if (!resp.ok) throw new Error(await edgeErrorMessage(resp));
   var data = await resp.json();
-  if (data.error) throw new Error(data.error);
+  if (data.error) throw new Error(data.message || data.error);
   return data.lignes || [];
 }
 
@@ -5061,11 +5495,11 @@ function mercRenderResults() {
 
     rows += '<tr class="' + rowClass + '">' +
       '<td><input type="checkbox" class="merc-check" data-idx="' + i + '" ' + checked + (prod ? '' : ' disabled') + ' onchange="_mercMatches[' + i + '].checked=this.checked;mercUpdateApplyBtn()"></td>' +
-      '<td><div style="font-weight:500">' + line.designation + '</div>' +
-        (line.conditionnement ? '<div style="font-size:11px;color:var(--text2)">' + line.conditionnement + '</div>' : '') + '</td>' +
-      '<td>' + (prod ? '<span style="font-size:12px">' + prod.produit + '</span><br><span style="font-size:11px;color:var(--text2)">' + (prod.fournisseur || '') + ' · ' + prod.code + '</span>' : '<span style="color:var(--text3);font-size:12px">— non trouvé —</span>') + '</td>' +
+      '<td><div style="font-weight:500">' + esc(line.designation) + '</div>' +
+        (line.conditionnement ? '<div style="font-size:11px;color:var(--text2)">' + esc(line.conditionnement) + '</div>' : '') + '</td>' +
+      '<td>' + (prod ? '<span style="font-size:12px">' + esc(prod.produit) + '</span><br><span style="font-size:11px;color:var(--text2)">' + esc(prod.fournisseur || '') + ' · ' + esc(prod.code) + '</span>' : '<span style="color:var(--text3);font-size:12px">— non trouvé —</span>') + '</td>' +
       '<td class="merc-price-old">' + oldPrixStr + '</td>' +
-      '<td class="merc-price-new">' + newPrix.toFixed(2) + ' €' + uniteStr + '</td>' +
+      '<td class="merc-price-new">' + Number(newPrix).toFixed(2) + ' €' + esc(uniteStr) + '</td>' +
       '<td class="' + deltaClass + '" style="font-weight:600;white-space:nowrap">' + pctStr + '</td>' +
     '</tr>';
     idx++;
@@ -5115,30 +5549,46 @@ function mercApplySelected() {
   if (!confirm(msg)) return;
 
   var updated = 0;
+  var changedItems = [];
+  var nbHausses = 0; // hausses de plus de 5 %
+  var today = localISODate();
   toApply.forEach(function(m) {
     var code = m.dataProduct.code;
-    var newPrix = m.mercLine.prix_ht;
+    var newPrix = Number(m.mercLine.prix_ht);
     // Mettre à jour dans DATA[]
     var idx = DATA.findIndex(function(d) { return d.code === code; });
-    if (idx >= 0) {
+    if (idx >= 0 && isFinite(newPrix)) {
+      if (DATA[idx].prix > 0 && newPrix > DATA[idx].prix * 1.05) nbHausses++;
       DATA[idx].prix = newPrix;
       DATA[idx].status = 'updated';
+      changedItems.push(DATA[idx]);
+      // Historique des prix (comparateur)
+      if (!PRIX_HISTO_DATA[code]) PRIX_HISTO_DATA[code] = [];
+      PRIX_HISTO_DATA[code].push({ date: today, prix: newPrix, fournisseur: DATA[idx].fournisseur || '', note: 'Mercuriale' });
       updated++;
     }
   });
 
-  // Sauvegarder et synchroniser
-  if (typeof saveAll === 'function') saveAll();
-  if (typeof syncProductsToCloud === 'function') syncProductsToCloud();
-  if (typeof render === 'function') render();
-  if (typeof updateStats === 'function') updateStats();
+  // Sauvegarder et synchroniser.
+  // 18/10/2026 : saveAll() et syncProductsToCloud() n'existaient pas → les prix
+  // n'étaient changés qu'en mémoire et revenaient à l'ancienne valeur au
+  // rechargement (le catalogue est relu depuis Supabase).
+  saveNewModules();
+  render(); updateStats(); scheduleBilanRebuild();
 
   var status = document.getElementById('merc-status');
-  status.className = 'merc-status ok';
-  status.textContent = '✅ ' + updated + ' prix mis à jour dans l\'inventaire !';
+  status.className = 'merc-status loading';
+  status.textContent = '⏳ Enregistrement de ' + updated + ' prix sur le serveur…';
   document.getElementById('merc-results').classList.remove('show');
 
-  showSyncToast('💰 ' + updated + ' prix mis à jour depuis la mercuriale');
+  Promise.all(changedItems.map(function(it) { return pushProductToCloud(it); })).then(function(results) {
+    var ko = results.filter(function(ok) { return !ok; }).length;
+    status.className = ko ? 'merc-status error' : 'merc-status ok';
+    status.textContent = ko
+      ? '⚠️ ' + (updated - ko) + ' prix enregistrés, ' + ko + ' NON enregistrés sur le serveur (connexion ? compte ?) — ils seront perdus au rechargement.'
+      : '✅ ' + updated + ' prix mis à jour et enregistrés.';
+    showSyncToast('💰 ' + (updated - ko) + ' prix mis à jour' + (nbHausses ? ' — dont ' + nbHausses + ' hausse(s) de plus de 5 % (voir Historique)' : ''));
+  });
 }
 
 
@@ -5173,7 +5623,6 @@ function logSyncError(module, error) {
   if (dot) { dot.style.background = '#f59e0b'; dot.title = 'Erreur sync: ' + String(error); }
 }
 
-function logSyncSuccess() { _syncFailCount = 0; var a = document.getElementById('_sync_alert'); if (a) a.remove(); }
 
 window.haccpDiag = function() {
   console.group('HACCP Diagnostic');
@@ -5208,6 +5657,8 @@ function _validateForm(){
     unite:document.getElementById('ap-unite').value.trim().toUpperCase(),
     qte,
     fournisseur:document.getElementById('ap-fourn').value.trim().toUpperCase(),
+    colisage:(v=>isNaN(v)||v<=0?null:v)(parseFloat(String(document.getElementById('ap-colisage').value).replace(',','.'))),
+    ean:document.getElementById('ap-ean').value.replace(/\s/g,'')||null,
   };
 }
 
@@ -5225,19 +5676,16 @@ function submitAddProduct(){
     qte:vals.qte,
     fournisseur:vals.fournisseur,
     status:'custom',
+    colisage:vals.colisage,
+    ean:vals.ean,
   };
   DATA.push(newItem);
   // ── Envoyer vers Supabase ──
-  (async()=>{
-    try{
-      await supa('/rest/v1/haccp_products',{method:'POST',
-        headers:{'Prefer':'return=minimal'},
-        body:JSON.stringify({code:newItem.code,zone:newItem.zone,cat:newItem.cat,
-          produit:newItem.produit,unite:newItem.unite,prix:newItem.prix,
-          fournisseur:newItem.fournisseur||'',status:'custom'})});
-      showSyncToast('✨ '+newItem.produit+' ajouté dans Supabase');
-    }catch(e){showSyncToast('⚠ Produit ajouté localement uniquement');}
-  })();
+  // (avant : aucune vérification de la réponse → « ajouté dans Supabase »
+  // affiché même en cas de refus, et le produit disparaissait au rechargement)
+  pushProductToCloud(newItem).then(ok=>{
+    showSyncToast(ok?'✨ '+newItem.produit+' enregistré':'⚠ '+newItem.produit+' NON enregistré sur le serveur — il disparaîtra au rechargement (connexion ?)');
+  });
   // Sauvegarder le seuil si renseigné
   const seuilVal=parseFloat(document.getElementById('ap-seuil').value);
   if(!isNaN(seuilVal)&&seuilVal>=0)SEUILS_DATA[code]={min:seuilVal,unite:vals.unite};
@@ -5263,6 +5711,13 @@ function submitEditProduct(){
   if(!vals)return;
   const item=DATA.find(d=>d.code===_editCode);
   if(!item)return;
+  // Historique des prix + alerte de hausse (> 5 %)
+  if(vals.prix!==item.prix&&item.prix>0){
+    if(!PRIX_HISTO_DATA[item.code])PRIX_HISTO_DATA[item.code]=[];
+    PRIX_HISTO_DATA[item.code].push({date:localISODate(),prix:vals.prix,fournisseur:vals.fournisseur||item.fournisseur||'',note:'Fiche produit'});
+    saveNewModules();
+    if(vals.prix>item.prix*1.05)showSyncToast('📈 Hausse de '+Math.round((vals.prix/item.prix-1)*100)+' % sur '+vals.nom);
+  }
   item.produit=vals.nom;
   item.zone=vals.zone;
   item.cat=vals.cat;
@@ -5270,6 +5725,8 @@ function submitEditProduct(){
   item.unite=vals.unite;
   item.qte=vals.qte;
   item.fournisseur=vals.fournisseur;
+  item.colisage=vals.colisage;
+  item.ean=vals.ean;
   // Seuil
   const seuilValE=parseFloat(document.getElementById('ap-seuil').value);
   if(!isNaN(seuilValE)&&seuilValE>=0)SEUILS_DATA[_editCode]={min:seuilValE,unite:vals.unite};
@@ -5281,27 +5738,12 @@ function submitEditProduct(){
   render();
   scheduleBilanRebuild();
   autoSave();
-  // ── Envoyer vers Supabase ──
-  const _code=_editCode;
+  // ── Envoyer vers Supabase ── (mise à jour, ou création si absent ; résultat vérifié)
   const _item=item;
-  (async()=>{
-    try{
-      // Tenter PATCH (mise à jour)
-      const r=await supa('/rest/v1/haccp_products?code=eq.'+encodeURIComponent(_code),{
-        method:'PATCH',
-        body:JSON.stringify({produit:_item.produit,zone:_item.zone,cat:_item.cat,
-          prix:_item.prix,unite:_item.unite,fournisseur:_item.fournisseur||'',status:'updated'})
-      });
-      // Si 0 ligne modifiée → INSERT
-      if(r.status===404||r.status===200&&(await r.text())==='[]'){
-        await supa('/rest/v1/haccp_products',{method:'POST',
-          headers:{'Prefer':'return=minimal'},
-          body:JSON.stringify({code:_code,zone:_item.zone,cat:_item.cat,produit:_item.produit,
-            unite:_item.unite,prix:_item.prix,fournisseur:_item.fournisseur||'',status:'updated'})});
-      }
-      showSyncToast('✓ '+_item.produit+' enregistré dans Supabase');
-    }catch(e){showSyncToast('⚠ Sauvegarde locale uniquement');}
-  })();
+  if(_item.status!=='custom'&&_item.status!=='new')_item.status='updated';
+  pushProductToCloud(_item).then(ok=>{
+    showSyncToast(ok?'✓ '+_item.produit+' enregistré':'⚠ '+_item.produit+' NON enregistré sur le serveur — modification perdue au rechargement (connexion ?)');
+  });
   const fb=document.getElementById('addprod-feedback');
   fb.className='addprod-feedback ok';
   fb.textContent='✓ Produit modifié : '+vals.nom;
@@ -5313,8 +5755,13 @@ function deleteCurrentProduct(){
   const item=DATA.find(d=>d.code===_editCode);
   if(!item)return;
   if(!confirm('Supprimer définitivement « '+item.produit+' » ('+_editCode+') ?'))return;
-  const idx=DATA.findIndex(d=>d.code===_editCode);
+  const code=_editCode,nom=item.produit;
+  const idx=DATA.findIndex(d=>d.code===code);
   if(idx>-1)DATA.splice(idx,1);
+  // Avant : suppression locale seulement → le produit revenait au rechargement
+  deleteProductFromCloud(code).then(ok=>{
+    showSyncToast(ok?'🗑 '+nom+' supprimé':'⚠ Suppression de '+nom+' NON enregistrée sur le serveur (il réapparaîtra)');
+  });
   buildZoneTabs();
   updateStats();
   render();
@@ -5330,8 +5777,8 @@ function buildFilters_update(){
   const prevCat=cs.value,prevFourn=fs.value;
   const cats=[...new Set(DATA.map(d=>d.cat).filter(Boolean))].sort();
   const fourns=[...new Set(DATA.map(d=>d.fournisseur).filter(Boolean))].sort();
-  cs.innerHTML='<option value="">Toutes catégories</option>'+cats.map(c=>`<option value="${c}"${c===prevCat?' selected':''}>${c}</option>`).join('');
-  fs.innerHTML='<option value="">Tous fournisseurs</option>'+fourns.map(f=>`<option value="${f}"${f===prevFourn?' selected':''}>${f}</option>`).join('');
+  cs.innerHTML='<option value="">Toutes catégories</option>'+cats.map(c=>`<option value="${esc(c)}"${c===prevCat?' selected':''}>${esc(c)}</option>`).join('');
+  fs.innerHTML='<option value="">Tous fournisseurs</option>'+fourns.map(f=>`<option value="${esc(f)}"${f===prevFourn?' selected':''}>${esc(f)}</option>`).join('');
 }
 
 
@@ -5340,7 +5787,9 @@ function buildFilters_update(){
 // ══════════════════════════════════════════════════════════
 function dlcDaysLeft(dateStr){
   const today=new Date(); today.setHours(0,0,0,0);
-  const d=new Date(dateStr); d.setHours(0,0,0,0);
+  // "AAAA-MM-JJ" interprété en date locale (new Date('AAAA-MM-JJ') = minuit UTC)
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr||''));
+  const d=m?new Date(+m[1],+m[2]-1,+m[3]):new Date(dateStr); d.setHours(0,0,0,0);
   return Math.round((d-today)/(1000*60*60*24));
 }
 function dlcColor(days){
@@ -5351,7 +5800,7 @@ function dlcColor(days){
 }
 function openDLCAdd(code){
   const sel=document.getElementById('dlc-prod-select');
-  sel.innerHTML=DATA.map(d=>`<option value="${d.code}">${d.produit} (${(ZONES[d.zone]||{label:d.zone}).label})</option>`).join('');
+  sel.innerHTML=DATA.map(d=>`<option value="${esc(d.code)}">${esc(d.produit)} (${esc((ZONES[d.zone]||{label:d.zone}).label)})</option>`).join('');
   if(code)sel.value=code;
   const today=new Date().toISOString().slice(0,10);
   document.getElementById('dlc-date').value='';
@@ -5411,8 +5860,8 @@ function renderDLC(){
       '<div class="histo-empty">✅ Tous les produits ont une DLC saisie</div>':
       '<div style="border:.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden">'+
       noDLCItems.map((d,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border-bottom:${i<noDLCItems.length-1?'.5px solid var(--border)':'none'};background:${i%2===0?'var(--bg)':'var(--bg2)'}">
-        <div><div style="font-size:12px;font-weight:500">${d.produit}</div><div style="font-size:10px;color:var(--text3)">${(ZONES[d.zone]||{label:d.zone}).label}</div></div>
-        <button class="dlc-btn-sm" onclick="openDLCAdd('${d.code}')">+ DLC</button>
+        <div><div style="font-size:12px;font-weight:500">${esc(d.produit)}</div><div style="font-size:10px;color:var(--text3)">${(ZONES[d.zone]||{label:d.zone}).label}</div></div>
+        <button class="dlc-btn-sm" onclick="openDLCAdd(${jsArg(d.code)})">+ DLC</button>
       </div>`).join('')+'</div>';
     return;
   }
@@ -5426,8 +5875,8 @@ function renderDLC(){
         <div class="dlc-card-left">
           <div class="dlc-card-dot" style="background:${c.dot}"></div>
           <div>
-            <div class="dlc-card-name">${d.produit}</div>
-            <div class="dlc-card-meta">${d.type}${d.lot?' · Lot '+d.lot:''}${d.qte?' · Qté '+d.qte:''}</div>
+            <div class="dlc-card-name">${esc(d.produit)}</div>
+            <div class="dlc-card-meta">${esc(d.type)}${d.lot?' · Lot '+esc(d.lot):''}${d.qte?' · Qté '+d.qte:''}</div>
           </div>
         </div>
         <div class="dlc-card-right">
@@ -5435,10 +5884,10 @@ function renderDLC(){
           <div class="dlc-card-days" style="color:${c.dot}">${daysLabel}</div>
         </div>
       </div>
-      ${d.note?`<div style="padding:0 12px 8px;font-size:11px;color:var(--text2)">📝 ${d.note}</div>`:''}
+      ${d.note?`<div style="padding:0 12px 8px;font-size:11px;color:var(--text2)">📝 ${esc(d.note)}</div>`:''}
       <div class="dlc-card-actions">
-        <button class="dlc-btn-sm" onclick="openDLCAdd('${d.code}')">+ Nouvelle DLC</button>
-        <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deleteDLC(${d.id})">🗑 Supprimer</button>
+        <button class="dlc-btn-sm" onclick="openDLCAdd(${jsArg(d.code)})">+ Nouvelle DLC</button>
+        <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deleteDLC(${jsArg(d.id)})">🗑 Supprimer</button>
       </div>
     </div>`;
   }).join('');
@@ -5466,7 +5915,81 @@ function deleteSnapshot(id){
   HISTO_DATA=HISTO_DATA.filter(h=>h.id!==id);
   saveAllData();renderHistorique();
 }
+// ══════════════════════════════════════════════════════════
+// CONSOMMATION ET RATIO MATIÈRE (18/10/2026)
+// Consommation = stock de début + achats de la période − stock de fin,
+// séparée entre nourriture et boissons/café. Les achats viennent du Cahier
+// d'achats (601000 = nourriture, 607000 = boissons ; anciens codes 601100/601200/601400 acceptés).
+// ══════════════════════════════════════════════════════════
+const CONSO_BEV_ZONES=['BOISSONS','CAFETERIE'];
+// Comptes d'achats consommés (601000 / 607000 = plan du cabinet ; 6011xx/6012xx/6014xx = ancien plan de l'appli)
+const CONSO_CODES={nourriture:['601000','601100'],boissons:['607000','601200','601400']};
+function _stockSplit(items){
+  const r={nourriture:0,boissons:0};
+  (items||[]).forEach(i=>{if(i.qte==null||!i.prix)return;const v=i.qte*i.prix;r[CONSO_BEV_ZONES.includes(i.zone)?'boissons':'nourriture']+=v;});
+  return r;
+}
+function _achatsEntre(debutISO,finISO){
+  let inv=[];try{inv=JSON.parse(localStorage.getItem('ca_invoices'))||[];}catch(e){}
+  const d0=localISODate(new Date(debutISO)),d1=localISODate(new Date(finISO));
+  const r={nourriture:0,boissons:0,exclus:0,nb:0};const fac=new Set();
+  inv.forEach(i=>{
+    if(!i.date||i.date<=d0||i.date>d1)return; // achats APRÈS l'inventaire de début, jusqu'à celui de fin inclus
+    const ht=Number(i.ht)||0;
+    if(CONSO_CODES.nourriture.includes(i.code)){r.nourriture+=ht;fac.add(i.factureId||i.id);}
+    else if(CONSO_CODES.boissons.includes(i.code)){r.boissons+=ht;fac.add(i.factureId||i.id);}
+    else r.exclus+=ht;
+  });
+  r.nb=fac.size;
+  return r;
+}
+function renderConsommation(){
+  const box=document.getElementById('conso-card');if(!box)return;
+  if(!HISTO_DATA.length){box.innerHTML='';return;}
+  const prevD=box.querySelector('#conso-debut')?.value,prevF=box.querySelector('#conso-fin')?.value;
+  const snaps=[...HISTO_DATA].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const optSnap=s=>`<option value="${esc(String(s.id))}">${esc(s.label)} — ${new Date(s.date).toLocaleDateString('fr-FR')}</option>`;
+  const debut=snaps.find(s=>String(s.id)===prevD)||snaps[Math.max(0,snaps.length-1)];
+  const finId=prevF||'actuel';
+  const fin=finId==='actuel'?{label:'Inventaire actuel',date:new Date().toISOString(),items:DATA}:(snaps.find(s=>String(s.id)===finId)||{label:'Inventaire actuel',date:new Date().toISOString(),items:DATA});
+  // CA HT mémorisé par mois (mois de l'inventaire de fin), partagé entre appareils
+  const moisFin=typeof caMoisDe==='function'?caMoisDe(fin.date):'';
+  const caStore=(typeof CA_MENSUEL!=='undefined'&&CA_MENSUEL[moisFin])||{};
+  const caN=caStore.nourriture!=null?String(caStore.nourriture):'',caB=caStore.boissons!=null?String(caStore.boissons):'';
+  const sD=_stockSplit(debut.items),sF=_stockSplit(fin.items);
+  const ach=_achatsEntre(debut.date,fin.date);
+  const conso={nourriture:sD.nourriture+ach.nourriture-sF.nourriture,boissons:sD.boissons+ach.boissons-sF.boissons};
+  const ca={nourriture:parseFloat(String(caN).replace(',','.')),boissons:parseFloat(String(caB).replace(',','.'))};
+  const f=v=>v.toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
+  const ratio=k=>ca[k]>0?Math.round(conso[k]/ca[k]*1000)/10+' %':'—';
+  const totCA=(ca.nourriture>0?ca.nourriture:0)+(ca.boissons>0?ca.boissons:0);
+  const ratioTot=totCA>0?Math.round((conso.nourriture+conso.boissons)/totCA*1000)/10+' %':'—';
+  const ligne=(lib,n,b)=>`<tr><td>${lib}</td><td class="num">${n}</td><td class="num">${b}</td></tr>`;
+  const avertNeg=(conso.nourriture<0||conso.boissons<0)?'<div class="conso-warn">⚠️ Consommation négative : il manque probablement des factures dans le Cahier d\'achats, ou l\'inventaire de fin contient des erreurs.</div>':'';
+  box.innerHTML=`<div class="conso-title">🧮 Consommation et ratio matière</div>
+    <div class="conso-sel">
+      <label>Inventaire de début<select id="conso-debut" onchange="renderHistorique()">${snaps.map(optSnap).join('')}</select></label>
+      <label>Inventaire de fin<select id="conso-fin" onchange="renderHistorique()"><option value="actuel">Inventaire actuel (en cours)</option>${snaps.map(optSnap).join('')}</select></label>
+    </div>
+    <table class="conso-table"><tr><th></th><th class="num">🍴 Nourriture</th><th class="num">🥤 Boissons & café</th></tr>
+      ${ligne('Stock de début',f(sD.nourriture),f(sD.boissons))}
+      ${ligne('+ Achats HT de la période ('+ach.nb+' factures)',f(ach.nourriture),f(ach.boissons))}
+      ${ligne('− Stock de fin',f(sF.nourriture),f(sF.boissons))}
+      <tr class="conso-total"><td>= Consommation</td><td class="num">${f(conso.nourriture)}</td><td class="num">${f(conso.boissons)}</td></tr>
+      <tr><td>Chiffre d'affaires HT de ${esc(moisFin?new Date(moisFin+'-15').toLocaleDateString('fr-FR',{month:'long',year:'numeric'}):'la période')}</td>
+        <td class="num"><input id="conso-ca-n" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA nourriture" value="${esc(caN)}" onchange="consoSaveCA(${jsArg(moisFin)});renderConsommation()"></td>
+        <td class="num"><input id="conso-ca-b" type="number" inputmode="decimal" min="0" step="0.01" placeholder="CA boissons" value="${esc(caB)}" onchange="consoSaveCA(${jsArg(moisFin)});renderConsommation()"></td></tr>
+      <tr class="conso-total"><td>Ratio matière</td><td class="num">${ratio('nourriture')}</td><td class="num">${ratio('boissons')}</td></tr>
+    </table>
+    <div class="conso-foot">Ratio global : <b>${ratioTot}</b>${ach.exclus?` · ${f(ach.exclus)} d'autres achats (entretien, matériel…) non comptés`:''}<br>
+    Période : achats datés du lendemain de « ${esc(debut.label)} » jusqu'au ${new Date(fin.date).toLocaleDateString('fr-FR')} inclus. Les stocks sont valorisés aux prix enregistrés dans chaque inventaire.</div>${avertNeg}`;
+  box.querySelector('#conso-debut').value=String(debut.id);
+  box.querySelector('#conso-fin').value=fin.id!=null?String(fin.id):'actuel';
+}
+
 function renderHistorique(){
+  renderConsommation();
+  if(typeof invPlusRenderAnalyses==='function')invPlusRenderAnalyses();
   const el=document.getElementById('histo-list');
   if(!HISTO_DATA.length){
     el.innerHTML='<div class="histo-empty">Aucun inventaire archivé.<br><br>Cliquez sur <b>📸 Archiver l\'inventaire actuel</b> après chaque inventaire mensuel pour conserver un historique et comparer les consommations.</div>';
@@ -5474,25 +5997,25 @@ function renderHistorique(){
   }
   el.innerHTML=HISTO_DATA.map((snap,idx)=>{
     const prev=HISTO_DATA[idx+1];
-    const diffVal=prev?snap.total-prev.total:null;
+    const diffVal=prev?(snap.total||0)-(prev.total||0):null;
     const diffStr=diffVal!==null?(diffVal>0?'+':'')+diffVal.toFixed(2)+' €':'';
     const diffCls=diffVal===null?'':diffVal>0?'diff-pos':diffVal<0?'diff-neg':'diff-zero';
     return`<div class="histo-card">
-      <div class="histo-card-header" onclick="toggleHistoBody(${snap.id})">
+      <div class="histo-card-header" onclick="toggleHistoBody(${jsArg(snap.id)})">
         <div>
-          <div class="histo-card-title">${snap.label}</div>
+          <div class="histo-card-title">${esc(snap.label)}</div>
           <div class="histo-card-meta">${new Date(snap.date).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})} · ${snap.refs} références${diffVal!==null?' · <span class="'+diffCls+'" style="font-weight:600">'+diffStr+'</span>':''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <div class="histo-card-val">${snap.total.toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div>
+          <div class="histo-card-val">${(snap.total||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'})}</div>
           <span style="color:var(--text3);font-size:14px">▼</span>
         </div>
       </div>
       <div class="histo-card-body" id="histo-body-${snap.id}">
         ${prev?renderHistoDelta(snap,prev):'<div style="padding:12px 14px;font-size:12px;color:var(--text2)">Pas d\'inventaire précédent pour comparaison.</div>'}
         <div style="padding:10px 14px;display:flex;gap:8px;border-top:.5px solid var(--border)">
-          <button class="dlc-btn-sm" onclick="restoreSnapshot(${snap.id})">↩ Restaurer</button>
-          <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deleteSnapshot(${snap.id})">🗑 Supprimer</button>
+          <button class="dlc-btn-sm" onclick="restoreSnapshot(${jsArg(snap.id)})">↩ Restaurer</button>
+          <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deleteSnapshot(${jsArg(snap.id)})">🗑 Supprimer</button>
         </div>
       </div>
     </div>`;
@@ -5510,7 +6033,7 @@ function renderHistoDelta(snap,prev){
     const diff=(item.qte||0)-(prev.qte||0);
     const diffCls=diff<0?'diff-pos':diff>0?'diff-neg':'diff-zero'; // consommation = négatif = vert
     return`<div class="histo-delta-row" style="background:${i%2===0?'var(--bg)':'var(--bg2)'}">
-      <span class="histo-delta-name">${item.produit}</span>
+      <span class="histo-delta-name">${esc(item.produit)}</span>
       <span class="histo-delta-old">${prev.qte}</span>
       <span class="histo-delta-arrow">→</span>
       <span class="histo-delta-new">${item.qte}</span>
@@ -5555,7 +6078,7 @@ function initCmdFournisseurFilter(){
   const sel=document.getElementById('cmd-fourn-filter');
   const prev=sel.value;
   const fourns=[...new Set(DATA.map(d=>d.fournisseur).filter(Boolean))].sort();
-  sel.innerHTML='<option value="">Tous fournisseurs</option>'+fourns.map(f=>`<option value="${f}"${f===prev?' selected':''}>${f}</option>`).join('');
+  sel.innerHTML='<option value="">Tous fournisseurs</option>'+fourns.map(f=>`<option value="${esc(f)}"${f===prev?' selected':''}>${esc(f)}</option>`).join('');
 }
 function genCommande(){
   CMD_DATA=[];
@@ -5601,11 +6124,11 @@ function renderCommande(){
     '<div class="cmd-cell">Produit</div><div class="cmd-cell" style="text-align:right">Prix HT</div>'+
     '<div class="cmd-cell" style="text-align:right">Qté</div><div class="cmd-cell" style="text-align:right">Montant</div><div class="cmd-cell"></div></div>'+
     items.map(c=>`<div class="cmd-row">
-      <div class="cmd-cell"><div class="cmd-cell-name">${c.produit}</div><div class="cmd-cell-fourn">${c.fournisseur||'—'} · ${c.unite}</div></div>
+      <div class="cmd-cell"><div class="cmd-cell-name">${esc(c.produit)}</div><div class="cmd-cell-fourn">${esc(c.fournisseur||'—')} · ${esc(c.unite)}</div></div>
       <div class="cmd-cell" style="text-align:right;font-size:12px">${c.prix.toFixed(2)} €</div>
-      <div class="cmd-cell"><input class="cmd-input" type="number" min="0" step="0.1" value="${c.qteCmd}" oninput="updateCmdQte(${c.id},this.value)"></div>
+      <div class="cmd-cell"><input class="cmd-input" type="number" min="0" step="0.1" value="${c.qteCmd}" oninput="updateCmdQte(${jsArg(c.id)},this.value)"></div>
       <div class="cmd-cell" style="text-align:right;font-weight:600">${(c.qteCmd*c.prix).toFixed(2)} €</div>
-      <div class="cmd-cell"><button class="cmd-del-btn" onclick="removeCmdLine(${c.id})">✕</button></div>
+      <div class="cmd-cell"><button class="cmd-del-btn" onclick="removeCmdLine(${jsArg(c.id)})">✕</button></div>
     </div>`).join('')+'</div>';
   updateCmdTotaux();
 }
@@ -5683,13 +6206,24 @@ function updateAllergenPills(code){
 }
 
 function resetAllergenToPresets(){
-  if(!confirm('Recharger les allergènes depuis la base de données ? Vos modifications locales seront perdues.'))return;
-  try {
-    const stored = localStorage.getItem(ALLERGENS_KEY);
-    if(stored) { ALLERGEN_DATA = JSON.parse(stored); }
-    saveAllData(); renderAllergens();
-    alert('Allergènes rechargés depuis Supabase ✓');
-  } catch(e) { alert('Erreur: ' + e.message); }
+  // 18/10/2026 : relisait simplement le stockage local (aucun effet) tout en
+  // annonçant « rechargés depuis Supabase ». Recharge maintenant vraiment la
+  // version partagée du serveur.
+  if(!confirm('Recharger les allergènes depuis le serveur ? Les modifications de cet appareil non encore envoyées seront perdues.'))return;
+  (async()=>{
+    try {
+      const r = await supa('/rest/v1/haccp_store?id=eq.allergenes&select=data');
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const rows = await r.json();
+      if(!rows.length || !rows[0].data) throw new Error('aucune donnée sur le serveur');
+      ALLERGEN_DATA = rows[0].data;
+      localStorage.setItem(ALLERGENS_KEY, JSON.stringify(ALLERGEN_DATA));
+      // Annuler un éventuel envoi en attente qui ré-écraserait la version serveur
+      if(typeof syncQueue!=='undefined' && syncQueue.allergenes!==undefined){ delete syncQueue.allergenes; persistQueue(); }
+      renderAllergens();
+      alert('Allergènes rechargés depuis le serveur ✓');
+    } catch(e) { alert('Rechargement impossible : ' + e.message); }
+  })();
 }
 
 function exportAllergenPDF(){
@@ -5787,18 +6321,20 @@ function renderAllergens(){
   el.innerHTML=items.map(d=>{
     const algs=ALLERGEN_DATA[d.code]||[];
     const pillsHtml=algs.length?algs.map(aid=>{const a=ALLERGENS_LIST.find(x=>x.id===aid);return a?`<span class="allergen-pill">${a.emoji} ${a.label}</span>`:''}).join(''):'<span class="allergen-empty-pill">✓ Aucun</span>';
-    return`<div class="allergen-card">
-      <div class="allergen-card-header" onclick="toggleAllergenBody('${d.code}')">
+    // 18/10/2026 : un clic sur le libellé d'un allergène déclenchait DEUX bascules
+    // (onclick du label + onchange de la case) → aucune modification enregistrée.
+    return`<div class="allergen-card" data-code="${esc(d.code)}">
+      <div class="allergen-card-header" onclick="toggleAllergenBody(this.parentNode.dataset.code)">
         <div>
-          <div class="allergen-card-name">${d.produit}</div>
-          <div class="allergen-card-zone">${(ZONES[d.zone]||{label:d.zone}).label}${d.fournisseur?' · '+d.fournisseur:''}</div>
+          <div class="allergen-card-name">${esc(d.produit)}</div>
+          <div class="allergen-card-zone">${esc((ZONES[d.zone]||{label:d.zone}).label)}${d.fournisseur?' · '+esc(d.fournisseur):''}</div>
         </div>
-        <div class="allergen-card-pills" id="alg-pills-${d.code}">${pillsHtml}</div>
+        <div class="allergen-card-pills" id="alg-pills-${esc(d.code)}">${pillsHtml}</div>
       </div>
-      <div class="allergen-card-body" id="alg-body-${d.code}">
+      <div class="allergen-card-body" id="alg-body-${esc(d.code)}">
         <div class="allergen-grid">
-          ${ALLERGENS_LIST.map(a=>`<label class="allergen-check${algs.includes(a.id)?' active':''}" id="alg-${d.code}-${a.id}" onclick="toggleAllergen('${d.code}','${a.id}')">
-            <input type="checkbox" ${algs.includes(a.id)?'checked':''} onclick="event.stopPropagation()" onchange="toggleAllergen('${d.code}','${a.id}')">
+          ${ALLERGENS_LIST.map(a=>`<label class="allergen-check${algs.includes(a.id)?' active':''}" id="alg-${esc(d.code)}-${a.id}">
+            <input type="checkbox" ${algs.includes(a.id)?'checked':''} onchange="toggleAllergen(this.closest('.allergen-card').dataset.code,'${a.id}')">
             <span class="allergen-check-label">${a.emoji} ${a.label}</span>
           </label>`).join('')}
         </div>
@@ -5862,14 +6398,6 @@ const PRIX_HISTO_KEY='haccp_prix_historique_v1';
 
 let RECETTES_DATA=[];   // [{id,nom,cat,couverts,prixVente,ingredients:[{code,qte}],createdAt}]
 
-// Recettes PDF migrées dans Supabase haccp_store (id="recettes")
-
-// Les recettes sont chargées depuis Supabase via pullCloud()
-// Cette fonction est conservée pour compatibilité mais ne charge plus de données codées en dur
-function initRecettesPDF() {
-  // Recettes migrées dans Supabase — rien à faire ici
-  console.log('[RECETTES] Source: Supabase haccp_store');
-}
 let TRAC_DATA=[];       // [{id,type,code,produit,qte,unite,date,resp,note}]
 let PRIX_HISTO_DATA={}; // {code:[{date,prix},...]}
 
@@ -5879,10 +6407,10 @@ function loadNewModules(){
   try{const r=localStorage.getItem(PRIX_HISTO_KEY);if(r)PRIX_HISTO_DATA=JSON.parse(r);}catch(e){}
 }
 function saveNewModules(){
-  // Sync automatique via setItem hooks
-  try{localStorage.setItem(RECETTES_KEY,JSON.stringify(RECETTES_DATA));syncToCloud('recettes',RECETTES_DATA);}catch(e){}
-  try{localStorage.setItem(TRAC_KEY,JSON.stringify(TRAC_DATA));syncToCloud('tracabilite',TRAC_DATA);}catch(e){}
-  try{localStorage.setItem(PRIX_HISTO_KEY,JSON.stringify(PRIX_HISTO_DATA));syncToCloud('prix_historique',PRIX_HISTO_DATA);}catch(e){}
+  // N'envoie que les modules réellement modifiés (voir saveModule)
+  saveModule(RECETTES_KEY,'recettes',RECETTES_DATA);
+  saveModule(TRAC_KEY,'tracabilite',TRAC_DATA);
+  saveModule(PRIX_HISTO_KEY,'prix_historique',PRIX_HISTO_DATA);
 }
 
 // ══════════════════════════════════════════════════════════
@@ -5892,7 +6420,7 @@ function buildDashboard(){
   const wrap=document.getElementById('dash-content');
   if(!wrap)return;
   const now=new Date();
-  const todayStr=now.toISOString().slice(0,10);
+  const todayStr=localISODate(now);
   const dayLabel=now.toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   const BEV_ZONES=['BOISSONS','CAFETERIE'];
 
@@ -5954,13 +6482,12 @@ function buildDashboard(){
   const tempAlerts=tempReadings.filter(r=>r.status!=='conforme');
 
   // ── Traçabilité du jour ──
-  const tracToday=TRAC_DATA.filter(t=>t.date.slice(0,10)===todayStr);
+  const tracToday=TRAC_DATA.filter(t=>t.date&&localISODate(new Date(t.date))===todayStr);
   const tracEntrees=tracToday.filter(t=>t.type==='entree').length;
   const tracSorties=tracToday.filter(t=>t.type==='sortie').length;
   const tracPertes=tracToday.filter(t=>t.type==='perte').length;
 
   // ── Achats du mois (factures) ──
-  const monthStr=now.toISOString().slice(0,7);
   const achats=INVOICES.reduce((s,inv)=>s+inv.total,0);
 
   const fmt=(v)=>v.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
@@ -6099,7 +6626,7 @@ function buildDashboard(){
       <span style="font-size:11px;color:var(--pink-text)">Commander →</span>
     </div>
     ${stockBas.slice(0,4).map((d,i)=>`<div style="padding:8px 14px;border-top:.5px solid var(--border);display:flex;justify-content:space-between;background:${i%2===0?'var(--bg)':'var(--bg2)'}">
-      <span style="font-size:12px;font-weight:500">${d.produit}</span>
+      <span style="font-size:12px;font-weight:500">${esc(d.produit)}</span>
       <span style="font-size:11px;color:var(--pink-text);font-weight:600">${d.qte!=null?d.qte:0} ${d.unite} / min ${SEUILS_DATA[d.code]?.min} ${d.unite}</span>
     </div>`).join('')}
     ${stockBas.length>4?`<div style="padding:8px 14px;font-size:11px;color:var(--text2);text-align:center;border-top:.5px solid var(--border)">+ ${stockBas.length-4} autre${stockBas.length-4>1?'s':''} produit${stockBas.length-4>1?'s':''} sous seuil</div>`:''}
@@ -6133,7 +6660,7 @@ function buildDashboard(){
       const fc=r.prixVente>0?Math.round(c/(r.prixVente*r.couverts)*100):null;
       const col=fc===null?'var(--text3)':fc<=28?'var(--green-text)':fc<=35?'var(--amber-text)':'var(--pink-text)';
       return`<div style="padding:8px 14px;border-top:.5px solid var(--border);display:flex;justify-content:space-between;cursor:pointer" onclick="switchTabByName('recettes')">
-        <span style="font-size:12px;font-weight:500">${r.nom}</span>
+        <span style="font-size:12px;font-weight:500">${esc(r.nom)}</span>
         <span style="font-size:13px;font-weight:700;color:${col}">${fc!==null?fc+'%':'—'}</span>
       </div>`;
     }).join('')}
@@ -6261,7 +6788,10 @@ function resolveIngredient(ing){
   }
 
   const uniteCatalogue = prod.unite || '';
-  const factor = unitConversionFactor(uniteRecette, uniteCatalogue);
+  // Ingrédient saisi via le formulaire Recettes : pas d'unité propre, la quantité
+  // est exprimée dans l'unité du catalogue (affichée à côté du champ). Avant le
+  // 18/10/2026, ces recettes affichaient toutes un coût de 0 € (« conversion manuelle »).
+  const factor = !uniteRecette ? 1 : unitConversionFactor(uniteRecette, uniteCatalogue);
   if(factor===null){
     // Unité recette et unité catalogue incompatibles (conditionnement différent,
     // ou familles différentes) : conversion manuelle nécessaire, pas de calcul auto.
@@ -6329,20 +6859,26 @@ function renderRecetteIngredients(){
     return;
   }
   el.innerHTML=_recetteIngredients.map((ing,i)=>{
-    const prod=DATA.find(d=>d.code===ing.code);
+    const ingCode=ing.code_produit||ing.code;
+    const prod=DATA.find(d=>d.code===ingCode);
+    const missing=!prod?`<option value="" selected>${esc(ing.designation||ingCode||'— choisir —')} (non rapproché)</option>`:'';
     return`<div class="rec-ing-line">
       <select class="rec-ing-select" onchange="updRecIng(${i},'code',this.value)">
-        ${DATA.map(d=>`<option value="${d.code}"${d.code===ing.code?' selected':''}>${d.produit} (${d.unite})</option>`).join('')}
+        ${missing}${DATA.map(d=>`<option value="${esc(d.code)}"${d.code===ingCode?' selected':''}>${esc(d.produit)} (${esc(d.unite)})</option>`).join('')}
       </select>
       <input class="rec-ing-input" type="number" min="0" step="0.01" value="${ing.qte||''}" placeholder="Qté" oninput="updRecIng(${i},'qte',this.value)">
-      <span class="rec-ing-unit">${prod?prod.unite:''}</span>
+      <span class="rec-ing-unit">${esc(ing.unite||(prod?prod.unite:''))}</span>
       <button class="rec-del-btn" onclick="removeRecetteIngredient(${i})">✕</button>
     </div>`;
   }).join('');
 }
 
 function updRecIng(idx,field,val){
-  if(field==='code')_recetteIngredients[idx].code=val;
+  if(field==='code'){
+    // Nouveau produit choisi : sa quantité s'exprime dans l'unité du catalogue
+    const ing=_recetteIngredients[idx];
+    ing.code=val; delete ing.code_produit; delete ing.unite;
+  }
   else _recetteIngredients[idx].qte=parseFloat(val)||0;
   if(field==='code')renderRecetteIngredients();
   updateRecetteCost();
@@ -6351,10 +6887,8 @@ function updRecIng(idx,field,val){
 function updateRecetteCost(){
   const couverts=parseInt(document.getElementById('rec-couverts').value)||1;
   const prixVente=parseFloat(document.getElementById('rec-prix-vente').value)||0;
-  const cout=_recetteIngredients.reduce((s,ing)=>{
-    const prod=DATA.find(d=>d.code===ing.code);
-    return s+(prod?prod.prix*(ing.qte||0):0);
-  },0);
+  // Même calcul que la fiche affichée (conversion d'unités comprise)
+  const cout=_recetteIngredients.reduce((s,ing)=>s+resolveIngredient(ing).cout,0);
   if(cout===0){document.getElementById('rec-cost-preview').style.display='none';return;}
   const coutCouvert=cout/couverts;
   const fc=prixVente>0?Math.round(cout/(prixVente*couverts)*100):null;
@@ -6376,7 +6910,9 @@ function submitRecette(){
     nom,cat:document.getElementById('rec-cat').value,
     couverts:parseInt(document.getElementById('rec-couverts').value)||4,
     prixVente:parseFloat(document.getElementById('rec-prix-vente').value)||0,
-    ingredients:_recetteIngredients.map(i=>({code:i.code,qte:i.qte||0})),
+    // On conserve tous les champs (unite, code_produit, designation des recettes
+    // importées) : avant, modifier une recette importée perdait ses unités.
+    ingredients:_recetteIngredients.map(i=>({...i,qte:i.qte||0})),
     updatedAt:new Date().toISOString()
   };
   if(_editRecetteId){
@@ -6407,14 +6943,14 @@ function renderRecettes(){
   const CATS={entree:'Entrée',plat:'Plat',dessert:'Dessert',autre:'Autre'};
   el.innerHTML=RECETTES_DATA.map(r=>{
     const cout=calcRecetteCout(r);
-    const coutCouvert=cout/r.couverts;
-    const fc=r.prixVente>0?Math.round(cout/(r.prixVente*r.couverts)*100):null;
+    const coutCouvert=cout/(r.couverts||1);
+    const fc=r.prixVente>0?Math.round(cout/(r.prixVente*(r.couverts||1))*100):null;
     const fcColor=fc===null?'var(--text2)':fc<=28?'var(--green-text)':fc<=35?'var(--amber-text)':'var(--pink-text)';
     const fcLabel=fc===null?'Prix vente non renseigné':fc<=28?'✅ Excellent':fc<=35?'⚠️ Correct':'🔴 Trop élevé';
     return`<div class="recette-card">
-      <div class="recette-card-header" onclick="toggleRecetteBody(${r.id})">
+      <div class="recette-card-header" onclick="toggleRecetteBody(${jsArg(r.id)})">
         <div>
-          <div class="recette-card-title">${r.nom}</div>
+          <div class="recette-card-title">${esc(r.nom)}</div>
           <div class="recette-card-meta">${CATS[r.cat]||r.cat} · ${r.couverts} couverts · ${cout.toFixed(2)}€ coût · ${coutCouvert.toFixed(2)}€/couvert</div>
         </div>
         <div class="recette-card-fc" style="color:${fcColor}">${fc!==null?fc+'%':'—'}</div>
@@ -6431,7 +6967,7 @@ function renderRecettes(){
             coutStr = `${ing.qte||''} ${ri.uniteRecette} <span style="color:var(--text2);font-style:italic">· prix à renseigner</span>`;
           }
           return`<div class="recette-ing-row">
-            <span class="recette-ing-name">${ri.nom}</span>
+            <span class="recette-ing-name">${esc(ri.nom)}</span>
             <span class="recette-ing-cost">${coutStr}</span>
           </div>`;
         }).join('')}
@@ -6453,8 +6989,8 @@ function renderRecettes(){
           ${fc!==null?`<div class="dash-foodcost-bar"><div class="dash-foodcost-fill" style="width:${Math.min(fc,100)}%;background:${fcColor}"></div></div>`:''}
         </div>
         <div style="padding:10px 14px;display:flex;gap:8px;border-top:.5px solid var(--border)">
-          <button class="dlc-btn-sm" onclick="openEditRecette(${r.id})">✏️ Modifier</button>
-          <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deleteRecette(${r.id})">🗑 Supprimer</button>
+          <button class="dlc-btn-sm" onclick="openEditRecette(${jsArg(r.id)})">✏️ Modifier</button>
+          <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deleteRecette(${jsArg(r.id)})">🗑 Supprimer</button>
         </div>
       </div>
     </div>`;
@@ -6508,7 +7044,7 @@ const TRAC_LABELS={entree:'Entrée',sortie:'Sortie cuisine',perte:'Perte/Périm�
 
 function openTracAdd(){
   const sel=document.getElementById('trac-prod');
-  sel.innerHTML=DATA.map(d=>`<option value="${d.code}">${d.produit} (${(ZONES[d.zone]||{label:d.zone}).label})</option>`).join('');
+  sel.innerHTML=DATA.map(d=>`<option value="${esc(d.code)}">${esc(d.produit)} (${esc((ZONES[d.zone]||{label:d.zone}).label)})</option>`).join('');
   const now=new Date();
   now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
   document.getElementById('trac-date').value=now.toISOString().slice(0,16);
@@ -6587,13 +7123,13 @@ function renderTracabilite(){
     entries.map(t=>`<div class="trac-row trac-type-${t.type}">
       <div class="trac-icon">${TRAC_ICONS[t.type]||'📋'}</div>
       <div class="trac-body">
-        <div class="trac-prod">${t.produit}</div>
-        <div class="trac-meta">${TRAC_LABELS[t.type]||t.type}${t.resp?' · '+t.resp:''}${t.note?' · '+t.note:''}</div>
+        <div class="trac-prod">${esc(t.produit)}</div>
+        <div class="trac-meta">${TRAC_LABELS[t.type]||esc(t.type)}${t.resp?' · '+esc(t.resp):''}${t.note?' · '+esc(t.note):''}</div>
       </div>
       <div class="trac-right">
-        <div class="trac-qte">${t.type==='entree'?'+':'−'}${t.qte} ${t.unite}</div>
+        <div class="trac-qte">${t.type==='entree'?'+':'−'}${esc(t.qte)} ${esc(t.unite)}</div>
         <div class="trac-date">${new Date(t.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
-        <button class="trac-del" onclick="deleteTrac(${t.id})">✕</button>
+        <button class="trac-del" onclick="deleteTrac(${jsArg(t.id)})">✕</button>
       </div>
     </div>`).join('');
   }).join('');
@@ -6727,7 +7263,6 @@ async function enableNotifications(){
 }
 
 
-
 // ══════════════════════════════════════════════════════════
 // MODULE COMPARATEUR DE PRIX FOURNISSEURS
 // ══════════════════════════════════════════════════════════
@@ -6738,7 +7273,7 @@ function loadPlats(){
   try{const r=localStorage.getItem(PLATS_KEY);if(r)PLATS_DATA=JSON.parse(r);}catch(e){}
 }
 function savePlats(){
-  try{localStorage.setItem(PLATS_KEY,JSON.stringify(PLATS_DATA));syncToCloud('plats',PLATS_DATA);}catch(e){}
+  saveModule(PLATS_KEY,'plats',PLATS_DATA);
 }
 
 // ── Init onglet Prix ──
@@ -6753,7 +7288,7 @@ function initPrixPanel(){
   const dl=document.getElementById('prix-fourn-list');
   if(dl){
     const fourns=[...new Set(DATA.map(d=>d.fournisseur).filter(Boolean))].sort();
-    dl.innerHTML=fourns.map(f=>`<option value="${f}">`).join('');
+    dl.innerHTML=fourns.map(f=>`<option value="${esc(f)}">`).join('');
   }
 }
 
@@ -6769,7 +7304,7 @@ function openAddPrix(code){
     document.getElementById('prix-add-val').value=p?.prix||'';
   };
   sel.onchange=updateFourn; updateFourn();
-  document.getElementById('prix-add-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('prix-add-date').value=localISODate();
   document.getElementById('prix-add-note').value='';
   document.getElementById('prix-feedback').style.display='none';
   document.getElementById('prix-overlay').classList.add('open');
@@ -6789,7 +7324,12 @@ function submitPrix(){
   PRIX_HISTO_DATA[code].sort((a,b)=>a.date.localeCompare(b.date));
   // Update current product price
   const prod=DATA.find(d=>d.code===code);
-  if(prod){prod.prix=val;prod.fournisseur=fourn||prod.fournisseur;prod.status='updated';}
+  if(prod){
+    prod.prix=val;prod.fournisseur=fourn||prod.fournisseur;prod.status='updated';
+    // Le prix du catalogue n'était changé qu'en mémoire (perdu au rechargement)
+    pushProductToCloud(prod).then(ok=>{if(!ok)showSyncToast('⚠ Nouveau prix NON enregistré sur le serveur (connexion ?)');});
+    render();updateStats();
+  }
   saveNewModules();autoSave();
   fb.style.display='block';fb.style.color='var(--green-text)';fb.textContent='✓ Prix enregistré !';
   setTimeout(()=>{closePrix();renderPrixChart();},600);
@@ -7026,10 +7566,10 @@ function closePlat(){document.getElementById('plat-overlay').classList.remove('o
 
 function renderPlatAlgGrid(){
   document.getElementById('plat-alg-grid').innerHTML=ALLERGENS_LIST.map(a=>`
-    <label class="allergen-check${_platAlgSelected.includes(a.id)?' active':''}" 
-           id="palg-${a.id}" onclick="togglePlatAlg('${a.id}')">
+    <label class="allergen-check${_platAlgSelected.includes(a.id)?' active':''}"
+           id="palg-${a.id}">
       <input type="checkbox" ${_platAlgSelected.includes(a.id)?'checked':''}
-             onclick="event.stopPropagation()" onchange="togglePlatAlg('${a.id}')">
+             onchange="togglePlatAlg('${a.id}')">
       <span class="allergen-check-label">${a.emoji} ${a.label}</span>
     </label>`).join('');
 }
@@ -7083,9 +7623,9 @@ function renderCartAlg(){
         ?algs.map(aid=>{const a=ALLERGENS_LIST.find(x=>x.id===aid);return a?`<span class="plat-alg-pill">${a.emoji} ${a.label}</span>`:''}).join('')
         :'<span class="plat-no-alg">✓ Aucun allergène majeur déclaré</span>';
       return`<div class="plat-card">
-        <div class="plat-card-header" onclick="togglePlatBody(${p.id})">
+        <div class="plat-card-header" onclick="togglePlatBody(${jsArg(p.id)})">
           <div>
-            <div class="plat-card-title">${p.nom}</div>
+            <div class="plat-card-title">${esc(p.nom)}</div>
             ${p.traces?'<div style="font-size:10px;color:var(--amber-text);margin-top:1px">⚠️ Peut contenir des traces</div>':''}
             <div class="plat-card-pills">${pillsHtml}</div>
           </div>
@@ -7101,8 +7641,8 @@ function renderCartAlg(){
           </div>
           ${p.traces?'<div style="margin-top:8px;padding:6px 10px;background:var(--amber-bg);border-radius:var(--radius);font-size:11px;color:var(--amber-text)">⚠️ Ce plat peut contenir des traces d\'allergènes non listés.</div>':''}
           <div style="display:flex;gap:8px;margin-top:12px">
-            <button class="dlc-btn-sm" onclick="openEditPlat(${p.id})">✏️ Modifier</button>
-            <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deletePlat(${p.id})">🗑 Supprimer</button>
+            <button class="dlc-btn-sm" onclick="openEditPlat(${jsArg(p.id)})">✏️ Modifier</button>
+            <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deletePlat(${jsArg(p.id)})">🗑 Supprimer</button>
           </div>
         </div>
       </div>`;
@@ -7140,64 +7680,6 @@ function exportCarteAlgPDF(){
     .legend-dot{width:12px;height:12px;border-radius:2px}
     @media print{@page{size:A4;margin:12mm}body{padding:0}}
   
-/* ══ ONGLETS SECONDAIRES "PLUS ▾" ════════════════════════ */
-.tab-more-btn{font-style:normal;color:var(--info-text)!important;background:var(--info-bg)!important;border-radius:6px;margin:4px 0;flex-shrink:0}
-.tab-more-btn.active-more{background:var(--info-text)!important;color:#fff!important}
-.tab-more-menu{position:sticky;top:44px;z-index:99;background:var(--bg);border-bottom:.5px solid var(--border);padding:6px 16px;display:flex;flex-wrap:wrap;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.tab-more-item{font-family:var(--font);font-size:13px;font-weight:500;padding:8px 14px;background:var(--bg2);border:.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;white-space:nowrap;min-height:36px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.tab-more-item:active,.tab-more-item.active{background:var(--info-bg);color:var(--info-text);border-color:var(--info-text)}
-.tab-more-item.active{font-weight:700}
-
-
-/* Padding bottom global pour tous les panels (footer sticky ~60px) */
-.recette-wrap,.trac-wrap,.prix-wrap,.carte-alg-wrap,.dash-wrap,
-.dlc-wrap,.histo-wrap,.cmd-wrap,.allergen-wrap,.bilan-wrap,.inv-list,.pieces-wrap{
-  padding-bottom:100px!important
-}
-
-
-/* ══ CENTRE D'ENVOI EMAIL ════════════════════════════════ */
-.send-overlay{position:fixed;inset:0;z-index:500;display:none}
-.send-overlay.open{display:block}
-.send-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5)}
-.send-panel{position:absolute;bottom:0;left:0;right:0;background:var(--bg);border-top:.5px solid var(--border2);border-radius:20px 20px 0 0;padding:20px 16px env(safe-area-inset-bottom,16px);z-index:501;box-shadow:0 -8px 40px rgba(0,0,0,.25);max-height:92vh;overflow-y:auto}
-@media(min-width:600px){.send-panel{left:50%;right:auto;transform:translateX(-50%);width:560px;border-radius:16px 16px 0 0}}
-.send-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
-.send-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.send-title{font-size:17px;font-weight:700}
-.send-close{background:var(--bg2);border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center}
-/* Destinataires */
-.send-field{margin-bottom:12px}
-.send-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;display:block}
-.send-input{font-family:var(--font);font-size:16px;padding:10px 12px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg);color:var(--text);width:100%}
-.send-input:focus{outline:none;border-color:var(--info-text)}
-/* Modules à inclure */
-.send-modules-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-.send-module-card{border:.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;cursor:pointer;transition:all .15s;position:relative;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
-.send-module-card.selected{border-color:var(--info-text);background:var(--info-bg)}
-.send-module-card.selected .send-module-check{opacity:1}
-.send-module-check{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:var(--info-text);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;opacity:0;transition:opacity .15s}
-.send-module-icon{font-size:20px;margin-bottom:4px}
-.send-module-name{font-size:12px;font-weight:600;color:var(--text)}
-.send-module-desc{font-size:10px;color:var(--text2);margin-top:2px}
-/* Format */
-.send-format-row{display:flex;gap:8px;margin-bottom:14px}
-.send-format-btn{flex:1;font-family:var(--font);font-size:13px;font-weight:600;padding:9px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;text-align:center;transition:all .15s}
-.send-format-btn.active{background:var(--green-bg);color:var(--green-text);border-color:var(--green-text)}
-/* Boutons action */
-.send-actions{display:flex;gap:8px;margin-top:4px}
-.send-btn{flex:1;font-family:var(--font);font-size:14px;font-weight:600;padding:13px;border-radius:var(--radius);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;touch-action:manipulation;min-height:48px}
-.send-btn.cancel{background:var(--bg2);color:var(--text2)}
-.send-btn.excel{background:var(--green-bg);color:var(--green-text)}
-.send-btn.pdf{background:var(--pink-bg);color:var(--pink-text)}
-.send-btn.mail{background:var(--info-bg);color:var(--info-text)}
-.send-btn:active{opacity:.7}
-.send-progress{font-size:12px;color:var(--text2);text-align:center;padding:8px 0;display:none}
-.send-feedback{font-size:13px;padding:8px 12px;border-radius:var(--radius);margin-top:8px;display:none}
-.send-feedback.ok{display:block;background:var(--green-bg);color:var(--green-text)}
-.send-feedback.err{display:block;background:var(--pink-bg);color:var(--pink-text)}
-/* Bouton envoi dans le header */
-.btn-send{background:var(--purple-bg)!important;color:var(--purple-text)!important;border-color:transparent!important;font-weight:600}
 
 </style></head><body>
   <div class="header">
@@ -7246,11 +7728,6 @@ function exportCarteAlgExcel(){
 // ── RECONNAISSANCE VOCALE WEB SPEECH API ──────────────────
 
 
-
-
-
-
-
 // Suggestions basées sur les produits sans quantité
 function buildVoiceSuggestions(){
   const el=document.getElementById('voice-suggestions');if(!el)return;
@@ -7282,6 +7759,8 @@ function toggleTabMore(btn){
 function switchTabMore(name,btn){
   var hf = document.getElementById('btn-home-float');
   if(hf) hf.classList.add('visible');
+  var hs = document.getElementById('home-screen');
+  if(hs) hs.style.display = 'none';
   // Fermer le menu
   var moreMenu = document.getElementById('tab-more-menu');
   if(moreMenu) moreMenu.style.display='none';
@@ -7290,8 +7769,11 @@ function switchTabMore(name,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-more-item').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  // Activer le panel
-  document.getElementById('panel-'+name)?.classList.add('active');
+  // Activer le panel. « Factures » = Cahier d'achats (panel-factures-ca).
+  // Avant le 18/10/2026 on affichait l'ancien panneau de factures figées ET on
+  // forçait le Cahier d'achats en display:block — il restait ensuite affiché
+  // sous tous les autres modules (et sous l'accueil).
+  document.getElementById(name==='factures'?'panel-factures-ca':'panel-'+name)?.classList.add('active');
   if(btn) btn.classList.add('active'); // Guard contre null
   document.querySelector('.tab-more-btn')?.classList.add('active-more');
   // Init du panel
@@ -7300,11 +7782,9 @@ function switchTabMore(name,btn){
   if(name==='prix'){initPrixPanel();setTimeout(renderPrixChart,100);}
   if(name==='carte-allergenes')renderCartAlg();
   if(name==='pieces'){try{const r=localStorage.getItem(PIECES_KEY);PIECES=r?JSON.parse(r):[];}catch(e){PIECES=[];} renderPieces(); detectCameraContext();}
-  if(name==='reception-mp'){recLoad();renderReceptions();recRenderCal();}
+  if(name==='reception-mp'){recLoad();renderReceptions();recRenderCal();recResetDateHeure();recUploadPendingPhotos();}
   if(name==='autocontroles'){if(typeof autocInit==='function')autocInit();}
   if(name==='factures'){
-    var caDiv=document.getElementById('panel-factures-ca');
-    if(caDiv) caDiv.style.display='block';
     if(window.CaApp && !window.CaApp._initialized){
       window.CaApp.init();
       window.CaApp._initialized=true;
@@ -7324,63 +7804,54 @@ const SEND_MODULES = [
   {
     id:'inventaire', icon:'📦', name:'Inventaire complet',
     desc:'Toutes les références, quantités, montants',
-    excel: ()=>buildExcelInventaire(),
     pdf:   ()=>buildPDFInventaire(),
     defaultOn: true,
   },
   {
     id:'bilan', icon:'📊', name:'Bilan par zone',
     desc:'Sous-totaux Boissons / Nourriture / zones',
-    excel: ()=>buildExcelBilan(),
     pdf:   ()=>buildPDFBilan(),
     defaultOn: true,
   },
   {
     id:'dlc', icon:'🌡', name:'DLC & Alertes',
     desc:'Dates de péremption, relevés températures',
-    excel: ()=>buildExcelDLC(),
     pdf:   ()=>buildPDFDLC(),
     defaultOn: true,
   },
   {
     id:'commande', icon:'🛒', name:'Bon de commande',
     desc:'Produits à commander, totaux par fournisseur',
-    excel: ()=>exportCmdExcel(),
     pdf:   ()=>exportCmdPDF(),
     defaultOn: false,
   },
   {
     id:'tracabilite', icon:'📋', name:'Traçabilité',
     desc:'Journal des entrées, sorties, pertes',
-    excel: ()=>buildExcelTrac(),
     pdf:   ()=>exportTracPDF(),
     defaultOn: false,
   },
   {
     id:'recettes', icon:'👨‍🍳', name:'Fiches techniques',
     desc:'Recettes, food cost, coût matière',
-    excel: ()=>buildExcelRecettes(),
     pdf:   ()=>exportRecettesPDF(),
     defaultOn: false,
   },
   {
     id:'allergenes', icon:'⚠️', name:'Carte allergènes',
     desc:'14 allergènes par produit et par plat',
-    excel: ()=>exportCarteAlgExcel(),
     pdf:   ()=>exportCarteAlgPDF(),
     defaultOn: false,
   },
   {
     id:'prix', icon:'💰', name:'Historique prix',
     desc:'Évolution des prix par fournisseur',
-    excel: ()=>exportPrixExcel(),
     pdf:   ()=>buildPDFPrix(),
     defaultOn: false,
   },
   {
     id:'factures', icon:'📄', name:'Factures',
     desc:'Toutes les factures du mois',
-    excel: ()=>buildExcelFactures(),
     pdf:   ()=>buildPDFFactures(),
     defaultOn: false,
   },
@@ -7425,7 +7896,7 @@ function openSendCenter(){
   // Objet par défaut
   const now=new Date();
   const dateLabel=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
-  document.getElementById('send-subject').value=`Inventaire HACCP — La Salle à Manger — ${dateLabel}`;
+  document.getElementById('send-subject').value=`Inventaire — La Salle à Manger · Grenoble — ${dateLabel}`;
   document.getElementById('send-msg').value='Bonjour,\n\nVeuillez trouver ci-joint les documents d\'inventaire HACCP de La Salle à Manger.\n\nCordialement,';
   // Reset format
   _sendFormat='excel';
@@ -7446,8 +7917,9 @@ function closeSendCenter(){
 function buildSendModuleCards(){
   const grid=document.getElementById('send-modules-grid');
   if(!grid)return;
+  // (les modules par défaut étaient ré-ajoutés à chaque ouverture : impossible
+  // de les décocher durablement ni d'envoyer seulement « la commande » à la voix)
   grid.innerHTML=SEND_MODULES.map(m=>{
-    if(m.defaultOn)_sendSelected.add(m.id);
     const sel=_sendSelected.has(m.id);
     return`<div class="send-module-card${sel?' selected':''}" id="smod-${m.id}" onclick="toggleSendModule('${m.id}')">
       <div class="send-module-check">✓</div>
@@ -7489,17 +7961,8 @@ async function doSend(action){
       await new Promise(r=>setTimeout(r,50));
       // Un seul classeur Excel avec un onglet par module
       if(typeof XLSX==='undefined')throw new Error('SheetJS non chargé');
-      const wb=XLSX.utils.book_new();
-      for(const m of modules){
-        if(m.excel){
-          try{
-            const result=m.excel();
-            // Si la fonction retourne un workbook partiel, on fusionne
-            // Sinon elle génère elle-même son fichier
-          }catch(e){console.warn('Excel error for',m.id,e);}
-        }
-      }
-      // Build unified workbook
+      // Un seul classeur. (Avant : chaque module « Commande », « Prix »,
+      // « Allergènes » téléchargeait EN PLUS son propre fichier.)
       buildUnifiedExcel(modules);
     }
 
@@ -7514,7 +7977,7 @@ async function doSend(action){
       await new Promise(r=>setTimeout(r,50));
       const to=document.getElementById('send-to').value.trim();
       const cc=document.getElementById('send-cc').value.trim();
-      const subject=document.getElementById('send-subject').value.trim()||'Inventaire HACCP — La Salle à Manger';
+      const subject=document.getElementById('send-subject').value.trim()||'Inventaire — La Salle à Manger · Grenoble';
       const msg=document.getElementById('send-msg').value.trim();
       const now=new Date();
       const dateLabel=now.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
@@ -7714,7 +8177,7 @@ function buildUnifiedExcel(modules){
       }
 
       else if(mod.id==='temperatures'){
-        const COLS=['Chambre','Service','Température (°C)','Visa','Statut'];
+        const COLS=['Chambre','Service','Température (°C)','Visa','Statut','Action corrective'];
         const rows=[];
         const now2=new Date();
         const monthTotal=new Date(now2.getFullYear(),now2.getMonth()+1,0).getDate();
@@ -7727,19 +8190,19 @@ function buildUnifiedExcel(modules){
               const v=cur&&cur.temp;
               if(v===''||v==null)return;
               const st=tempStatus(ch,v);
-              rows.push([ds+' · '+ch.label,svc==='matin'?'Matin':'Soir',parseFloat(v),cur.visa||'',TEMP_STATUS_LABEL[st]]);
+              rows.push([ds+' · '+ch.label,svc==='matin'?'Matin':'Soir',parseFloat(v),cur.visa||'',TEMP_STATUS_LABEL[st],cur.action||(st==='nonconforme'?'MANQUANTE':'')]);
             });
           });
         }
-        ws=XLSX.utils.aoa_to_sheet([['TEMPÉRATURES CHAMBRES FROIDES — La Salle à Manger',...Array(4).fill('')],['Édition du '+dateStr+' · mois en cours',...Array(4).fill('')],[],COLS,...rows]);
-        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:4}},{s:{r:1,c:0},e:{r:1,c:4}}];
+        ws=XLSX.utils.aoa_to_sheet([['TEMPÉRATURES CHAMBRES FROIDES — La Salle à Manger',...Array(5).fill('')],['Édition du '+dateStr+' · mois en cours',...Array(5).fill('')],[],COLS,...rows]);
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:5}},{s:{r:1,c:0},e:{r:1,c:5}}];
         if(ws['A1'])ws['A1'].s={font:{bold:true,color:{argb:C.WHITE},sz:13,name:'Arial'},fill:fl(C.HD),alignment:al('left')};
-        styleHdr(ws,3,5,C.HD);
+        styleHdr(ws,3,6,C.HD);
         rows.forEach((r,i)=>{
           const bg=r[4]==='Non conforme'?'FFFFDDDD':r[4]==='À surveiller'?'FFFFFACC':i%2===0?'FFFFFFFF':C.ALT;
-          styleRow(ws,4+i,5,bg);
+          styleRow(ws,4+i,6,bg);
         });
-        ws['!cols']=[{wch:30},{wch:10},{wch:16},{wch:10},{wch:14}];
+        ws['!cols']=[{wch:30},{wch:10},{wch:16},{wch:10},{wch:14},{wch:28}];
       }
 
       else if(mod.id==='huile_friture'){
@@ -7998,19 +8461,21 @@ button,a,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transpa
           total++;
           const st=tempStatus(ch,v);
           if(st==='nonconforme')nonConf++; else if(st==='surveiller')surveil++;
-          rows.push({ds,ch,svc,v,visa:cur.visa||'',st});
+          rows.push({ds,ch,svc,v,visa:cur.visa||'',st,action:cur.action||''});
         }));
       }
+      const sansAction=rows.filter(r=>r.st==='nonconforme'&&!r.action).length;
       html+=`<div class="meta">Chambres froides — ${monthLabel}</div>`;
       html+=`<div class="summary">
         <div class="sum-box"><div class="sum-label">Relevés</div><div class="sum-val">${total}</div></div>
         <div class="sum-box"><div class="sum-label">🟡 À surveiller</div><div class="sum-val" style="color:#633806">${surveil}</div></div>
         <div class="sum-box"><div class="sum-label">🔴 Non conformes</div><div class="sum-val" style="color:#cc0000">${nonConf}</div></div>
+        ${sansAction?`<div class="sum-box" style="border-color:#cc0000"><div class="sum-label" style="color:#cc0000">⚠️ Sans action corrective</div><div class="sum-val" style="color:#cc0000">${sansAction}</div></div>`:''}
       </div>`;
-      html+=`<table><tr><th>Date</th><th>Chambre</th><th>Service</th><th>T°</th><th>Visa</th><th>Statut</th></tr>`;
+      html+=`<table><tr><th>Date</th><th>Chambre</th><th>Service</th><th>T°</th><th>Visa</th><th>Statut</th><th>Action corrective</th></tr>`;
       rows.forEach(r=>{
         const cl=r.st==='nonconforme'?'alert':r.st==='conforme'?'ok':'';
-        html+=`<tr class="${cl}"><td>${new Date(r.ds).toLocaleDateString('fr-FR')}</td><td>${r.ch.label}</td><td>${r.svc==='matin'?'Matin':'Soir'}</td><td style="font-weight:700">${r.v}°C</td><td>${r.visa}</td><td>${TEMP_STATUS_LABEL[r.st]}</td></tr>`;
+        html+=`<tr class="${cl}"><td>${new Date(r.ds).toLocaleDateString('fr-FR')}</td><td>${r.ch.label}</td><td>${r.svc==='matin'?'Matin':'Soir'}</td><td style="font-weight:700">${r.v}°C</td><td>${r.visa}</td><td>${TEMP_STATUS_LABEL[r.st]}</td><td>${r.action||(r.st==='nonconforme'?'<b style="color:#cc0000">manquante</b>':'—')}</td></tr>`;
       });
       html+=`</table>`;
       if(TEMP_DATA.cellule&&TEMP_DATA.cellule.length){
@@ -8130,6 +8595,110 @@ function buildExcelTrac(){/* handled in buildUnifiedExcel */}
 function buildExcelRecettes(){/* handled in buildUnifiedExcel */}
 function buildExcelFactures(){/* handled in buildUnifiedExcel */}
 
+
+// ══════════════════════════════════════════════════════════
+// REGISTRES HACCP DU MOIS (PDF à imprimer / archiver) — 18/10/2026
+// Températures (avec actions correctives), réceptions, traçabilité, DLC.
+// ══════════════════════════════════════════════════════════
+function openRegistresHACCP(){
+  let ov=document.getElementById('registres-overlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='registres-overlay';
+    ov.className='voice-overlay';
+    ov.innerHTML=`<div class="voice-backdrop" onclick="closeRegistresHACCP()"></div>
+      <div class="voice-panel">
+        <div class="voice-handle"></div>
+        <div class="voice-header"><div class="voice-title">📑 Registres HACCP du mois</div>
+          <button class="voice-close-btn" onclick="closeRegistresHACCP()">✕</button></div>
+        <div class="voice-hint" style="margin-bottom:12px">Document à imprimer ou enregistrer en PDF (« Enregistrer au format PDF » dans la fenêtre d'impression) et à archiver chaque mois : relevés de températures et actions correctives, contrôles à réception, traçabilité, DLC.</div>
+        <label class="dlc-label" for="registres-mois">Mois</label>
+        <input class="dlc-input" type="month" id="registres-mois" style="width:100%;margin-bottom:12px">
+        <div class="voice-actions"><button class="va-btn" onclick="closeRegistresHACCP()">Annuler</button>
+          <button class="va-btn" style="background:var(--info-bg);color:var(--info-text);font-weight:700" onclick="exportRegistresHACCP(document.getElementById('registres-mois').value)">📄 Générer le PDF</button></div>
+      </div>`;
+    document.body.appendChild(ov);
+  }
+  document.getElementById('registres-mois').value=localISODate().slice(0,7);
+  ov.classList.add('open');
+}
+function closeRegistresHACCP(){document.getElementById('registres-overlay')?.classList.remove('open');}
+
+function exportRegistresHACCP(mois){
+  if(!/^\d{4}-\d{2}$/.test(mois||'')){alert('Choisissez un mois.');return;}
+  if(typeof recLoad==='function')recLoad();
+  const dansMois=d=>{if(!d)return false;const s=String(d);return /^\d{4}-\d{2}/.test(s)&&localISODate(new Date(s.length<=10?s+'T12:00:00':s)).slice(0,7)===mois;};
+  const fmtDT=d=>new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const fmtD=d=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||''));return m?m[3]+'/'+m[2]+'/'+m[1]:esc(d||'');};
+  const [y,m]=mois.split('-');
+  const titreMois=new Date(+y,+m-1,1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+
+  // Relevés de températures : un enregistrement par (date, chambre, service) — voir js/autocontroles.js
+  const temps=[];
+  Object.keys((TEMP_DATA&&TEMP_DATA.entries)||{}).filter(dansMois).sort().forEach(ds=>{
+    const dayData=TEMP_DATA.entries[ds]||{};
+    TEMP_CHAMBRES.forEach(ch=>TEMP_SERVICES.forEach(svc=>{
+      const cur=dayData[ch.id]&&dayData[ch.id][svc];
+      const v=cur&&cur.temp;
+      if(v===''||v==null)return;
+      temps.push({date:ds,chambre:ch.label,service:svc==='matin'?'Matin':'Soir',v,st:tempStatus(ch,v),visa:cur.visa||'',action:cur.action||''});
+    }));
+  });
+  const recs=((recState&&recState.receptions)||[]).filter(r=>dansMois(r.date)).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
+  const tracs=(TRAC_DATA||[]).filter(t=>dansMois(t.date)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const dlcs=(DLC_DATA||[]).filter(d=>dansMois(d.createdAt)||dansMois(d.date)).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+
+  const tempHors=temps.filter(t=>t.st!=='conforme');
+  const recNC=r=>{const lim=parseFloat(r.typeTemp||'4');const t=parseFloat(r.temp);return (r.typeTemp!=='na'&&!isNaN(t)&&!isNaN(lim)&&t>lim)||r.dlc==='ko'||(r.emb&&r.emb!=='ok')||(r.decision&&r.decision!=='ok');};
+  const nbRecNC=recs.filter(recNC).length;
+
+  let h=`<html><head><meta charset="UTF-8"><title>Registres HACCP ${esc(titreMois)}</title><style>
+    body{font-family:Arial,sans-serif;font-size:10px;color:#1a1a18;margin:0;padding:12mm}
+    h1{font-size:17px;color:#1a3a5c;margin:0 0 2px}h2{font-size:12px;color:#fff;background:#1a3a5c;padding:5px 8px;margin:18px 0 6px}
+    .sub{color:#666;font-size:10px;margin-bottom:8px}table{width:100%;border-collapse:collapse;margin-bottom:6px}
+    th{background:#eef2f7;text-align:left;padding:4px 5px;font-size:9px;border:1px solid #ccc}td{padding:3px 5px;border:1px solid #ddd;vertical-align:top}
+    .ko{color:#b00020;font-weight:700}.ok{color:#27500a}.vide{color:#888;font-style:italic;padding:6px 0}
+    .synth{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.synth div{border:1px solid #ccc;border-radius:4px;padding:6px 10px}
+    .sig{display:flex;gap:30px;margin-top:28px}.sig div{flex:1;border-top:1px solid #333;padding-top:4px}
+    @media print{@page{size:A4 landscape;margin:10mm}body{padding:0}h2{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+  <h1>Registres HACCP — ${esc(titreMois)}</h1>
+  <div class="sub">${esc(RESTAURANT_NAME)} · Document édité le ${new Date().toLocaleString('fr-FR')}</div>
+  <div class="synth"><div>🌡 Relevés de températures : <b>${temps.length}</b> (dont <b class="${tempHors.length?'ko':''}">${tempHors.length}</b> hors seuil)</div>
+    <div>🚚 Réceptions contrôlées : <b>${recs.length}</b> (dont <b class="${nbRecNC?'ko':''}">${nbRecNC}</b> non conformes)</div>
+    <div>📋 Opérations de traçabilité : <b>${tracs.length}</b></div><div>⏰ DLC / lots enregistrés : <b>${dlcs.length}</b></div></div>`;
+
+  // 1. Températures
+  h+=`<h2>1. Relevés de températures des enceintes</h2>`;
+  h+=temps.length?`<table><tr><th>Date</th><th>Chambre</th><th>Service</th><th>Température</th><th>Statut</th><th>Action corrective</th><th>Relevé par</th></tr>`+
+    temps.map(t=>`<tr class="${t.st!=='conforme'?'ko':''}"><td>${fmtD(t.date)}</td><td>${esc(t.chambre)}</td><td>${esc(t.service)}</td><td>${esc(t.v)}°C</td><td>${esc(TEMP_STATUS_LABEL[t.st]||t.st)}</td><td>${t.action?esc(t.action):(t.st==='nonconforme'?'<b>manquante</b>':'')}</td><td>${esc(t.visa||'')}</td></tr>`).join('')+'</table>'
+    :'<div class="vide">Aucun relevé ce mois-ci.</div>';
+
+  // 2. Réceptions
+  const lib={ok:'✅',ko:'❌',partiel:'⚠️',reserve:'⚠️ Réserve',refuse:'❌ Refusé'};
+  h+=`<h2>2. Contrôles à réception des marchandises</h2>`;
+  h+=recs.length?`<table><tr><th>Date</th><th>Heure</th><th>Fournisseur</th><th>Produit</th><th>Qté</th><th>T° mesurée / attendue</th><th>DLC</th><th>Emballages</th><th>Décision</th><th>Lot / DLC date</th><th>Observations / action corrective</th><th>Opérateur</th></tr>`+
+    recs.map(r=>{const nc=recNC(r);const tt=r.typeTemp==='na'?'ambiant':('≤ '+(r.typeTemp||'4')+' °C');
+      return `<tr class="${nc?'ko':''}"><td>${fmtD(r.date)}</td><td>${esc(r.heure)}</td><td>${esc(r.fourn)}</td><td>${esc(r.produit)}</td><td>${esc(r.qte)} ${esc(r.unite||'')}</td><td>${r.temp?esc(r.temp)+' °C':'—'} / ${tt}</td><td>${r.dlc==='ko'?'❌':'✅'}</td><td>${lib[r.emb]||esc(r.emb)}</td><td>${r.decision==='ok'?'✅ Accepté':(lib[r.decision]||esc(r.decision))}</td><td>${r.dlcDate?fmtD(r.dlcDate):''}</td><td>${esc(r.obs||'')}</td><td>${esc(r.op||r.by||'')}</td></tr>`;}).join('')+'</table>'
+    :'<div class="vide">Aucune réception enregistrée ce mois-ci.</div>';
+
+  // 3. Traçabilité
+  h+=`<h2>3. Traçabilité (entrées, sorties, pertes, transferts)</h2>`;
+  h+=tracs.length?`<table><tr><th>Date / heure</th><th>Type</th><th>Produit</th><th>Quantité</th><th>Responsable</th><th>Note</th></tr>`+
+    tracs.map(t=>`<tr><td>${fmtDT(t.date)}</td><td>${esc(TRAC_LABELS[t.type]||t.type)}</td><td>${esc(t.produit)}</td><td>${esc(t.qte)} ${esc(t.unite||'')}</td><td>${esc(t.resp||'')}</td><td>${esc(t.note||'')}</td></tr>`).join('')+'</table>'
+    :'<div class="vide">Aucune opération ce mois-ci.</div>';
+
+  // 4. DLC
+  h+=`<h2>4. Dates limites (DLC / DDM) et lots</h2>`;
+  h+=dlcs.length?`<table><tr><th>Produit</th><th>Type</th><th>Lot</th><th>Date limite</th><th>Qté du lot</th><th>Note</th><th>Saisie le</th></tr>`+
+    dlcs.map(d=>`<tr class="${dlcDaysLeft(d.date)<0?'ko':''}"><td>${esc(d.produit)}</td><td>${esc(d.type)}</td><td>${esc(d.lot||'')}</td><td>${fmtD(d.date)}</td><td>${d.qte!=null?esc(d.qte):''}</td><td>${esc(d.note||'')}</td><td>${d.createdAt?fmtDT(d.createdAt):''}</td></tr>`).join('')+'</table>'
+    :'<div class="vide">Aucune DLC enregistrée ce mois-ci.</div>';
+
+  h+=`<div class="sig"><div>Établi par (nom, signature)</div><div>Vérifié par le responsable HACCP</div><div>Date / visa</div></div>
+  </body></html>`;
+  closeRegistresHACCP();
+  openHtmlInNewTab(h);
+}
 
 function openHtmlInNewTab(html, autoPrint=true, delay=600){
   // Compatible Chrome/Android : Blob URL instead of document.write
@@ -8304,269 +8873,13 @@ function stopVoice() {
   if (status) status.textContent = 'Micro prêt';
 }
 
-// Surcharge de openVoice pour init suggestions
-var _origOpenVoice = null;
 function refreshApp(){
   if('serviceWorker' in navigator && navigator.serviceWorker.controller){
-    navigator.serviceWorker.controller.postMessage('skipWaiting');
+    navigator.serviceWorker.controller.postMessage({type:'SKIP_WAITING'});
     setTimeout(()=>window.location.reload(true),300);
   } else {
     window.location.reload(true);
   }
-}
-
-// ══════════════════════════════════════
-// MODULE RÉCEPTION MARCHANDISES
-// ══════════════════════════════════════
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// ══════════════════════════════════════
-// SCANNER ÉTIQUETTE — Caméra + Claude Vision
-// ══════════════════════════════════════
-let _recStream = null;
-let _recPhotoData = null;
-
-function openCameraReception() {
-  const preview = document.getElementById('rec-scan-preview');
-  const photoPreview = document.getElementById('rec-photo-preview');
-  if (!preview) return;
-  photoPreview.style.display = 'none';
-  preview.style.display = 'block';
-  document.getElementById('rec-scan-status').textContent = 'Démarrage de la caméra…';
-  
-  const video = document.getElementById('rec-video');
-  navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }
-  }).then(function(stream) {
-    _recStream = stream;
-    video.srcObject = stream;
-    document.getElementById('rec-scan-status').textContent = '📦 Pointez vers l\'étiquette du colis';
-  }).catch(function(e) {
-    document.getElementById('rec-scan-status').textContent = '⚠️ Caméra non disponible: ' + e.message;
-  });
-}
-
-function stopCameraReception() {
-  if (_recStream) {
-    _recStream.getTracks().forEach(function(t) { t.stop(); });
-    _recStream = null;
-  }
-  document.getElementById('rec-scan-preview').style.display = 'none';
-}
-
-function captureReceptionPhoto() {
-  const video = document.getElementById('rec-video');
-  const canvas = document.getElementById('rec-canvas');
-  canvas.width = video.videoWidth || 1280;
-  canvas.height = video.videoHeight || 720;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  _recPhotoData = canvas.toDataURL('image/jpeg', 0.85);
-  
-  stopCameraReception();
-  
-  // Afficher la photo prise
-  const photoPreview = document.getElementById('rec-photo-preview');
-  document.getElementById('rec-photo-img').src = _recPhotoData;
-  document.getElementById('rec-analysis-result').textContent = '';
-  photoPreview.style.display = 'block';
-}
-
-function retakeReceptionPhoto() {
-  document.getElementById('rec-photo-preview').style.display = 'none';
-  _recPhotoData = null;
-  openCameraReception();
-}
-
-
-
-
-// ══════════════════════════════════════
-// MODULE SCAN IA — RÉCEPTION MARCHANDISES
-// ══════════════════════════════════════
-let _scanData = null; // Données extraites par l'IA
-
-async function handleScanPhoto(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-
-  // Afficher l'aperçu
-  const preview = document.getElementById('scan-preview');
-  if (preview) {
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = 'block';
-  }
-
-  // Masquer résultat précédent
-  const resultEl = document.getElementById('scan-result');
-  const applyBtn = document.getElementById('scan-btn-apply');
-  if (resultEl) resultEl.style.display = 'none';
-  if (applyBtn) applyBtn.style.display = 'none';
-
-  // Afficher loading
-  const loadingEl = document.getElementById('scan-loading');
-  if (loadingEl) loadingEl.style.display = 'block';
-
-  try {
-    // Convertir en base64
-    const base64 = await fileToBase64(file);
-    const mediaType = file.type || 'image/jpeg';
-
-    // Appel Claude Vision via l'API Anthropic
-    const response = await fetch('https://pbydidazdjqqihkolzgc.supabase.co/functions/v1/scan-etiquette', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64, mimeType: 'image/jpeg' })
-    });
-
-    if (!response.ok) throw new Error('API error: ' + response.status);
-    const data = await response.json();
-
-    // Parser la réponse JSON
-    const text = data.content[0].text.trim();
-    let parsed;
-    try {
-      // Nettoyer les backticks éventuels
-      const clean = text.replace(/```json|```/g, '').trim();
-      parsed = JSON.parse(clean);
-    } catch(e) {
-      throw new Error('Impossible de parser la réponse IA');
-    }
-
-    _scanData = parsed;
-    displayScanResult(parsed);
-
-  } catch(e) {
-    if (loadingEl) loadingEl.style.display = 'none';
-    console.error('[SCAN]', e);
-    if (resultEl) {
-      resultEl.style.display = 'block';
-      resultEl.innerHTML = '<div style="color:var(--pink-text);text-align:center;padding:8px">⚠️ Erreur d\'analyse — ' + e.message + '</div>';
-    }
-  }
-}
-
-function displayScanResult(data) {
-  const loadingEl = document.getElementById('scan-loading');
-  const resultEl = document.getElementById('scan-result');
-  const applyBtn = document.getElementById('scan-btn-apply');
-  if (loadingEl) loadingEl.style.display = 'none';
-  if (!resultEl) return;
-
-  const fields = [
-    ['Produit',      data.produit],
-    ['Fournisseur',  data.fournisseur],
-    ['N° de lot',    data.lot],
-    ['DLC / DDM',    data.dlc],
-    ['Quantité',     data.quantite],
-    ['Poids net',    data.poids_net],
-    ['Température',  data.temperature],
-    ['Origine',      data.origine],
-    ['Info',         data.commentaire],
-  ].filter(([k, v]) => v && v !== 'null' && v !== null);
-
-  if (!fields.length) {
-    resultEl.innerHTML = '<div style="text-align:center;color:var(--text2);padding:8px">Aucune information détectée sur cette image</div>';
-    resultEl.style.display = 'block';
-    return;
-  }
-
-  resultEl.innerHTML = '<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">🤖 Informations détectées</div>'
-    + fields.map(([k, v]) =>
-        '<div class="scan-result-row"><span class="scan-result-key">' + k + '</span><span class="scan-result-val">' + v + '</span></div>'
-      ).join('');
-  resultEl.style.display = 'block';
-
-  if (applyBtn) applyBtn.style.display = 'block';
-}
-
-function applyScanResult() {
-  if (!_scanData) return;
-  const d = _scanData;
-
-  // Remplir le formulaire réception
-  if (d.produit)      setVal('rec-produit', d.produit);
-  if (d.fournisseur)  setVal('rec-fourn', d.fournisseur);
-  if (d.dlc)          setVal('rec-dlc', d.dlc);
-  if (d.temperature) {
-    const tempNum = parseFloat(d.temperature.replace(',', '.').replace(/[^0-9.\-]/g, ''));
-    if (!isNaN(tempNum)) {
-      setVal('rec-temp', tempNum);
-      // Détecter le type de température
-      const typeEl = document.getElementById('rec-type-temp');
-      if (typeEl) {
-        if (tempNum <= -10) typeEl.value = '-18';
-        else if (tempNum <= 4) typeEl.value = '4';
-        else if (tempNum <= 8) typeEl.value = '8';
-        else typeEl.value = 'na';
-        checkReceptionMP();
-      }
-    }
-  }
-
-  // Mettre les infos supplémentaires en observations
-  const obsEl = document.getElementById('rec-obs');
-  if (obsEl) {
-    const extras = [];
-    if (d.lot)        extras.push('Lot: ' + d.lot);
-    if (d.quantite)   extras.push('Qté: ' + d.quantite);
-    if (d.poids_net)  extras.push('Poids: ' + d.poids_net);
-    if (d.origine)    extras.push('Origine: ' + d.origine);
-    if (d.commentaire) extras.push(d.commentaire);
-    if (extras.length) obsEl.value = extras.join(' | ');
-  }
-
-  // Feedback
-  if (typeof showSyncToast === 'function') showSyncToast('✅ Formulaire pré-rempli !');
-
-  // Masquer le bouton appliquer
-  const applyBtn = document.getElementById('scan-btn-apply');
-  if (applyBtn) applyBtn.style.display = 'none';
-}
-
-
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-
-// ══════════════════════════════════════
-// SCAN ÉTIQUETTE → RÉCEPTION AUTO
-// ══════════════════════════════════════
-
-
-
-
-function setVal(id, val) {
-  const el = document.getElementById(id);
-  if (el && val !== null && val !== undefined) el.value = val;
 }
 
 function openVoice() {
@@ -8591,7 +8904,7 @@ document.getElementById('footer-date').textContent=_dateLocale;
 const _hdl=document.getElementById('header-date-line');
 if(_hdl)_hdl.textContent='La Salle à Manger · Grenoble — '+_now.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
 loadAllData();
-buildZoneTabs();buildFilters();updateStats();render();buildBilan();buildInvoiceList();
+buildZoneTabs();buildFilters();updateStats();render();buildBilan();updateDlcTabDot();
 if(__restoreResult&&__restoreResult.savedAt){
   const __restoredCount=DATA.filter(d=>d.qte!==null&&d.qte!==undefined).length;
   if(__restoredCount>0)showRestoreBanner(__restoredCount,__restoreResult.savedAt);

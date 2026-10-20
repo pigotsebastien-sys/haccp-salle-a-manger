@@ -159,12 +159,20 @@ function renderTempChambres(){
       var st=tempStatus(ch, cur.temp);
       if(st && (!worst || TEMP_STATUS_RANK[st]>TEMP_STATUS_RANK[worst])) worst=st;
       var borderColor = st==='conforme' ? 'var(--green-text)' : st==='surveiller' ? 'var(--amber-text)' : st==='nonconforme' ? 'var(--pink-text)' : 'var(--border2)';
+      // Action corrective obligatoire (exigence HACCP) dès que la température est hors seuil
+      var actionField = st==='nonconforme' ? (
+        '<div style="margin-top:4px">'+
+          '<input type="text" class="rec-input" style="width:100%;border-color:'+(cur.action?'var(--border2)':'var(--pink-text)')+'" '+
+            'placeholder="⚠️ Action corrective obligatoire" value="'+(cur.action||'').replace(/"/g,'&quot;')+'" '+
+            'oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'action\',this.value)">'+
+        '</div>'
+      ) : '';
       return '<div style="flex:1;min-width:0">'+
         '<div class="rec-label">'+(svc==='matin'?'Matin':'Soir')+'</div>'+
         '<div style="display:flex;gap:4px">'+
           '<input type="number" step="0.1" class="rec-input" style="width:64px;border-color:'+borderColor+'" placeholder="°C" value="'+(cur.temp===''||cur.temp==null?'':cur.temp)+'" oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'temp\',this.value)">'+
           '<input type="text" class="rec-input" style="width:56px" placeholder="Visa" value="'+(cur.visa||'').replace(/"/g,'&quot;')+'" oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'visa\',this.value)">'+
-        '</div></div>';
+        '</div>'+actionField+'</div>';
     }).join('');
     var badge = worst ? '<span class="dlc-badge '+TEMP_STATUS_CLS[worst]+'">'+TEMP_STATUS_LABEL[worst]+'</span>' : '';
     return '<div class="autoc-zone-row" style="flex-direction:column;align-items:stretch;gap:6px;padding:10px 0">'+
@@ -296,7 +304,7 @@ function exportTempCSV(){
         var dateStr=tempCalYear+'-'+String(tempCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
         var dayData=TEMP_DATA.entries[dateStr]||{};
         var cur=dayData[ch.id] && dayData[ch.id][svc];
-        row.push(cur && cur.temp!=='' && cur.temp!=null ? cur.temp+(cur.visa?' ('+cur.visa+')':'') : '');
+        row.push(cur && cur.temp!=='' && cur.temp!=null ? cur.temp+(cur.visa?' ('+cur.visa+')':'')+(cur.action?' — Action corrective : '+cur.action:'') : '');
       }
       rows.push(row.map(function(v){ return '"'+String(v||'').replace(/"/g,'""')+'"'; }).join(','));
     });
@@ -706,7 +714,7 @@ function autocMonthStats(){
   var monthSet={}; dates.forEach(function(d){ monthSet[d]=true; });
 
   // Températures
-  var tempTotal=0, tempSurveil=0, tempNonConf=0;
+  var tempTotal=0, tempSurveil=0, tempNonConf=0, tempSansAction=0;
   dates.forEach(function(ds){
     var dayData=(TEMP_DATA.entries||{})[ds]||{};
     TEMP_CHAMBRES.forEach(function(ch){ TEMP_SERVICES.forEach(function(svc){
@@ -714,7 +722,8 @@ function autocMonthStats(){
       if(v===''||v==null)return;
       tempTotal++;
       var st=tempStatus(ch,v);
-      if(st==='nonconforme')tempNonConf++; else if(st==='surveiller')tempSurveil++;
+      if(st==='nonconforme'){ tempNonConf++; if(!cur.action) tempSansAction++; }
+      else if(st==='surveiller')tempSurveil++;
     });});
   });
 
@@ -737,7 +746,7 @@ function autocMonthStats(){
   var anomCloturees=anomMois.filter(function(a){ return a.status==='cloturee'; }).length;
 
   return {
-    tempTotal:tempTotal, tempSurveil:tempSurveil, tempNonConf:tempNonConf,
+    tempTotal:tempTotal, tempSurveil:tempSurveil, tempNonConf:tempNonConf, tempSansAction:tempSansAction,
     huileCount:huileMois.length, huileChangements:huileChangements,
     nettDone:nettDone, nettTotal:nettTotal, nettTaux:nettTaux,
     anomTotal:anomMois.length, anomOuvertes:anomOuvertes, anomCloturees:anomCloturees,
@@ -753,6 +762,7 @@ function autocHtmlResume(){
     '<div class="sum-box"><div class="sum-label">Relevés</div><div class="sum-val">'+s.tempTotal+'</div></div>'+
     '<div class="sum-box"><div class="sum-label">🟡 À surveiller</div><div class="sum-val" style="color:#633806">'+s.tempSurveil+'</div></div>'+
     '<div class="sum-box"><div class="sum-label">🔴 Non conformes</div><div class="sum-val" style="color:#cc0000">'+s.tempNonConf+'</div></div>'+
+    (s.tempSansAction?'<div class="sum-box" style="border-color:#cc0000"><div class="sum-label" style="color:#cc0000">⚠️ Sans action corrective</div><div class="sum-val" style="color:#cc0000">'+s.tempSansAction+'</div></div>':'')+
   '</div>';
   body+='<h2>🍟 Huile de friture</h2>';
   body+='<div class="summary">'+
@@ -782,10 +792,10 @@ function autocHtmlTemperatures(){
       var cur=dayData[ch.id]&&dayData[ch.id][svc]; var v=cur&&cur.temp;
       if(v===''||v==null)return;
       var st=tempStatus(ch,v);
-      rows.push('<tr class="'+(st==='nonconforme'?'alert':st==='conforme'?'ok':'')+'"><td>'+new Date(ds).toLocaleDateString('fr-FR')+'</td><td>'+ch.label+'</td><td>'+(svc==='matin'?'Matin':'Soir')+'</td><td style="font-weight:700">'+v+'°C</td><td>'+(cur.visa||'')+'</td><td>'+TEMP_STATUS_LABEL[st]+'</td></tr>');
+      rows.push('<tr class="'+(st==='nonconforme'?'alert':st==='conforme'?'ok':'')+'"><td>'+new Date(ds).toLocaleDateString('fr-FR')+'</td><td>'+ch.label+'</td><td>'+(svc==='matin'?'Matin':'Soir')+'</td><td style="font-weight:700">'+v+'°C</td><td>'+(cur.visa||'')+'</td><td>'+TEMP_STATUS_LABEL[st]+'</td><td>'+(cur.action||(st==='nonconforme'?'<b style="color:#cc0000">manquante</b>':'—'))+'</td></tr>');
     });});
   });
-  var body='<table><tr><th>Date</th><th>Chambre</th><th>Service</th><th>T°</th><th>Visa</th><th>Statut</th></tr>'+rows.join('')+'</table>';
+  var body='<table><tr><th>Date</th><th>Chambre</th><th>Service</th><th>T°</th><th>Visa</th><th>Statut</th><th>Action corrective</th></tr>'+rows.join('')+'</table>';
   if(TEMP_DATA.cellule&&TEMP_DATA.cellule.length){
     body+='<h2>🧊 Cellule de refroidissement</h2><table><tr><th>Date</th><th>Produit</th><th>Entrée</th><th>Sortie</th><th>Visa</th></tr>';
     TEMP_DATA.cellule.forEach(function(c){

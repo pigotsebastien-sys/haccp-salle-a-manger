@@ -1,7 +1,7 @@
 {
-  "name": "HACCP La Salle à Manger",
-  "short_name": "HACCP LSM",
-  "description": "Application HACCP La Salle à Manger · Grenoble",
+  "name": "Inventaire SP Conseil",
+  "short_name": "SP Conseil",
+  "description": "Inventaire SP Conseil — HACCP · La Salle à Manger · Grenoble",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a2c4a",
