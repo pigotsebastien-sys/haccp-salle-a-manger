@@ -394,7 +394,7 @@ function autocSwitch(name, btn){
   if(sub) sub.classList.add('active');
 }
 
-// Rappel : relevé du matin attendu avant 11h, du soir avant 18h (à ajuster si vos
+// Rappel : relevé du matin attendu avant 10h, du soir avant 19h (à ajuster si vos
 // horaires de service diffèrent).
 function autocTempReminderStatus(){
   var dayData = TEMP_DATA.entries[todayStr()] || {};
@@ -406,8 +406,8 @@ function autocTempReminderStatus(){
     if(s && s.temp!=='' && s.temp!=null) hasSoir=true;
   });
   var h = new Date().getHours();
-  var missingMatin = !hasMatin && h>=11;
-  var missingSoir = !hasSoir && h>=18;
+  var missingMatin = !hasMatin && h>=10;
+  var missingSoir = !hasSoir && h>=19;
   return {missingMatin:missingMatin, missingSoir:missingSoir, overdue: missingMatin||missingSoir};
 }
 
