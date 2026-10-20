@@ -3338,6 +3338,13 @@ async function saveReception() {
   if(obsEl)     obsEl.value   = '';
   if(fabEl)     fabEl.value   = '';
   if(dlcDateEl) dlcDateEl.value = '';
+  // Bug corrigé le 20/10/2026 : DLC/Emballages/Décision n'étaient jamais remis à
+  // "conforme" après l'enregistrement — un refus ou une réserve restait affiché(e)
+  // et pouvait être ré-enregistré par erreur sur la livraison suivante, pourtant
+  // conforme.
+  if(dlcEl)  dlcEl.value  = 'ok';
+  if(embEl)  embEl.value  = 'ok';
+  if(decEl)  decEl.value  = 'ok';
   var badge = document.getElementById('rec-dlc-badge');
   if(badge) { badge.textContent='—'; badge.className='rec-dlc-badge'; }
   window.recPendingPhotos = [];
