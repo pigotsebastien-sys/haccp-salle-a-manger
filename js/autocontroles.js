@@ -865,7 +865,7 @@ function autocMonthStats(){
   };
 }
 
-function autocHtmlResume(){
+function _autocBodyResume(){
   var s=autocMonthStats();
   var monthLabel=new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
   var body='<div class="meta">Synthèse des autocontrôles — '+monthLabel+'</div>';
@@ -892,10 +892,13 @@ function autocHtmlResume(){
     '<div class="sum-box"><div class="sum-label">🔴 En cours</div><div class="sum-val" style="color:#cc0000">'+s.anomOuvertes+'</div></div>'+
     '<div class="sum-box"><div class="sum-label">✅ Clôturées</div><div class="sum-val" style="color:#27500a">'+s.anomCloturees+'</div></div>'+
   '</div>';
-  return autocWrapHtmlDoc('📊 Résumé mensuel — Autocontrôles HACCP', body);
+  return body;
+}
+function autocHtmlResume(){
+  return autocWrapHtmlDoc('📊 Résumé mensuel — Autocontrôles HACCP', _autocBodyResume());
 }
 
-function autocHtmlTemperatures(){
+function _autocBodyTemperatures(){
   var dates=autocMonthRange();
   var rows=[];
   dates.forEach(function(ds){
@@ -915,18 +918,23 @@ function autocHtmlTemperatures(){
     });
     body+='</table>';
   }
-  return autocWrapHtmlDoc('🌡️ Relevés de températures', body);
+  return body;
+}
+function autocHtmlTemperatures(){
+  return autocWrapHtmlDoc('🌡️ Relevés de températures', _autocBodyTemperatures());
 }
 
-function autocHtmlHuile(){
+function _autocBodyHuile(){
   var rows=(HUILE_DATA.entries||[]).map(function(e){
     return '<tr><td>'+e.date+'</td><td>'+e.visa+'</td><td>'+(e.filtrage==='oui'?'✓':'✕')+'</td><td>'+(e.changement==='oui'?'✓':'✕')+'</td><td>'+(HUILE_LABELS[e.indice]||'')+'</td><td>'+(HUILE_LABELS[e.chrono]||'')+'</td><td>'+(e.note||'—')+'</td></tr>';
   }).join('');
-  var body='<table><tr><th>Date</th><th>Visa</th><th>Filtrage</th><th>Changement</th><th>Indice</th><th>Temps chrono</th><th>Observation</th></tr>'+rows+'</table>';
-  return autocWrapHtmlDoc('🍟 Contrôle huile de friture', body);
+  return '<table><tr><th>Date</th><th>Visa</th><th>Filtrage</th><th>Changement</th><th>Indice</th><th>Temps chrono</th><th>Observation</th></tr>'+rows+'</table>';
+}
+function autocHtmlHuile(){
+  return autocWrapHtmlDoc('🍟 Contrôle huile de friture', _autocBodyHuile());
 }
 
-function autocHtmlNettoyage(){
+function _autocBodyNettoyage(){
   var dates=autocMonthRange();
   var zones=NETT_DATA.zones||[];
   var body='<table style="font-size:7px"><tr><th>Zone</th>'+dates.map(function(d){ return '<th>'+parseInt(d.slice(8))+'</th>'; }).join('')+'</tr>';
@@ -939,10 +947,13 @@ function autocHtmlNettoyage(){
     body+='</tr>';
   });
   body+='</table>';
-  return autocWrapHtmlDoc('🧽 Checklist de nettoyage', body);
+  return body;
+}
+function autocHtmlNettoyage(){
+  return autocWrapHtmlDoc('🧽 Checklist de nettoyage', _autocBodyNettoyage());
 }
 
-function autocHtmlAnomalies(){
+function _autocBodyAnomalies(){
   var body='';
   (ANOM_DATA.entries||[]).forEach(function(a){
     body+='<p style="font-weight:700;font-size:11px;margin:8px 0 2px">'+a.date+' '+a.heure+' — '+a.description+' <span style="font-weight:400;color:#888">('+ANOM_STATUS_LABEL[a.status]+')</span></p>';
@@ -956,14 +967,41 @@ function autocHtmlAnomalies(){
     body+='</table>';
   });
   if(!(ANOM_DATA.entries||[]).length) body='<div class="meta">Aucune anomalie déclarée.</div>';
-  return autocWrapHtmlDoc('⚠️ Anomalies & actions correctives', body);
+  return body;
+}
+function autocHtmlAnomalies(){
+  return autocWrapHtmlDoc('⚠️ Anomalies & actions correctives', _autocBodyAnomalies());
 }
 
-// Ouvre le résumé mensuel dans un nouvel onglet, prêt à imprimer (Ctrl+P → Enregistrer en PDF)
+// Les 5 documents (résumé + 4 fiches) à la suite dans UN seul document, avec un
+// saut de page entre chacun : permet d'imprimer (ou « Enregistrer en PDF ») le
+// dossier mensuel complet en un seul clic, sans passer par l'enregistrement sur
+// disque (utile aussi sur iPad/Safari, où showDirectoryPicker n'existe pas).
+function autocHtmlDossierComplet(){
+  var monthLabel=new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  var sections=[
+    {title:'📊 Résumé mensuel', body:_autocBodyResume()},
+    {title:'🌡️ Relevés de températures', body:_autocBodyTemperatures()},
+    {title:'🍟 Contrôle huile de friture', body:_autocBodyHuile()},
+    {title:'🧽 Checklist de nettoyage', body:_autocBodyNettoyage()},
+    {title:'⚠️ Anomalies & actions correctives', body:_autocBodyAnomalies()},
+  ];
+  var full=sections.map(function(s, i){
+    return (i>0?'<div style="page-break-before:always"></div>':'')+'<h2 style="font-size:16px;border:none;padding-bottom:0">'+s.title+'</h2>'+s.body;
+  }).join('');
+  return autocWrapHtmlDoc('📁 Dossier de contrôle HACCP — '+monthLabel, full);
+}
+
+// Ouvre un document dans un nouvel onglet, prêt à imprimer (Ctrl+P → Enregistrer en PDF)
 function genererResumeMensuel(){
   if(typeof openHtmlInNewTab==='function') openHtmlInNewTab(autocHtmlResume());
   else window.open('data:text/html;charset=utf-8,'+encodeURIComponent(autocHtmlResume()));
 }
+function autocImprimerTemperatures(){ if(typeof openHtmlInNewTab==='function') openHtmlInNewTab(autocHtmlTemperatures()); }
+function autocImprimerHuile(){ if(typeof openHtmlInNewTab==='function') openHtmlInNewTab(autocHtmlHuile()); }
+function autocImprimerNettoyage(){ if(typeof openHtmlInNewTab==='function') openHtmlInNewTab(autocHtmlNettoyage()); }
+function autocImprimerAnomalies(){ if(typeof openHtmlInNewTab==='function') openHtmlInNewTab(autocHtmlAnomalies()); }
+function imprimerDossierMensuel(){ if(typeof openHtmlInNewTab==='function') openHtmlInNewTab(autocHtmlDossierComplet()); }
 
 function autocDownloadHtml(filename, html){
   var blob=new Blob([html], {type:'text/html;charset=utf-8'});

@@ -1082,6 +1082,7 @@
     <div id="autoc-operateurs" class="autoc-operateurs"></div>
     <div class="autoc-toolbar-global">
       <button class="btn" onclick="genererResumeMensuel()">📊 Résumé mensuel</button>
+      <button class="btn" onclick="imprimerDossierMensuel()">🖨️ Imprimer le dossier mensuel</button>
       <button class="btn btn-primary" onclick="ouvrirDossierControle()">📁 Dossier de contrôle (disque)</button>
     </div>
     <div id="dossier-feedback" class="autoc-dossier-feedback" style="display:none"></div>
@@ -1099,6 +1100,7 @@
           <input class="dlc-select" type="date" id="temp-date" onchange="renderTempChambres()">
           <span id="temp-progress" style="font-size:12px;color:var(--text2);font-weight:600"></span>
           <button class="btn" onclick="exportTempCSV()">📊 Export mois (CSV)</button>
+          <button class="btn" onclick="autocImprimerTemperatures()">🖨️ Imprimer (PDF)</button>
         </div>
       </div>
       <div id="temp-chambres-list" style="padding:0 16px"></div>
@@ -1165,7 +1167,7 @@
       </div>
       <div style="padding:4px 16px 14px"><button class="btn btn-primary" onclick="saveHuile()">✓ Enregistrer le contrôle</button></div>
       <div class="dlc-section-title">📋 Historique</div>
-      <div style="padding:0 16px 8px"><button class="btn" onclick="exportHuileCSV()">📊 Export CSV</button></div>
+      <div style="padding:0 16px 8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="exportHuileCSV()">📊 Export CSV</button><button class="btn" onclick="autocImprimerHuile()">🖨️ Imprimer (PDF)</button></div>
       <div id="huile-list" style="padding:0 16px 90px"></div>
     </div>
 
@@ -1176,6 +1178,7 @@
           <input class="dlc-select" type="date" id="nett-date" onchange="renderNettoyage()">
           <span id="nett-progress" style="font-size:12px;color:var(--text2);font-weight:600"></span>
           <button class="btn" onclick="exportNettoyageCSV()">📊 Export mois (CSV)</button>
+          <button class="btn" onclick="autocImprimerNettoyage()">🖨️ Imprimer (PDF)</button>
         </div>
       </div>
       <div id="nett-list" style="padding:0 16px"></div>
@@ -1207,6 +1210,7 @@
       <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="autocToggleAnomalieForm()" id="anomalie-form-toggle">+ Déclarer une anomalie</button>
         <button class="btn" onclick="exportAnomaliesCSV()">📊 Export CSV</button>
+        <button class="btn" onclick="autocImprimerAnomalies()">🖨️ Imprimer (PDF)</button>
       </div>
       <div class="autoc-section" id="anomalie-form-wrap" style="display:none">
         <div class="dlc-section-title">⚠️ Description de l'anomalie</div>
