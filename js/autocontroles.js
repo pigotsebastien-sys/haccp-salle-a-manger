@@ -47,7 +47,63 @@ function nowTime(){ return new Date().toTimeString().slice(0,5); }
 
 // Identité de l'auteur = compte connecté (et non plus des initiales tapées à la main),
 // pour une traçabilité HACCP fiable. Repli sur l'identifiant d'appareil si non connecté.
-function autocCurrentUser(){ return (typeof getCurrentUserIdentifier==='function') ? getCurrentUserIdentifier() : ''; }
+// En cuisine, l'appareil est souvent partagé par 2 personnes sous un seul compte connecté :
+// un sélecteur "opérateur actif" (prénoms configurables) donne un visa fiable par personne
+// sans obliger chacun à se reconnecter à chaque contrôle.
+const AUTOC_OP_KEY = 'haccp_autoc_operateurs_v1';
+var AUTOC_OPERATEURS = {list:['Opérateur 1','Opérateur 2'], active:null};
+
+function autocLoadOperateurs(){
+  try{
+    var r=localStorage.getItem(AUTOC_OP_KEY);
+    if(r){ var d=JSON.parse(r); if(d && Array.isArray(d.list) && d.list.length) AUTOC_OPERATEURS=d; }
+  }catch(e){}
+  if(!AUTOC_OPERATEURS.active) AUTOC_OPERATEURS.active = AUTOC_OPERATEURS.list[0];
+}
+function autocSaveOperateurs(){
+  try{ localStorage.setItem(AUTOC_OP_KEY, JSON.stringify(AUTOC_OPERATEURS)); }catch(e){}
+}
+function autocRefreshVisaFields(){
+  var me=autocCurrentUser();
+  ['huile-visa','cell-visa','anom-visa'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=me; });
+}
+function autocSetActiveOperateurByIndex(i){
+  AUTOC_OPERATEURS.active = AUTOC_OPERATEURS.list[i];
+  autocSaveOperateurs();
+  renderAutocOperateurs();
+  autocRefreshVisaFields();
+}
+function autocRenameOperateur(i){
+  var name = prompt('Prénom de l\'opérateur '+(i+1)+' :', AUTOC_OPERATEURS.list[i] || '');
+  if(name==null) return;
+  name = name.trim();
+  if(!name) return;
+  var wasActive = AUTOC_OPERATEURS.active === AUTOC_OPERATEURS.list[i];
+  AUTOC_OPERATEURS.list[i] = name;
+  if(wasActive) AUTOC_OPERATEURS.active = name;
+  autocSaveOperateurs();
+  renderAutocOperateurs();
+  autocRefreshVisaFields();
+}
+function renderAutocOperateurs(){
+  var el=document.getElementById('autoc-operateurs');
+  if(!el) return;
+  el.innerHTML = '<span style="font-size:11px;color:var(--text2);margin-right:2px">Qui êtes-vous ?</span>' +
+    AUTOC_OPERATEURS.list.map(function(name, i){
+      var active = name === AUTOC_OPERATEURS.active;
+      return '<span class="autoc-op-wrap">'+
+        '<button class="autoc-op-pill'+(active?' active':'')+'" onclick="autocSetActiveOperateurByIndex('+i+')">'+(active?'👤 ':'')+name+'</button>'+
+        '<button class="autoc-op-edit" onclick="autocRenameOperateur('+i+')" title="Modifier ce prénom">✏️</button>'+
+      '</span>';
+    }).join('');
+}
+
+// Identité de l'auteur : l'opérateur actif s'il est configuré, sinon le compte connecté
+// (et non plus des initiales tapées à la main), pour une traçabilité HACCP fiable.
+function autocCurrentUser(){
+  if(AUTOC_OPERATEURS && AUTOC_OPERATEURS.active) return AUTOC_OPERATEURS.active;
+  return (typeof getCurrentUserIdentifier==='function') ? getCurrentUserIdentifier() : '';
+}
 
 // Un registre HACCP ne doit pas pouvoir être réécrit après coup : toute date antérieure
 // à aujourd'hui est verrouillée en lecture seule (seule la journée en cours est modifiable).
@@ -93,13 +149,14 @@ function autocReload(moduleId){
 // ── Init (appelé à l'ouverture du panneau) ──────────────────────────
 function autocInit(){
   autocLoad();
+  autocLoadOperateurs();
+  renderAutocOperateurs();
   var hd=document.getElementById('huile-date'); if(hd && !hd.value) hd.value=todayStr();
   var nd=document.getElementById('nett-date');   if(nd && !nd.value) nd.value=todayStr();
   var td=document.getElementById('temp-date');   if(td && !td.value) td.value=todayStr();
   var cd=document.getElementById('cell-date');   if(cd && !cd.value) cd.value=todayStr();
-  // Visa = identité du compte connecté, affichée en lecture seule (plus de saisie libre)
-  var me=autocCurrentUser();
-  ['huile-visa','cell-visa','anom-visa'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=me; });
+  // Visa = opérateur actif / compte connecté, affiché en lecture seule (plus de saisie libre)
+  autocRefreshVisaFields();
   renderTempChambres();
   renderCellule();
   tempRenderCal();
@@ -147,7 +204,7 @@ function setTempVal(chambreId, service, field, value){
   // Le visa suit automatiquement le compte connecté dès qu'une température est saisie
   if(field==='temp' && value!=='') TEMP_DATA.entries[date][chambreId][service].visa=autocCurrentUser();
   autocSaveTempData();
-  if(field==='temp') renderTempChambres(); // recalcule le badge de statut
+  if(field==='temp'){ renderTempChambres(); updateAutocAlertDot(); } // recalcule le badge de statut + le rappel
   tempRenderCal();
 }
 
@@ -168,8 +225,14 @@ function renderTempChambres(){
   if(prog) prog.textContent = filled+'/'+total+' relevés';
 
   var lockBanner = locked ? '<div class="autoc-lock-banner">🔒 Jour clos — lecture seule (seule la journée en cours est modifiable)</div>' : '';
+  var reminderBanner = '';
+  if(date===todayStr()){
+    var rem=autocTempReminderStatus();
+    if(rem.missingMatin) reminderBanner += '<div class="autoc-reminder-banner">⚠️ Aucun relevé du matin saisi aujourd\'hui</div>';
+    if(rem.missingSoir) reminderBanner += '<div class="autoc-reminder-banner">⚠️ Aucun relevé du soir saisi aujourd\'hui</div>';
+  }
 
-  list.innerHTML = lockBanner + TEMP_CHAMBRES.map(function(ch){
+  list.innerHTML = lockBanner + reminderBanner + TEMP_CHAMBRES.map(function(ch){
     var worst=null;
     var blocks = TEMP_SERVICES.map(function(svc){
       var cur=(dayData[ch.id] && dayData[ch.id][svc]) || {temp:'',visa:'',action:''};
@@ -331,12 +394,36 @@ function autocSwitch(name, btn){
   if(sub) sub.classList.add('active');
 }
 
+// Rappel : relevé du matin attendu avant 11h, du soir avant 18h (à ajuster si vos
+// horaires de service diffèrent).
+function autocTempReminderStatus(){
+  var dayData = TEMP_DATA.entries[todayStr()] || {};
+  var hasMatin=false, hasSoir=false;
+  TEMP_CHAMBRES.forEach(function(ch){
+    var m=dayData[ch.id] && dayData[ch.id].matin;
+    var s=dayData[ch.id] && dayData[ch.id].soir;
+    if(m && m.temp!=='' && m.temp!=null) hasMatin=true;
+    if(s && s.temp!=='' && s.temp!=null) hasSoir=true;
+  });
+  var h = new Date().getHours();
+  var missingMatin = !hasMatin && h>=11;
+  var missingSoir = !hasSoir && h>=18;
+  return {missingMatin:missingMatin, missingSoir:missingSoir, overdue: missingMatin||missingSoir};
+}
+
 function updateAutocAlertDot(){
   var dot=document.getElementById('autoc-alert-dot');
   if(!dot) return;
-  var hasOpen=(ANOM_DATA.entries||[]).some(function(a){ return a.status!=='cloturee'; });
-  dot.style.display = hasOpen ? 'block' : 'none';
+  var hasOpenAnom=(ANOM_DATA.entries||[]).some(function(a){ return a.status!=='cloturee'; });
+  var tempOverdue=autocTempReminderStatus().overdue;
+  dot.style.display = (hasOpenAnom||tempOverdue) ? 'block' : 'none';
 }
+
+// Vérifie le rappel même si le panneau Autocontrôles n'a jamais été ouvert (dot sur la tuile d'accueil)
+window.addEventListener('load', function(){
+  setTimeout(function(){ autocLoad(); updateAutocAlertDot(); }, 3200);
+  setInterval(function(){ autocLoad(); updateAutocAlertDot(); }, 15*60*1000);
+});
 
 // ══════════════════════════════════════════════════════════════════
 // HUILE DE FRITURE

@@ -1237,6 +1237,12 @@ input[type="number"], input[type="date"], select, textarea {
 .autoc-dossier-feedback{margin:0 16px 10px;padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.5;background:var(--info-bg);color:var(--info-text)}
 .autoc-dossier-feedback.ok{background:var(--green-bg);color:var(--green-text)}
 .autoc-lock-banner{background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;padding:8px 10px;border-radius:8px;margin-bottom:8px}
+.autoc-reminder-banner{background:var(--pink-bg);color:var(--pink-text);font-size:12px;font-weight:600;padding:8px 10px;border-radius:8px;margin-bottom:8px}
+.autoc-operateurs{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:10px 16px 0}
+.autoc-op-wrap{display:inline-flex;align-items:center;gap:2px}
+.autoc-op-pill{font-family:var(--font);font-size:12px;font-weight:600;padding:6px 12px;background:var(--bg2);border:.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer}
+.autoc-op-pill.active{background:var(--info-bg);color:var(--info-text);border-color:transparent}
+.autoc-op-edit{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:4px}
 .autoc-subnav{display:flex;gap:6px;padding:0 16px 14px;overflow-x:auto}
 .autoc-subnav-btn{font-family:var(--font);font-size:13px;font-weight:500;padding:8px 14px;background:var(--bg2);border:.5px solid var(--border);border-radius:20px;color:var(--text2);cursor:pointer;white-space:nowrap;min-height:38px;flex-shrink:0}
 .autoc-subnav-btn.active{background:var(--info-bg);color:var(--info-text);border-color:transparent;font-weight:700}
