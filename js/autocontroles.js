@@ -218,6 +218,18 @@ function setTempVal(chambreId, service, field, value){
   tempRenderCal();
 }
 
+function autocToggleSign(chambreId, service){
+  var input = document.getElementById('temp-input-'+chambreId+'-'+service);
+  if(!input || input.disabled) return;
+  var v = parseFloat(input.value);
+  // Rien à inverser si le champ est vide (saisir d'abord le nombre, ex. "19",
+  // puis ± pour obtenir "-19" — un champ <input type="number"> refuse de toute
+  // façon de garder un simple "-" comme valeur).
+  if(isNaN(v) || v===0) return;
+  input.value = -v;
+  setTempVal(chambreId, service, 'temp', input.value);
+}
+
 function renderTempChambres(){
   var list=document.getElementById('temp-chambres-list');
   var prog=document.getElementById('temp-progress');
@@ -258,10 +270,15 @@ function renderTempChambres(){
             'oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'action\',this.value)">'+
         '</div>'
       ) : '';
+      // Le clavier numérique mobile n'affiche pas toujours la touche « - » (clavier
+      // Android notamment) : un bouton ± permet de saisir une température négative
+      // (congélateur…) sans dépendre du clavier de l'appareil.
+      var inputId = 'temp-input-'+ch.id+'-'+svc;
       return '<div style="flex:1;min-width:0">'+
         '<div class="rec-label">'+(svc==='matin'?'Matin':'Soir')+'</div>'+
         '<div style="display:flex;gap:4px;align-items:center">'+
-          '<input type="number" step="0.1" class="rec-input" style="width:64px;border-color:'+borderColor+'"'+dis+' placeholder="°C" value="'+(cur.temp===''||cur.temp==null?'':cur.temp)+'" oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'temp\',this.value)">'+
+          '<input type="number" step="0.1" id="'+inputId+'" class="rec-input" style="width:64px;border-color:'+borderColor+'"'+dis+' placeholder="°C" value="'+(cur.temp===''||cur.temp==null?'':cur.temp)+'" oninput="setTempVal(\''+ch.id+'\',\''+svc+'\',\'temp\',this.value)">'+
+          '<button type="button" class="btn-icon"'+dis+' title="Inverser le signe (+ / −)" onclick="autocToggleSign(\''+ch.id+'\',\''+svc+'\')">±</button>'+
           (cur.visa?'<span style="font-size:10px;color:var(--text2)">'+cur.visa+'</span>':'')+
         '</div>'+actionField+'</div>';
     }).join('');
