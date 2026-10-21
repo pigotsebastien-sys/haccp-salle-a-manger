@@ -606,6 +606,16 @@
       <label class="dlc-label">Note</label>
       <input class="dlc-input" id="trac-note" type="text" placeholder="Fournisseur, motif de perte…">
     </div>
+    <div class="dlc-field">
+      <label class="dlc-label">Photo (facultatif)</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <label class="rec-btn btn-ghost" style="cursor:pointer">
+          📷 Prendre une photo
+          <input type="file" accept="image/*" capture="environment" style="display:none" id="trac-photo-input" onchange="handleTracPhoto(this)">
+        </label>
+        <img id="trac-photo-preview" alt="" style="display:none;max-height:48px;border-radius:6px;cursor:pointer" onclick="openLightbox(this.src)">
+      </div>
+    </div>
     <div class="dlc-panel-actions">
       <button class="dlc-panel-btn cancel" onclick="closeTracAdd()">Annuler</button>
       <button class="dlc-panel-btn submit-ok" onclick="submitTrac()">✓ Enregistrer</button>

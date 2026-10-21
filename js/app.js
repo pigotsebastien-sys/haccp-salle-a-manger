@@ -1062,7 +1062,7 @@ function switchTab(name,btn){
   if(name==='prix'){initPrixPanel();renderPrixChart();}
   if(name==='carte-allergenes'){renderCartAlg();}
   if(name==='recettes'){if(typeof loadNewModules==='function')loadNewModules();renderRecettes();}
-  if(name==='tracabilite')renderTracabilite();
+  if(name==='tracabilite'){renderTracabilite();tracUploadPendingPhoto();}
   if(name==='dlc')renderDLC();
   if(name==='historique')renderHistorique();
   if(name==='commande'){renderCommande();}
@@ -6776,7 +6776,7 @@ function switchTabByName(name){
   if(panel){
     panel.classList.add('active');
     if(name==='dashboard')buildDashboard();
-    if(name==='tracabilite')renderTracabilite();
+    if(name==='tracabilite'){renderTracabilite();tracUploadPendingPhoto();}
     if(name==='historique')renderHistorique();
     if(name==='commande')renderCommande();
     if(name==='recettes')renderRecettes();
@@ -7105,6 +7105,9 @@ function openTracAdd(){
   document.getElementById('trac-note').value='';
   document.getElementById('trac-resp').value='';
   document.getElementById('trac-type').value='entree';
+  window._tracPendingPhoto=null;
+  const prev=document.getElementById('trac-photo-preview'); if(prev){prev.src='';prev.style.display='none';}
+  const pin=document.getElementById('trac-photo-input'); if(pin)pin.value='';
   // Auto-fill unite from selected product
   const firstProd=DATA[0];
   if(firstProd)document.getElementById('trac-unite').value=firstProd.unite||'';
@@ -7115,6 +7118,28 @@ function openTracAdd(){
   document.getElementById('trac-overlay').classList.add('open');
 }
 function closeTracAdd(){document.getElementById('trac-overlay').classList.remove('open');}
+
+// Photo prise en direct (capture="environment" : ouvre l'appareil photo, pas la
+// galerie) — compressée avant stockage, comme les photos de réception.
+function handleTracPhoto(input){
+  const file=input.files && input.files[0];
+  if(!file || !file.type || file.type.indexOf('image/')!==0) return;
+  const url=URL.createObjectURL(file);
+  const im=new Image();
+  im.onload=function(){
+    const MAX=1024; let w=im.width,h=im.height;
+    if(w>MAX||h>MAX){ const s=MAX/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    c.getContext('2d').drawImage(im,0,0,w,h);
+    URL.revokeObjectURL(url);
+    window._tracPendingPhoto=c.toDataURL('image/jpeg',0.6);
+    const prev=document.getElementById('trac-photo-preview');
+    if(prev){ prev.src=window._tracPendingPhoto; prev.style.display='block'; }
+  };
+  im.onerror=function(){ URL.revokeObjectURL(url); };
+  im.src=url;
+  input.value='';
+}
 
 function submitTrac(){
   const code=document.getElementById('trac-prod').value;
@@ -7129,6 +7154,7 @@ function submitTrac(){
     resp:document.getElementById('trac-resp').value.trim(),
     note:document.getElementById('trac-note').value.trim()
   };
+  if(window._tracPendingPhoto) entry.photo=window._tracPendingPhoto;
   TRAC_DATA.unshift(entry);
   if(TRAC_DATA.length>1000)TRAC_DATA=TRAC_DATA.slice(0,1000);
   // Mettre à jour le stock automatiquement
@@ -7139,7 +7165,42 @@ function submitTrac(){
     autoSave();updateStats();render();scheduleBilanRebuild();
   }
   saveNewModules();
+  window._tracPendingPhoto=null;
   closeTracAdd();renderTracabilite();
+  tracUploadPendingPhoto();
+}
+
+// Envoi de la photo vers le stockage privé (même bucket que les photos de
+// réception, chemin séparé) dès que la connexion le permet.
+const TRAC_PHOTO_PREFIX='tracabilite/';
+let _tracUploading=false;
+async function tracUploadPendingPhoto(){
+  if(_tracUploading || !navigator.onLine) return;
+  if(typeof ensureFreshToken!=='function' || !(await ensureFreshToken(false))) return;
+  _tracUploading=true;
+  let changed=false;
+  try{
+    for(const t of TRAC_DATA){
+      if(typeof t.photo!=='string' || t.photo.indexOf('data:')!==0) continue;
+      const path=TRAC_PHOTO_PREFIX+t.id+'.jpg';
+      const resp=await fetch(SUPA_URL+'/storage/v1/object/receptions-photos/'+path,{
+        method:'POST',
+        headers:{apikey:SUPA_KEY,Authorization:'Bearer '+window._supabaseAuthToken,'Content-Type':'image/jpeg','x-upsert':'true'},
+        body:_dataUrlToBlob(t.photo)
+      });
+      if(!resp.ok){ console.warn('[TRAC PHOTO] envoi refusé', resp.status); break; }
+      _recPhotoUrlCache[path]=t.photo;
+      t.photo={path:path};
+      changed=true;
+    }
+  }catch(e){ console.warn('[TRAC PHOTO] envoi impossible :', e.message); }
+  finally{ _tracUploading=false; if(changed){ saveNewModules(); renderTracabilite(); } }
+}
+async function tracOpenPhoto(id){
+  const t=TRAC_DATA.find(x=>String(x.id)===String(id));
+  if(!t || !t.photo) return;
+  try{ openLightbox(await recPhotoUrl(t.photo)); }
+  catch(e){ alert('⚠️ '+e.message+' — connectez-vous pour voir la photo.'); }
 }
 
 function deleteTrac(id){
@@ -7182,6 +7243,7 @@ function renderTracabilite(){
       <div class="trac-right">
         <div class="trac-qte">${t.type==='entree'?'+':'−'}${esc(t.qte)} ${esc(t.unite)}</div>
         <div class="trac-date">${new Date(t.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+        ${t.photo?`<span style="cursor:pointer" title="${typeof t.photo==='string'?'Photo pas encore envoyée sur le serveur':'Voir la photo'}" onclick="tracOpenPhoto(${jsArg(t.id)})">📷${typeof t.photo==='string'?'⏳':''}</span>`:''}
         <button class="trac-del" onclick="deleteTrac(${jsArg(t.id)})">✕</button>
       </div>
     </div>`).join('');
@@ -7830,7 +7892,7 @@ function switchTabMore(name,btn){
   if(btn) btn.classList.add('active'); // Guard contre null
   document.querySelector('.tab-more-btn')?.classList.add('active-more');
   // Init du panel
-  if(name==='tracabilite')renderTracabilite();
+  if(name==='tracabilite'){renderTracabilite();tracUploadPendingPhoto();}
   if(name==='historique')renderHistorique();
   if(name==='prix'){initPrixPanel();setTimeout(renderPrixChart,100);}
   if(name==='carte-allergenes')renderCartAlg();
