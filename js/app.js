@@ -4406,7 +4406,20 @@ const CaApp = {
       fournisseur, items: items.sort((a,b)=>a.date.localeCompare(b.date)), total: items.reduce((s,i)=>s+computeLine(i).ht,0)
     })).sort((a,b)=>a.fournisseur.localeCompare(b.fournisseur));
 
-    let html = `<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">
+    // Totaux toujours visibles pour les 3 comptes suivis de près (nourriture,
+    // sacs poubelle, emballages jetables), sur la période sélectionnée — quel
+    // que soit le filtre de code choisi ci-dessous.
+    const codesSuivis = ['601000','602220','602230'];
+    const periode = this.filteredInvoices();
+    const totauxSuivis = codesSuivis.map(code=>({
+      code, libelle:(this.codes.find(c=>c.code===code)||{}).libelle||code,
+      ht: periode.filter(i=>i.code===code).reduce((s,i)=>s+computeLine(i).ht,0)
+    }));
+    let html = `<div class="row" style="margin-bottom:14px;">
+      ${totauxSuivis.map(t=>`<div class="kpi"><div class="label">${esc(t.code)} — ${esc(t.libelle)}</div><div class="value">${eur(t.ht)}</div></div>`).join('')}
+    </div>`;
+
+    html += `<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">
       <span style="font-size:13px;color:#8a8478;">Filtrer par code :</span>
       <select style="width:auto;" onchange="CaApp.setLedgerFilter(this.value)">
         <option value="">Tous les codes</option>
@@ -5517,8 +5530,13 @@ function mercRenderResults() {
     var oldPrixStr = oldPrix !== null ? oldPrix.toFixed(2) + ' €' : '—';
     var uniteStr = line.unite ? ' / ' + line.unite : '';
 
+    // Article sans correspondance : rien ne permettait jusqu'ici de l'ajouter
+    // au catalogue depuis cet écran (case à cocher désactivée, inutilisable).
+    var checkCell = prod
+      ? '<input type="checkbox" class="merc-check" data-idx="' + i + '" ' + checked + ' onchange="_mercMatches[' + i + '].checked=this.checked;mercUpdateApplyBtn()">'
+      : '<button class="dlc-btn-sm" onclick="mercCreerProduit(' + i + ')">+ Ajouter</button>';
     rows += '<tr class="' + rowClass + '">' +
-      '<td><input type="checkbox" class="merc-check" data-idx="' + i + '" ' + checked + (prod ? '' : ' disabled') + ' onchange="_mercMatches[' + i + '].checked=this.checked;mercUpdateApplyBtn()"></td>' +
+      '<td>' + checkCell + '</td>' +
       '<td><div style="font-weight:500">' + esc(line.designation) + '</div>' +
         (line.conditionnement ? '<div style="font-size:11px;color:var(--text2)">' + esc(line.conditionnement) + '</div>' : '') + '</td>' +
       '<td>' + (prod ? '<span style="font-size:12px">' + esc(prod.produit) + '</span><br><span style="font-size:11px;color:var(--text2)">' + esc(prod.fournisseur || '') + ' · ' + esc(prod.code) + '</span>' : '<span style="color:var(--text3);font-size:12px">— non trouvé —</span>') + '</td>' +
@@ -5532,6 +5550,17 @@ function mercRenderResults() {
   document.getElementById('merc-tbody').innerHTML = rows;
   document.getElementById('merc-results').classList.add('show');
   mercUpdateApplyBtn();
+}
+
+// Pré-remplit la fiche "Nouveau produit" à partir d'une ligne de facture sans
+// correspondance dans le catalogue — il reste juste à choisir la zone/catégorie.
+function mercCreerProduit(idx) {
+  var line = (_mercMatches[idx] || {}).mercLine; if (!line) return;
+  openAddProduct();
+  document.getElementById('ap-nom').value = line.designation || '';
+  document.getElementById('ap-prix').value = Number.isFinite(line.prix_ht) ? line.prix_ht : '';
+  document.getElementById('ap-unite').value = (typeof apUnite === 'function' ? apUnite(line.unite) : line.unite) || '';
+  if (line.four) document.getElementById('ap-fourn').value = line.four;
 }
 
 function mercUpdateApplyBtn() {

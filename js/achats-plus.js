@@ -550,6 +550,33 @@ function apBatchPrix() {
   mercRenderResults();
 }
 
+// Reprend TOUT l'historique des articles de factures (CA_ARTICLES, pas
+// seulement la facture ou le lot en cours) pour rapprocher chaque désignation
+// du catalogue : prix à mettre à jour, et surtout articles jamais vus (pas de
+// produit correspondant) — à ajouter au catalogue via le bouton "+ Ajouter"
+// qui apparaît sur ces lignes-là dans la mercuriale.
+function apActualiserProduits() {
+  const dernier = {};
+  (CA_ARTICLES || []).forEach(a => {
+    if (!a.designation || !Number.isFinite(a.prix) || a.prix <= 0) return;
+    const k = mercNorm(a.designation);
+    if (!dernier[k] || a.date > dernier[k].date) dernier[k] = a;
+  });
+  const lignes = Object.values(dernier).map(a => ({
+    designation: a.designation, reference: a.reference || '', prix_ht: a.prix, unite: a.unite || '',
+    conditionnement: 'Facture ' + a.fournisseur + ' du ' + String(a.date).split('-').reverse().join('/'),
+    four: a.fournisseur, dateFacture: a.date
+  }));
+  if (!lignes.length) return CaApp.toast('Aucun article dans l\'historique des factures.', 'error');
+  openMercuriale();
+  _mercMatches = mercMatch(lignes);
+  const n = _mercMatches.filter(m => m.dataProduct).length;
+  const st = document.getElementById('merc-status');
+  st.className = 'merc-status ok';
+  st.textContent = '🧾 ' + lignes.length + ' produits distincts lus sur tout l\'historique des factures — ' + n + ' correspondances (prix à vérifier), ' + (lignes.length - n) + ' sans produit correspondant (« + Ajouter » pour les créer).';
+  mercRenderResults();
+}
+
 // ── 9. Clôture mensuelle ────────────────────────────────────────────
 let _apCloMois = null;
 const apMoisDecal = (m, n) => { const [y, mm] = m.split('-').map(Number); const d = new Date(y, mm - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
