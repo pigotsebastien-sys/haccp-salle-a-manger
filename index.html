@@ -1099,6 +1099,7 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input class="dlc-select" type="date" id="temp-date" onchange="renderTempChambres()">
           <span id="temp-progress" style="font-size:12px;color:var(--text2);font-weight:600"></span>
+          <button class="btn" id="temp-ferme-toggle" onclick="autocToggleFermeJour()">🔒 Marquer ce jour fermé</button>
           <button class="btn" onclick="exportTempCSV()">📊 Export mois (CSV)</button>
           <button class="btn" onclick="autocImprimerTemperatures()">🖨️ Imprimer (PDF)</button>
         </div>

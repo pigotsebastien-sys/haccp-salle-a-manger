@@ -591,6 +591,7 @@ textarea.rec-form-control { resize:vertical; min-height:70px; }
 .rec-cal-cell.ok{background:#D1FAE5;color:#1B4332;font-weight:700}
 .rec-cal-cell.warn{background:#FEF3C7;color:#92400E;font-weight:700}
 .rec-cal-cell.danger{background:#FEE2E2;color:#991B1B;font-weight:700}
+.rec-cal-cell.closed{background:#EDE9E2;color:#9B9892}
 .rec-cal-count{position:absolute;top:1px;right:2px;font-size:9px;font-weight:800}
 .rec-day-panel{background:#fff;border:1.5px solid #E8E2D9;border-radius:10px;padding:12px;display:none}
 .rec-day-panel-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}

@@ -90,6 +90,9 @@
     // 20/10/2026 : les 2 prénoms d'opérateur Autocontrôles (celui qui vise les
     // relevés) n'étaient gardés que sur l'appareil où ils avaient été réglés.
     'autoc_operateurs':'haccp_autoc_operateurs_v1',
+    // 21/10/2026 : calendrier des jours de fermeture (congés/fériés), pour ne
+    // pas réclamer de relevé ces jours-là.
+    'autoc_fermetures':'haccp_autoc_fermetures_v1',
   };
   // Modules dont les données existaient sur chaque appareil AVANT d'être
   // synchronisées : à la 1re synchro, la version locale est fusionnée avec celle
@@ -444,6 +447,12 @@
           if (typeof autocLoadOperateurs==='function') autocLoadOperateurs();
           if (typeof renderAutocOperateurs==='function') renderAutocOperateurs();
           if (typeof autocRefreshVisaFields==='function') autocRefreshVisaFields();
+          break;
+        case 'autoc_fermetures':
+          if (typeof autocLoadFermetures==='function') autocLoadFermetures();
+          if (typeof renderTempChambres==='function') renderTempChambres();
+          if (typeof tempRenderCal==='function') tempRenderCal();
+          if (typeof updateAutocAlertDot==='function') updateAutocAlertDot();
           break;
         default: break;
       }

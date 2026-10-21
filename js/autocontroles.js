@@ -24,6 +24,63 @@ const TEMP_CHAMBRES = [
 ];
 const TEMP_SERVICES = ['matin','soir'];
 
+// Jours de fermeture du restaurant (repos d'équipe tournant + jours fériés
+// fermés + semaines de vacances), transcrits du planning SAMG 2026-2027 (+
+// janvier 2028 fourni en prévisionnel). Permet de ne pas réclamer de relevé ni
+// afficher de rappel ces jours-là. Modifiable (bouton 🔒/🔓 sous le calendrier
+// des températures) si le planning change ou pour une fermeture exceptionnelle.
+function _fermDays(ym, days){ return days.map(function(d){ return ym+'-'+String(d).padStart(2,'0'); }); }
+const AUTOC_FERMETURES_DEFAUT = [].concat(
+  _fermDays('2026-01',[1,2,3,4,10,11,18,19,24,25,31]),
+  _fermDays('2026-02',[1,7,8,12,13,14,15,21,22,28]),
+  _fermDays('2026-03',[1,7,8,14,15,21,22,28,29]),
+  _fermDays('2026-04',[4,5,6,11,12,13,14,15,16,17,18,19,25,26]),
+  _fermDays('2026-05',[1,2,3,8,9,10,14,15,16,17,23,24,25,30,31]),
+  _fermDays('2026-06',[6,7,13,14,20,21,27,28]),
+  _fermDays('2026-07',[4,5,11,12,13,14,18,19,25,26,27,28,29,30,31]),
+  _fermDays('2026-08',[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,22,23,29,30]),
+  _fermDays('2026-09',[5,6,12,13,19,20,26,27]),
+  _fermDays('2026-10',[3,4,10,11,17,18,24,25,26,27,28,29,30,31]),
+  _fermDays('2026-11',[1,7,8,11,14,15,21,22,28,29]),
+  _fermDays('2026-12',[5,6,12,13,19,20,25,26,27,28,29,30,31]),
+  _fermDays('2027-01',[1,2,3,9,10,17,18,23,24,30,31]),
+  _fermDays('2027-02',[6,7,13,14,15,16,17,18,19,20,21,27,28]),
+  _fermDays('2027-03',[6,7,13,14,20,21,27,28,29]),
+  _fermDays('2027-04',[3,4,10,11,12,13,14,15,16,17,18,24,25]),
+  _fermDays('2027-05',[1,2,6,7,8,9,15,16,17,22,23,29,30]),
+  _fermDays('2027-06',[5,6,12,13,19,20,26,27]),
+  _fermDays('2027-07',[3,4,10,11,14,17,18,24,25,26,27,28,29,30,31]),
+  _fermDays('2027-08',[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,21,22,28,29]),
+  _fermDays('2027-09',[4,5,11,12,18,19,25,26]),
+  _fermDays('2027-10',[2,3,9,10,16,17,23,24,30,31]),
+  _fermDays('2027-11',[1,2,3,4,5,6,7,11,12,13,14,20,21,27,28]),
+  _fermDays('2027-12',[4,5,11,12,18,19,25,26,27,28,29,30,31]),
+  _fermDays('2028-01',[1,2,8,9,15,16,22,23,29,30])
+);
+const AUTOC_FERM_KEY = 'haccp_autoc_fermetures_v1';
+var AUTOC_FERMETURES = AUTOC_FERMETURES_DEFAUT.slice();
+function autocLoadFermetures(){
+  try{
+    var r=localStorage.getItem(AUTOC_FERM_KEY);
+    if(r){ var d=JSON.parse(r); if(Array.isArray(d) && d.length) AUTOC_FERMETURES=d; }
+  }catch(e){}
+}
+function autocSaveFermetures(){
+  try{ localStorage.setItem(AUTOC_FERM_KEY, JSON.stringify(AUTOC_FERMETURES)); }catch(e){}
+  if(typeof syncToCloud==='function') syncToCloud('autoc_fermetures', AUTOC_FERMETURES);
+}
+function autocIsFerme(dateStr){ return AUTOC_FERMETURES.indexOf(dateStr)!==-1; }
+function autocToggleFerme(dateStr){
+  var i=AUTOC_FERMETURES.indexOf(dateStr);
+  if(i===-1) AUTOC_FERMETURES.push(dateStr); else AUTOC_FERMETURES.splice(i,1);
+  AUTOC_FERMETURES.sort();
+  autocSaveFermetures();
+  renderTempChambres();
+  tempRenderCal();
+  updateAutocAlertDot();
+}
+function autocToggleFermeJour(){ autocToggleFerme(tempDate()); }
+
 const NETT_ZONES_DEFAUT = [
   'Four gauche','Four droit','Armoire MEP','Timbre réfrigéré','Top congélateur','Sol cuisine',
   'Plonge (desserte + machine)','Bac plonge batterie','Sol plonge','Bac légumerie','Sol légumerie',
@@ -159,6 +216,7 @@ function autocReload(moduleId){
 // ── Init (appelé à l'ouverture du panneau) ──────────────────────────
 function autocInit(){
   autocLoad();
+  autocLoadFermetures();
   autocLoadOperateurs();
   renderAutocOperateurs();
   var hd=document.getElementById('huile-date'); if(hd && !hd.value) hd.value=todayStr();
@@ -246,22 +304,27 @@ function renderTempChambres(){
   });
   if(prog) prog.textContent = filled+'/'+total+' relevés';
 
+  var ferme = autocIsFerme(date);
   var lockBanner = locked ? '<div class="autoc-lock-banner">🔒 Jour clos — lecture seule (seule la journée en cours est modifiable)</div>' : '';
+  var closedBanner = ferme ? '<div class="autoc-lock-banner">🔒 Jour de fermeture (congé/férié) — relevé non exigé</div>' : '';
   var reminderBanner = '';
   if(date===todayStr()){
     var rem=autocTempReminderStatus();
     if(rem.missingMatin) reminderBanner += '<div class="autoc-reminder-banner">⚠️ Aucun relevé du matin saisi aujourd\'hui</div>';
     if(rem.missingSoir) reminderBanner += '<div class="autoc-reminder-banner">⚠️ Aucun relevé du soir saisi aujourd\'hui</div>';
   }
+  var fermeBtn=document.getElementById('temp-ferme-toggle');
+  if(fermeBtn) fermeBtn.textContent = ferme ? '🔓 Rouvrir ce jour' : '🔒 Marquer ce jour fermé';
 
-  list.innerHTML = lockBanner + reminderBanner + TEMP_CHAMBRES.map(function(ch){
+  list.innerHTML = lockBanner + closedBanner + reminderBanner + TEMP_CHAMBRES.map(function(ch){
+    var hs = !!(dayData[ch.id] && dayData[ch.id].hs);
     var worst=null;
     var blocks = TEMP_SERVICES.map(function(svc){
       var cur=(dayData[ch.id] && dayData[ch.id][svc]) || {temp:'',visa:'',action:''};
-      var st=tempStatus(ch, cur.temp);
+      var st = hs ? null : tempStatus(ch, cur.temp);
       if(st && (!worst || TEMP_STATUS_RANK[st]>TEMP_STATUS_RANK[worst])) worst=st;
       var borderColor = st==='conforme' ? 'var(--green-text)' : st==='surveiller' ? 'var(--amber-text)' : st==='nonconforme' ? 'var(--pink-text)' : 'var(--border2)';
-      var dis = locked ? ' disabled' : '';
+      var dis = (locked || hs) ? ' disabled' : '';
       // Action corrective obligatoire (exigence HACCP) dès que la température est hors seuil
       var actionField = st==='nonconforme' ? (
         '<div style="margin-top:4px">'+
@@ -282,14 +345,29 @@ function renderTempChambres(){
           (cur.visa?'<span style="font-size:10px;color:var(--text2)">'+cur.visa+'</span>':'')+
         '</div>'+actionField+'</div>';
     }).join('');
-    var badge = worst ? '<span class="dlc-badge '+TEMP_STATUS_CLS[worst]+'">'+TEMP_STATUS_LABEL[worst]+'</span>' : '';
+    var badge = hs ? '<span class="dlc-badge dlc-badge-grey">🔧 Hors service</span>' : (worst ? '<span class="dlc-badge '+TEMP_STATUS_CLS[worst]+'">'+TEMP_STATUS_LABEL[worst]+'</span>' : '');
+    var hsDis = locked ? ' disabled' : '';
+    var hsBtn = '<button type="button" class="dlc-btn-sm"'+hsDis+' onclick="autocToggleHS(\''+ch.id+'\')">'+(hs?'✅ Remettre en service':'🔧 Hors service')+'</button>';
     return '<div class="autoc-zone-row" style="flex-direction:column;align-items:stretch;gap:6px;padding:10px 0">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center">'+
-        '<span style="font-weight:600;font-size:13px">'+ch.label+'</span>'+badge+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+
+        '<span style="font-weight:600;font-size:13px">'+ch.label+'</span>'+
+        '<div style="display:flex;align-items:center;gap:6px">'+badge+hsBtn+'</div>'+
       '</div>'+
-      '<div style="display:flex;gap:10px">'+blocks+'</div>'+
+      (hs ? '' : '<div style="display:flex;gap:10px">'+blocks+'</div>')+
     '</div>';
   }).join('');
+}
+
+function autocToggleHS(chambreId){
+  var date=tempDate();
+  if(autocIsLocked(date)) return;
+  if(!TEMP_DATA.entries[date]) TEMP_DATA.entries[date]={};
+  if(!TEMP_DATA.entries[date][chambreId]) TEMP_DATA.entries[date][chambreId]={};
+  TEMP_DATA.entries[date][chambreId].hs = !TEMP_DATA.entries[date][chambreId].hs;
+  autocSaveTempData();
+  renderTempChambres();
+  tempRenderCal();
+  updateAutocAlertDot();
 }
 
 // ── Cellule de refroidissement ──
@@ -355,6 +433,7 @@ function tempDayWorst(dateStr){
   var dayData=TEMP_DATA.entries[dateStr]||{};
   var filled=0, worst=null;
   TEMP_CHAMBRES.forEach(function(ch){
+    if(dayData[ch.id] && dayData[ch.id].hs) return; // chambre hors service : exclue du calcul
     TEMP_SERVICES.forEach(function(svc){
       var cur=dayData[ch.id] && dayData[ch.id][svc];
       var v=cur && cur.temp;
@@ -378,16 +457,19 @@ function tempRenderCal(){
   var first=new Date(tempCalYear, tempCalMonth, 1).getDay();
   first = first===0 ? 6 : first-1;
   var total=new Date(tempCalYear, tempCalMonth+1, 0).getDate();
-  var totalSlots=TEMP_CHAMBRES.length*TEMP_SERVICES.length;
   var html=days.map(function(d){ return '<div class="rec-cal-day-hdr">'+d+'</div>'; }).join('');
   for(var i=0;i<first;i++) html+='<div></div>';
   for(var d=1; d<=total; d++){
     var dateStr=tempCalYear+'-'+String(tempCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     var r=tempDayWorst(dateStr);
+    var dayData=TEMP_DATA.entries[dateStr]||{};
+    var hsCount=TEMP_CHAMBRES.filter(function(ch){ return dayData[ch.id]&&dayData[ch.id].hs; }).length;
+    var totalSlots=(TEMP_CHAMBRES.length-hsCount)*TEMP_SERVICES.length;
     var cls='rec-cal-cell';
     if(r.worst==='nonconforme') cls+=' danger';
     else if(r.worst==='surveiller' || (r.filled>0 && r.filled<totalSlots)) cls+=' warn';
     else if(r.filled>0) cls+=' ok';
+    else if(autocIsFerme(dateStr)) cls+=' closed';
     html+='<div class="'+cls+'" onclick="document.getElementById(\'temp-date\').value=\''+dateStr+'\';renderTempChambres()">'+d+(r.filled?'<span class="rec-cal-count">'+r.filled+'</span>':'')+'</div>';
   }
   grid.innerHTML=html;
@@ -424,6 +506,7 @@ function autocSwitch(name, btn){
 // Rappel : relevé du matin attendu avant 10h, du soir avant 19h (à ajuster si vos
 // horaires de service diffèrent).
 function autocTempReminderStatus(){
+  if(autocIsFerme(todayStr())) return {missingMatin:false, missingSoir:false, overdue:false};
   var dayData = TEMP_DATA.entries[todayStr()] || {};
   var hasMatin=false, hasSoir=false;
   TEMP_CHAMBRES.forEach(function(ch){
@@ -448,7 +531,7 @@ function updateAutocAlertDot(){
 
 // Vérifie le rappel même si le panneau Autocontrôles n'a jamais été ouvert (dot sur la tuile d'accueil)
 window.addEventListener('load', function(){
-  setTimeout(function(){ autocLoad(); updateAutocAlertDot(); }, 3200);
+  setTimeout(function(){ autocLoad(); autocLoadFermetures(); updateAutocAlertDot(); }, 3200);
   setInterval(function(){ autocLoad(); updateAutocAlertDot(); }, 15*60*1000);
 });
 
@@ -846,7 +929,9 @@ function autocMonthStats(){
   var tempTotal=0, tempSurveil=0, tempNonConf=0, tempSansAction=0;
   dates.forEach(function(ds){
     var dayData=(TEMP_DATA.entries||{})[ds]||{};
-    TEMP_CHAMBRES.forEach(function(ch){ TEMP_SERVICES.forEach(function(svc){
+    TEMP_CHAMBRES.forEach(function(ch){
+      if(dayData[ch.id] && dayData[ch.id].hs) return; // chambre hors service : exclue des statistiques
+      TEMP_SERVICES.forEach(function(svc){
       var cur=dayData[ch.id]&&dayData[ch.id][svc]; var v=cur&&cur.temp;
       if(v===''||v==null)return;
       tempTotal++;
@@ -920,7 +1005,12 @@ function _autocBodyTemperatures(){
   var rows=[];
   dates.forEach(function(ds){
     var dayData=(TEMP_DATA.entries||{})[ds]||{};
-    TEMP_CHAMBRES.forEach(function(ch){ TEMP_SERVICES.forEach(function(svc){
+    TEMP_CHAMBRES.forEach(function(ch){
+      if(dayData[ch.id] && dayData[ch.id].hs){
+        rows.push('<tr><td>'+new Date(ds).toLocaleDateString('fr-FR')+'</td><td>'+ch.label+'</td><td>—</td><td>—</td><td>—</td><td>🔧 Hors service</td><td>—</td></tr>');
+        return;
+      }
+      TEMP_SERVICES.forEach(function(svc){
       var cur=dayData[ch.id]&&dayData[ch.id][svc]; var v=cur&&cur.temp;
       if(v===''||v==null)return;
       var st=tempStatus(ch,v);
