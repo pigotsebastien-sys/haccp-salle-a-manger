@@ -3716,8 +3716,21 @@ const CaApp = {
     return list;
   },
   totals(list){
+    // Les factures récentes (ventilation par article) n'ont plus de taux de TVA
+    // sur leur ligne principale : la TVA non récupérable est enregistrée comme
+    // une ligne à part, sur le compte 635200, avec son montant dans le champ HT
+    // de cette ligne. Avant cette correction, "Total HT" additionnait aussi ce
+    // montant (double emploi : la TVA se retrouvait comptée comme de la
+    // marchandise), ce qui donnait TVA = 0 € et TTC = HT sur tout le tableau de
+    // bord. Les comptes au taux de TVA classique (ancien plan comptable) restent
+    // calculés comme avant, via c.tva.
     let ht=0,tva=0,ttc=0;
-    list.forEach(i=>{ const c=computeLine(i); ht+=c.ht; tva+=c.tva; ttc+=c.ttc; });
+    list.forEach(i=>{
+      const c=computeLine(i);
+      ttc+=c.ttc;
+      if(i.code==='635200') tva+=c.ht;
+      else { ht+=c.ht; tva+=c.tva; }
+    });
     // Une facture ventilée sur plusieurs comptes = plusieurs lignes, même factureId
     return {ht,tva,ttc,count:new Set(list.map(i=>i.factureId||i.id)).size};
   },
