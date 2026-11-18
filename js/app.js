@@ -3078,6 +3078,45 @@ function openEditProduct(code){
 
 
 // ── SCAN PHOTO ÉTIQUETTE ──
+// Date lue sur l'étiquette → AAAA-MM-JJ (accepte 2026-11-25, 25/11/2026, 25.11.26, 25-11-2026)
+function recParseDate(v) {
+  v = String(v || '').trim();
+  if (!v) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  var m = v.match(/(\d{1,2})[\/.\-\s](\d{1,2})[\/.\-\s](\d{2,4})/);
+  if (!m) return '';
+  var y = m[3].length === 2 ? '20' + m[3] : m[3];
+  var mo = ('0' + m[2]).slice(-2), d = ('0' + m[1]).slice(-2);
+  if (+mo < 1 || +mo > 12 || +d < 1 || +d > 31) return '';
+  return y + '-' + mo + '-' + d;
+}
+// Quantité lue sur l'étiquette → {val, unite} (« 2,5 kg », « 500 g », « 6 pièces », « 1L »)
+function recParseQte(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') return { val: v, unite: '' };
+  var m = String(v).replace(',', '.').match(/(\d+(?:\.\d+)?)\s*([a-zA-Zéèû]*)/);
+  if (!m) return null;
+  var u = (m[2] || '').toLowerCase(), unite = '';
+  if (u === 'kg' || u === 'kgs') unite = 'kg';
+  else if (u === 'g' || u === 'gr') unite = 'g';
+  else if (u === 'l' || u === 'lt') unite = 'L';
+  else if (u === 'cl') return { val: +(parseFloat(m[1]) / 100).toFixed(3), unite: 'L' };
+  else if (u === 'ml') return { val: +(parseFloat(m[1]) / 1000).toFixed(3), unite: 'L' };
+  else if (/^(p|pc|pce|pces|piece|pièce|pieces|pièces|u|unité|unites|unités)$/.test(u)) unite = 'pièces';
+  return { val: parseFloat(m[1]), unite: unite };
+}
+// DLC enregistrée → « 25/11/2026 » + nombre de jours restants à la réception
+function recDlcCell(r) {
+  var icon = r.dlc === 'ok' ? '✅' : '❌';
+  if (!r.dlcDate) return icon;
+  var p = r.dlcDate.split('-'), txt = p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : r.dlcDate;
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var diff = Math.round((new Date(r.dlcDate + 'T00:00:00') - today) / 86400000);
+  var col = diff < 0 ? '#991B1B' : diff <= 3 ? '#D97706' : '#1B4332';
+  var lib = diff < 0 ? 'dépassée' : diff === 0 ? 'auj.' : 'J-' + diff;
+  return icon + ' <b style="white-space:nowrap">' + esc(txt) + '</b><br><span style="font-size:11px;color:' + col + '">' + lib + '</span>';
+}
+
 async function analyzeReceptionPhoto(input) {
   var file = input && input.files && input.files[0];
   if (!file) return;
@@ -3132,10 +3171,13 @@ async function analyzeReceptionPhoto(input) {
     }
     if (info.produit) { var e1=document.getElementById('rec-produit'); if(e1){e1.value=info.produit;filled++;} }
     if (info.fournisseur) { var e2=document.getElementById('rec-fourn'); if(e2){e2.value=info.fournisseur;filled++;} }
-    if (info.dlc) {
-      var e3=document.getElementById('rec-dlc-date'); // nouveau module: rec-dlc-date
-      if(!e3) e3=document.getElementById('rec-dlc'); // ancien module fallback
-      if(e3 && e3.type==='date'){e3.value=info.dlc;filled++;if(typeof recCalcDlc==='function')recCalcDlc();}
+    var dlcLue = recParseDate(info.dlc || info.ddm || info.dluo || '');
+    if (dlcLue) {
+      var e3=document.getElementById('rec-dlc-date');
+      if(e3){e3.value=dlcLue;filled++;if(typeof recCalcDlc==='function')recCalcDlc();}
+      // DLC dépassée à la réception : statut « non conforme » proposé
+      var today=localISODate(); var sel=document.getElementById('rec-dlc');
+      if(sel) sel.value = dlcLue < today ? 'ko' : 'ok';
     }
     if (info.temperature) {
       var e4=document.getElementById('rec-temp'); if(e4) e4.value=info.temperature;
@@ -3149,6 +3191,15 @@ async function analyzeReceptionPhoto(input) {
       }
       if(typeof checkReception==='function') checkReception();
       filled++;
+    }
+    // 18/11/2026 : la quantité (ou le poids) lue sur l'étiquette remplit le champ
+    // « Quantité » + l'unité, pour qu'elle soit visible dans l'enregistrement
+    // (avant : elle n'allait que dans les observations).
+    var q = recParseQte(info.quantite || info.qte || info.poids || info.poids_net || '');
+    if (q) {
+      var eq=document.getElementById('rec-qte'), eu=document.getElementById('rec-unite');
+      if (eq && !eq.value) { eq.value = q.val; filled++; }
+      if (eu && q.unite) eu.value = q.unite;
     }
     var obs='';
     if(info.lot) obs+='Lot: '+info.lot+' ';
@@ -3378,7 +3429,7 @@ function renderReceptions() {
   if(!tbody) return;
   var recs = recState.receptions || [];
   if(!recs.length) {
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#9B9892;padding:20px">Aucune réception enregistrée</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#9B9892;padding:20px">Aucune réception enregistrée</td></tr>';
     return;
   }
   tbody.innerHTML = recs.map(function(r) {
@@ -3396,9 +3447,10 @@ function renderReceptions() {
       '<td>'+esc(r.date)+'</td>'+
       '<td>'+esc(r.heure)+'</td>'+
       '<td style="font-weight:600">'+esc(r.fourn)+'</td>'+
-      '<td>'+esc(r.produit)+(r.qte?' — <b>'+esc(r.qte)+' '+esc(r.unite||'')+'</b>':'')+'</td>'+
+      '<td>'+esc(r.produit)+'</td>'+
+      '<td style="font-weight:700;white-space:nowrap">'+(r.qte?esc(String(r.qte).replace('.',','))+' '+esc(r.unite||''):'—')+'</td>'+
       '<td style="font-family:monospace;font-weight:600;'+tempCls+'">'+esc(r.temp)+(r.temp?'°C':'—')+'</td>'+
-      '<td>'+(r.dlc==='ok'?'✅':'❌')+'</td>'+
+      '<td>'+recDlcCell(r)+'</td>'+
       '<td>'+(r.emb==='ok'?'✅':r.emb==='partiel'?'⚠️':'❌')+'</td>'+
       '<td style="'+decCls+'">'+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</td>'+
       '<td>'+photos+'</td>'+
@@ -3571,7 +3623,7 @@ function recSelectDay(dateStr) {
   if(!dayRecs.length) { list.innerHTML = '<p style="color:#9B9892;font-size:13px">Aucune réception ce jour</p>'; return; }
   list.innerHTML = dayRecs.map(function(r){
     return '<div style="padding:8px;border-radius:8px;background:#F7F5F0;margin-bottom:6px;font-size:13px">'+
-      '<b>'+esc(r.fourn)+'</b> — '+esc(r.produit)+(r.qte?' ('+esc(r.qte)+' '+esc(r.unite)+')':'')+'<br>'+
+      '<b>'+esc(r.fourn)+'</b> — '+esc(r.produit)+(r.qte?' · <b>'+esc(String(r.qte).replace('.',','))+' '+esc(r.unite||'')+'</b>':'')+(r.dlcDate?' · DLC <b>'+esc(r.dlcDate.split('-').reverse().join('/'))+'</b>':'')+'<br>'+
       '<span style="color:#5C5954">'+esc(r.temp)+(r.temp?'°C · ':'')+(r.decision==='ok'?'✅ Accepté':r.decision==='reserve'?'⚠️ Réserve':'❌ Refusé')+'</span>'+
     '</div>';
   }).join('');
