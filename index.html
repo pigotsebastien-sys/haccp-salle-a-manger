@@ -13,7 +13,7 @@
 <link rel="manifest" href="manifest.json">
 <title>Inventaire SP Conseil — La Salle à Manger Grenoble</title>
 <script src="js/favicon.js?v=20261019a"></script>
-<link rel="stylesheet" href="style.css?v=20261019a">
+<link rel="stylesheet" href="style.css?v=20261125b">
 
   <!-- SYNC TEMPS RÉEL — WebSocket natif + REST fallback -->
   <script src="js/core-sync.js?v=20261019a"></script>
@@ -479,6 +479,7 @@
     <div class="recette-toolbar">
       <button class="btn btn-primary" onclick="openNewRecette()">+ Nouvelle recette</button>
       <button class="btn" onclick="exportRecettesPDF()">📄 Export PDF</button>
+      <input type="search" id="rec-search" class="dlc-select" placeholder="🔍 Rechercher une recette ou un ingrédient" oninput="renderRecettes()" style="flex:1;min-width:180px">
     </div>
     <div id="recettes-list"></div>
   </div>
@@ -1478,7 +1479,7 @@
 
 <div id="panel-factures-ca" class="panel" style="padding:0"><div id="app"></div></div>
 <script src="js/autocontroles.js"></script>
-<script src="js/app.js?v=20261125a"></script>
+<script src="js/app.js?v=20261125b"></script>
 <script src="js/inventaire-plus.js?v=20261019a"></script>
 <script src="js/achats-plus.js?v=20261019a"></script>
 
