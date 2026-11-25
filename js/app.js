@@ -5920,7 +5920,7 @@ function openDLCAdd(code){
   const sel=document.getElementById('dlc-prod-select');
   sel.innerHTML=DATA.map(d=>`<option value="${esc(d.code)}">${esc(d.produit)} (${esc((ZONES[d.zone]||{label:d.zone}).label)})</option>`).join('');
   if(code)sel.value=code;
-  const today=new Date().toISOString().slice(0,10);
+  const today=localISODate();
   document.getElementById('dlc-date').value='';
   document.getElementById('dlc-lot').value='';
   document.getElementById('dlc-qte-lot').value='';
@@ -7526,8 +7526,8 @@ function renderPrixChart(){
 
   // Add current price as a data point if not in history
   const allPoints=[...history];
-  if(prod&&!allPoints.some(p=>p.date===new Date().toISOString().slice(0,10)&&p.prix===prod.prix)){
-    allPoints.push({date:new Date().toISOString().slice(0,10),prix:prod.prix,fournisseur:prod.fournisseur||'Actuel',note:'Prix actuel'});
+  if(prod&&!allPoints.some(p=>p.date===localISODate()&&p.prix===prod.prix)){
+    allPoints.push({date:localISODate(),prix:prod.prix,fournisseur:prod.fournisseur||'Actuel',note:'Prix actuel'});
   }
 
   wrap.style.display='block';empty.style.display='none';
@@ -8542,7 +8542,7 @@ button,a,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transpa
       html+=`</table>`;
       // Températures (relevé du jour — chambres froides)
       if(typeof TEMP_DATA!=='undefined' && typeof TEMP_CHAMBRES!=='undefined'){
-        const todayKey=new Date().toISOString().slice(0,10);
+        const todayKey=localISODate();
         const dayData=(TEMP_DATA.entries&&TEMP_DATA.entries[todayKey])||{};
         const hasAny=TEMP_CHAMBRES.some(ch=>['matin','soir'].some(svc=>{
           const v=dayData[ch.id]&&dayData[ch.id][svc]&&dayData[ch.id][svc].temp;
@@ -8575,7 +8575,7 @@ button,a,[onclick]{touch-action:manipulation;-webkit-tap-highlight-color:transpa
     }
 
     else if(mod.id==='tracabilite'){
-      const today=new Date().toISOString().slice(0,10);
+      const today=localISODate();
       const todayOps=TRAC_DATA.filter(t=>t.date.slice(0,10)===today);
       html+=`<div class="summary"><div class="sum-box"><div class="sum-label">Opérations aujourd'hui</div><div class="sum-val">${todayOps.length}</div></div><div class="sum-box"><div class="sum-label">Total historique</div><div class="sum-val">${TRAC_DATA.length}</div></div></div>`;
       html+=`<table><tr><th>Date/Heure</th><th>Type</th><th>Produit</th><th>Qté</th><th>Responsable</th><th>Note</th></tr>`;
