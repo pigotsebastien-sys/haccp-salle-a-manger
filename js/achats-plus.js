@@ -593,7 +593,8 @@ function apRatioMois(m) {
 function apEtapesCloture(m) {
   const c = CA_CLOTURES.mois[m] || {};
   const facts = apFactures(CaApp.invoices.filter(i => monthKey(i.date) === m));
-  const exp = apExportWorkbook(m), ctrl = exp ? exp.controles : [];
+  let exp = null; try { exp = apExportWorkbook(m); } catch (e) { console.warn('[CLOTURE] contrôles indisponibles :', e.message); }
+  const ctrl = exp ? exp.controles : [];
   const sansFichier = facts.filter(f => !f.lignes.some(l => l.fichier)).length;
   const recl = CA_RECLAM.filter(x => x.statut === 'ouverte' && String(x.date).slice(0, 7) <= m);
   const snap = apSnapDuMois(m), ca = CA_MENSUEL[m] || {};
