@@ -1,7 +1,7 @@
 // Service Worker — HACCP LSM — Mode hors-ligne + mise à jour automatique
 // Version incrémentée à chaque déploiement pour forcer le rafraîchissement
 
-const CACHE_VERSION = 'haccp-lsm-v25';
+const CACHE_VERSION = 'haccp-lsm-v26';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,7 +11,8 @@ const APP_SHELL = [
   './js/autocontroles.js',
   './js/inventaire-plus.js',
   './js/achats-plus.js',
-  './js/favicon.js',
+  './logo.svg',
+  './favicon.png',
   './js/sw-register.js',
   './manifest.json',
   './icon-192.png',
