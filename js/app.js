@@ -6948,7 +6948,9 @@ function openEditRecette(id){
   document.getElementById('rec-nom').value=r.nom;
   document.getElementById('rec-couverts').value=r.couverts;
   document.getElementById('rec-prix-vente').value=r.prixVente||'';
-  document.getElementById('rec-cat').value=r.cat||'plat';
+  const catSel=document.getElementById('rec-cat');
+  if(r.cat&&![...catSel.options].some(o=>o.value===r.cat)){const o=document.createElement('option');o.value=r.cat;o.textContent=r.cat;catSel.appendChild(o);}
+  catSel.value=r.cat||'plat';
   document.getElementById('recette-modal-title').textContent='✏️ Modifier la recette';
   document.getElementById('rec-submit-btn').textContent='✓ Mettre à jour';
   renderRecetteIngredients();
@@ -7023,9 +7025,13 @@ function submitRecette(){
   const fb=document.getElementById('rec-feedback');
   if(!nom){fb.style.display='block';fb.style.color='var(--pink-text)';fb.textContent='⚠️ Nom obligatoire.';return;}
   if(!_recetteIngredients.length){fb.style.display='block';fb.style.color='var(--pink-text)';fb.textContent='⚠️ Ajoutez au moins un ingrédient.';return;}
+  // Modifier une recette garde ses autres champs (étapes, allergènes, notes,
+  // source…) : avant, ils étaient effacés à chaque modification.
+  const prev=_editRecetteId?(RECETTES_DATA.find(x=>x.id===_editRecetteId)||{}):{};
   const r={
+    ...prev,
     id:_editRecetteId||Date.now(),
-    nom,cat:document.getElementById('rec-cat').value,
+    nom,cat:document.getElementById('rec-cat').value||prev.cat||'plat',
     couverts:parseInt(document.getElementById('rec-couverts').value)||4,
     prixVente:parseFloat(document.getElementById('rec-prix-vente').value)||0,
     // On conserve tous les champs (unite, code_produit, designation des recettes
@@ -7059,7 +7065,10 @@ function renderRecettes(){
     return;
   }
   const CATS={entree:'Entrée',plat:'Plat',dessert:'Dessert',autre:'Autre'};
-  el.innerHTML=RECETTES_DATA.map(r=>{
+  const q=normRecherche(document.getElementById('rec-search')?.value||'');
+  const liste=q?RECETTES_DATA.filter(r=>normRecherche(r.nom+' '+(r.cat||'')+' '+(r.ingredients||[]).map(i=>i.designation||'').join(' ')).includes(q)):RECETTES_DATA;
+  if(!liste.length){el.innerHTML='<div class="histo-empty">Aucune recette ne correspond à la recherche.</div>';return;}
+  el.innerHTML=liste.map(r=>{
     const cout=calcRecetteCout(r);
     const coutCouvert=cout/(r.couverts||1);
     const fc=r.prixVente>0?Math.round(cout/(r.prixVente*(r.couverts||1))*100):null;
@@ -7089,6 +7098,7 @@ function renderRecettes(){
             <span class="recette-ing-cost">${coutStr}</span>
           </div>`;
         }).join('')}
+        ${ficheRecetteHTML(r)}
         <div class="recette-total-row">
           <span>Coût total · ${r.couverts} couverts</span>
           <span>${cout.toFixed(2)} €</span>
@@ -7107,6 +7117,7 @@ function renderRecettes(){
           ${fc!==null?`<div class="dash-foodcost-bar"><div class="dash-foodcost-fill" style="width:${Math.min(fc,100)}%;background:${fcColor}"></div></div>`:''}
         </div>
         <div style="padding:10px 14px;display:flex;gap:8px;border-top:.5px solid var(--border)">
+          <button class="dlc-btn-sm" onclick="printFicheRecette(${jsArg(r.id)})">🖨 Fiche A4</button>
           <button class="dlc-btn-sm" onclick="openEditRecette(${jsArg(r.id)})">✏️ Modifier</button>
           <button class="dlc-btn-sm" style="color:var(--pink-text)" onclick="deleteRecette(${jsArg(r.id)})">🗑 Supprimer</button>
         </div>
@@ -7117,6 +7128,49 @@ function renderRecettes(){
 
 function toggleRecetteBody(id){
   document.getElementById('rec-body-'+id)?.classList.toggle('open');
+}
+
+function normRecherche(s){return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+
+// Partie « fiche technique » d'une recette : étapes, allergènes, notes, source.
+function ficheRecetteHTML(r){
+  const etapes=Array.isArray(r.etapes)?r.etapes.filter(Boolean):[];
+  let h='';
+  if(etapes.length)h+=`<div class="recette-fiche"><div class="recette-fiche-titre">Étapes</div><ol>${etapes.map(e=>`<li>${esc(e)}</li>`).join('')}</ol></div>`;
+  const infos=[['Allergènes',r.allergenes],['Matériel',r.materiel],['Préparation',r.prepTime],['Cuisson',r.cuisson]].filter(x=>x[1]);
+  if(infos.length)h+=`<div class="recette-fiche">${infos.map(([k,v])=>`<div><b>${k} :</b> ${esc(v)}</div>`).join('')}</div>`;
+  if(r.notes)h+=`<div class="recette-fiche"><div class="recette-fiche-titre">Notes</div><div style="white-space:pre-line">${esc(r.notes)}</div></div>`;
+  if(r.source)h+=`<div class="recette-fiche" style="color:var(--text2);font-size:11px">Source : ${esc(r.source)}</div>`;
+  return h;
+}
+
+// Fiche technique imprimable (A4) d'une seule recette.
+function printFicheRecette(id){
+  const r=RECETTES_DATA.find(x=>x.id===id);
+  if(!r)return;
+  const etapes=Array.isArray(r.etapes)?r.etapes.filter(Boolean):[];
+  const cout=calcRecetteCout(r);
+  let html=`<html><head><meta charset="UTF-8"><title>${esc(r.nom)}</title><style>
+    body{font-family:Arial,sans-serif;font-size:12px;color:#1a1a18;margin:0}
+    h1{font-size:18px;color:#1a3a5c;margin:0 0 2px}
+    .meta{color:#666;font-size:11px;margin-bottom:12px}
+    .cols{display:flex;gap:18px}.ing{flex:0 0 40%}.etp{flex:1}
+    h2{font-size:13px;color:#0c447c;margin:10px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}
+    table{width:100%;border-collapse:collapse}td{padding:3px 4px;border-bottom:.5px solid #eee;vertical-align:top}
+    td.q{white-space:nowrap;text-align:right;width:1%}
+    ol{margin:0;padding-left:18px}li{margin-bottom:5px}
+    .bloc{margin-top:10px;font-size:11px}.notes{white-space:pre-line}
+    .pied{margin-top:14px;color:#888;font-size:10px;border-top:1px solid #ddd;padding-top:4px}
+    @media print{@page{size:A4;margin:12mm}}
+  </style></head><body>`;
+  html+=`<h1>${esc(r.nom)}</h1><div class="meta">${esc(r.cat||'')} · ${esc(r.couverts)} couverts${cout>0?` · coût matière ${cout.toFixed(2)} € (${(cout/(r.couverts||1)).toFixed(2)} €/couvert)`:''}</div>`;
+  html+=`<div class="cols"><div class="ing"><h2>Ingrédients</h2><table>`;
+  (r.ingredients||[]).forEach(ing=>{const ri=resolveIngredient(ing);html+=`<tr><td>${esc(ri.nom)}</td><td class="q">${esc(ing.qte||'')} ${esc(ri.uniteRecette||'')}</td></tr>`;});
+  html+=`</table></div><div class="etp"><h2>Étapes</h2>${etapes.length?`<ol>${etapes.map(e=>`<li>${esc(e)}</li>`).join('')}</ol>`:'<p style="color:#888">Étapes non renseignées.</p>'}</div></div>`;
+  [['Allergènes',r.allergenes],['Matériel',r.materiel],['Préparation',r.prepTime],['Cuisson',r.cuisson]].filter(x=>x[1]).forEach(([k,v])=>{html+=`<div class="bloc"><b>${k} :</b> ${esc(v)}</div>`;});
+  if(r.notes)html+=`<div class="bloc"><b>Notes</b><div class="notes">${esc(r.notes)}</div></div>`;
+  html+=`<div class="pied">La Salle à Manger · Grenoble — fiche imprimée le ${new Date().toLocaleDateString('fr-FR')}</div></body></html>`;
+  openHtmlInNewTab(html);
 }
 
 function exportRecettesPDF(){
