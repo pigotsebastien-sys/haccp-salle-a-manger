@@ -4718,7 +4718,18 @@ function showHomeScreen() {
 
 // Bouton 🏠 dans le header
 function goHomeScreen() {
+  // 25/11/2026 : « Accueil ne fonctionne pas ». Une fenêtre restée ouverte
+  // (DLC, recette, prix…) couvrait l'écran, et la page restait défilée tout en
+  // bas après un long module (inventaire) : l'accueil semblait ne pas s'ouvrir.
+  ['closeDLCAdd','closeRecette','closeTracAdd','closePrix','closePlat','closeMoreMenu',
+   'closeMercuriale','closeAddProduct','closeSendCenter','closeAccount','closeSave',
+   'closeLightbox','closeRegistresHACCP','closeVoice'].forEach(function(f){
+    try { if (typeof window[f] === 'function') window[f](); } catch(e) {}
+  });
+  var tm = document.getElementById('tab-more-menu'); if (tm) tm.style.display = 'none';
   showHomeScreen();
+  try { window.scrollTo({ top: 0, behavior: 'instant' }); } catch(e) { window.scrollTo(0, 0); }
+  var th = document.querySelector('.tab-btn.tab-home'); if (th) th.classList.add('active');
   var hf = document.getElementById('btn-home-float');
   if(hf) hf.classList.remove('visible');
 }
